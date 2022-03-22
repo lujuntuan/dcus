@@ -1,0 +1,150 @@
+package commonapi
+
+interface DCusInterfaces {
+    version { major 1 minor 0 }
+    method invokeDomainMessage fireAndForget {
+        in {
+            DomainMessage domainMessage
+        }
+    }
+    broadcast dispatchControlMessage {
+        out {
+            ControlMessage controlMessage
+        }
+    }
+    broadcast dispatchDetailMessage {
+        out {
+            DetailMessage detailMessage
+        }
+    }
+    enumeration MasterState {
+        MR_UNKNOWN = 0
+        MR_IDLE = 1
+        MR_PENDING = 2
+        MR_READY = 3
+        MR_DOWNLOAD = 4
+        MR_VERIFY = 5
+        MR_DISTRUBUTE = 6
+        MR_WAIT = 7
+        MR_DEPLOY = 8
+        MR_CANCEL = 9
+        MR_DOWNLOAD_ASK = 10
+        MR_DEPLOY_ASK = 11
+        MR_CANCEL_ASK = 12
+        MR_RESUME_ASK = 13
+        MR_DONE_ASK = 14
+        MR_ERROR_ASK = 15
+    }
+    enumeration WorkerState {
+        WR_UNKNOWN = 0
+        WR_ERROR = 1
+        WR_IDLE = 2
+        WR_DOWNLOAD = 3
+        WR_VERIFY = 4
+        WR_PATCH = 5
+        WR_WAIT = 6
+        WR_DEPLOY = 7
+    }
+    enumeration Answer {
+        ANS_UNKNOWN = 0
+        ANS_ACCEPT = 1
+        ANS_REFUSE = 2
+        ANS_OTHER = 3
+    }
+    enumeration Control {
+        CTL_UNKNOWN = 0
+        CTL_RESET = 1
+        CTL_DOWNLOAD = 2
+        CTL_DEPLOY = 3
+        CTL_CANCEL = 4
+        CTL_CLEAR = 5
+    }
+    enumeration Method {
+        MTHD_SKIP = 0
+        MTHD_ATTEMPT = 1
+        MTHD_FORCED = 2
+    }
+    array Files of File
+    array Packages of Package
+    array Transfers of Transfer
+    array Details of Detail
+    array Depends of Depend
+    struct Domain {
+        String name
+        String guid
+        WorkerState state_
+        WorkerState last
+        Boolean watcher
+        UInt32 error_
+        String version_
+        String attribute_
+        String meta
+        Float progress
+        String message
+        Answer answer
+    }
+    struct File {
+        String name
+        String domain
+        String url
+        UInt64 size
+        String md5
+        String sha1
+        String sha256
+    }
+    struct Package {
+        String part
+        String domain
+        String version_
+        String meta
+        Files files
+    }
+    struct Upgrade {
+        String id
+        Method download
+        Method deploy
+        Boolean maintenance
+        Packages packages
+    }
+    struct Transfer {
+        String domain
+        String name
+        Float progress
+        UInt32 speed
+        UInt32 total
+        UInt32 current
+        UInt32 pass
+        UInt32 left
+    }
+    struct Detail {
+        Domain domain
+        Package package_
+        Transfers transfers
+        Float progress
+        UInt32 deploy
+    }
+    struct Depend {
+        String data
+    }
+    struct ControlMessage {
+        UInt32 id
+        Control control
+        Upgrade upgrade
+        Depends depends
+    }
+    struct DetailMessage {
+        UInt32 id
+        MasterState state_
+        MasterState last
+        Boolean active
+        Int32 error_
+        Float step
+        Float progress
+        String message
+        Details details
+    }
+    struct DomainMessage {
+        Domain domain
+        Boolean discovery
+    }
+}

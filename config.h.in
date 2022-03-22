@@ -1,0 +1,52 @@
+/*********************************************************************************
+ *Copyright(C): Juntuan.Lu 2021
+ *Author:  Juntuan.Lu
+ *Version: 1.0
+ *Date:  2021/04/22
+ *Phone: 15397182986
+ *Description:
+ *Others:
+ *Function List:
+ *History:
+ **********************************************************************************/
+
+#ifndef DCUS_CONFIG_H
+#define DCUS_CONFIG_H
+
+#ifndef DCUS_PROJECT_NAME
+#define DCUS_PROJECT_NAME "@PROJECT_NAME@"
+#endif
+
+#ifndef DCUS_PROJECT_VERSION
+#define DCUS_PROJECT_VERSION "@PROJECT_VERSION@"
+#endif
+
+#ifndef DCUS_PROJECT_VERSION_MAJOR
+#define DCUS_PROJECT_VERSION_MAJOR "@PROJECT_VERSION_MAJOR@"
+#endif
+
+#ifndef DCUS_PROJECT_VERSION_MINOR
+#define DCUS_PROJECT_VERSION_MINOR "@PROJECT_VERSION_MINOR@"
+#endif
+
+#ifndef DCUS_PROJECT_COMMITID
+#define DCUS_PROJECT_COMMITID "@DCUS_COMMITID@"
+#endif
+
+#ifndef DCUS_MALLOC
+#define DCUS_MALLOC "@DCUS_MALLOC@"
+#endif
+
+#ifndef DCUS_BUILD_MASTER
+#cmakedefine DCUS_BUILD_MASTER
+#endif
+
+#ifndef DCUS_BUILD_WORKER
+#cmakedefine DCUS_BUILD_WORKER
+#endif
+
+#ifndef DCUS_USE_HTTPS
+#cmakedefine DCUS_USE_HTTPS
+#endif
+
+#endif // DCUS_CONFIG_H

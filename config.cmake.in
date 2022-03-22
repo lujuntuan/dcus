@@ -1,0 +1,25 @@
+#*********************************************************************************
+#  *Copyright(C): Juntuan.Lu 2021
+#  *Author:  Juntuan.Lu
+#  *Version: 1.0
+#  *Date:  2021/04/22
+#  *Phone: 15397182986
+#  *Description:
+#  *Others:
+#  *Function List:
+#  *History:
+#**********************************************************************************
+
+include(CMakeFindDependencyMacro)
+
+set(DCUS_NAME @PROJECT_NAME@)
+set(DCUS_VERSION @PROJECT_VERSION@)
+set(DCUS_VERSION_MAJOR @PROJECT_VERSION_MAJOR@)
+set(DCUS_VERSION_MINOR @PROJECT_VERSION_MINOR@)
+set(DCUS_COMMITID @DCUS_COMMITID@)
+set(DCUS_MALLOC @DCUS_MALLOC@)
+set(DCUS_BUILD_MASTER @DCUS_BUILD_MASTER@)
+set(DCUS_BUILD_WORKER @DCUS_BUILD_WORKER@)
+set(DCUS_USE_HTTPS @DCUS_USE_HTTPS@)
+
+include(${CMAKE_CURRENT_LIST_DIR}/dcusTargets.cmake)

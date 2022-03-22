@@ -1,0 +1,61 @@
+version: '3'
+services:
+  # ---------------------
+  # RabbitMQ service
+  # ---------------------
+  rabbitmq:
+    image: "rabbitmq:3-management"
+    environment:
+      RABBITMQ_DEFAULT_VHOST: "/"
+    restart: always
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "alarms"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    labels:
+      NAME: "rabbitmq"
+  # ---------------------
+  # MySQL service
+  # ---------------------
+  mysql:
+    image: "mysql:5.7"
+    environment:
+      MYSQL_DATABASE: "hawkbit"
+      MYSQL_ALLOW_EMPTY_PASSWORD: "true"
+    restart: always
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysql", "--execute", 'SHOW DATABASES']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    labels:
+      NAME: "mysql"
+  # ---------------------
+  # HawkBit service
+  # ---------------------
+  hawkbit:
+    image: "hawkbit/hawkbit-update-server:latest-mysql"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+    environment:
+      - 'SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/hawkbit'
+      - 'SPRING_RABBITMQ_HOST=rabbitmq'
+      - 'SPRING_RABBITMQ_USERNAME=guest'
+      - 'SPRING_RABBITMQ_PASSWORD=guest'
+      - 'SPRING_DATASOURCE_USERNAME=root'
+    volumes:
+      - ./application.properties:/opt/hawkbit/application.properties
+    restart: always
+    ports:
+      - "8080:8080"
+    labels:
+      NAME: "hawkbit"

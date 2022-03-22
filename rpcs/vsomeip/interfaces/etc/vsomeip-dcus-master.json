@@ -1,0 +1,58 @@
+{
+    "unicast" : "127.0.0.1",
+    "netmask" : "255.255.255.0",
+    "logging" :
+    { 
+        "level" : "info",
+        "console" : "true",
+        "file" : { "enable" : "false", "path" : "/tmp/vsomeip-dcus.log" },
+        "dlt" : "false"
+    },
+    "applications" :
+    [
+        {
+            "name" : "dcus-master",
+            "id" : "17453"
+        }
+    ],
+    "services" :
+    [
+        {
+            "service" : "15068",
+            "instance" : "26068",
+            "reliable" : { "port" : "53250", "enable-magic-cookies" : "false" },
+            "events" :
+            [
+                {
+                    "event" : "48101",
+                    "is_field" : "false",
+                    "is_reliable" : "true"
+                },
+                {
+                    "event" : "48102",
+                    "is_field" : "false",
+                    "is_reliable" : "true"
+                }
+            ],
+            "eventgroups" :
+            [
+                {
+                    "eventgroup" : "48101",
+                    "events" : [ "48101" ]
+                },
+                {
+                    "eventgroup" : "48102",
+                    "events" : [ "48102" ]
+                }
+            ]
+        }
+    ],
+    "routing" : "dcus-master",
+    "service-discovery" :
+    {
+        "enable" : "true",
+        "multicast" : "224.244.224.245",
+        "port" : "30499",
+        "protocol" : "udp"
+    }
+}

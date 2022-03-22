@@ -1,0 +1,33 @@
+import "platform:/plugin/org.genivi.commonapi.someip/deployment/CommonAPI-SOMEIP_deployment_spec.fdepl"
+import "DCusInterfaces.fidl"
+
+define org.genivi.commonapi.someip.deployment for interface commonapi.DCusInterfaces {
+    SomeIpServiceID = 15068
+    method invokeDomainMessage {
+        SomeIpMethodID = 15078
+        SomeIpReliable = true
+        in {
+        }
+    }
+    broadcast dispatchControlMessage {
+        SomeIpEventID = 48101
+        SomeIpReliable = true
+        SomeIpEventGroups = { 48101 }
+        out {
+        }
+    }
+    broadcast dispatchDetailMessage {
+        SomeIpEventID = 48102
+        SomeIpReliable = true
+        SomeIpEventGroups = { 48102 }
+        out {
+        }
+    }
+}
+
+define org.genivi.commonapi.someip.deployment for provider as Service {
+    instance commonapi.DCusInterfaces {
+        InstanceId = "commonapi.DCusInterfaces"
+        SomeIpInstanceID = 26068
+    }
+}

@@ -1,0 +1,145 @@
+syntax = "proto3";
+package DCusInterfaces;
+
+enum MsgID {
+    TP_UNKNOWN = 0;
+    TP_CONTROL_MSG = 1; //[master => worker] (broadcast) ControlMessage
+    TP_DETAIL_MSG = 2; //[master => worker] (broadcast) DetailMessage
+    TP_DOMAIN_MSG = 3; //[worker => master] (invoke) DomainMessage
+}
+
+message Domain
+{
+    enum WorkerState {
+        WR_UNKNOWN = 0;
+        WR_ERROR = 1;
+        WR_IDLE = 2;
+        WR_DOWNLOAD = 3;
+        WR_VERIFY = 4;
+        WR_PATCH = 5;
+        WR_WAIT = 6;
+        WR_DEPLOY = 7;
+    }
+    enum Answer {
+        ANS_UNKNOWN = 0;
+        ANS_ACCEPT = 1;
+        ANS_REFUSE = 2;
+        ANS_OTHER = 3;
+    }
+    string name = 1;
+	string guid = 2;
+    WorkerState state = 3;
+    WorkerState last = 4;
+    bool watcher = 5;
+    uint32 error = 6;
+    string version = 7;
+    string attribute = 8;
+    string meta = 9;
+    float progress = 10;
+    string message = 11;
+    Answer answer = 12;
+}
+
+message Package
+{
+    message File
+    {
+        bytes name = 1;
+        string domain = 2;
+        bytes url = 3;
+        uint64 size = 4;
+        string md5 = 5;
+        string sha1 = 6;
+        string sha256 = 7;
+    }
+    string part = 1;
+    string domain = 2;
+    string version = 3;
+    string meta = 4;
+    repeated File files = 5;
+}
+
+message ControlMessage
+{
+    enum Control {
+        CTL_UNKNOWN = 0;
+        CTL_RESET = 1;
+        CTL_DOWNLOAD = 2;
+        CTL_DEPLOY = 3;
+        CTL_CANCEL = 4;
+        CTL_CLEAR = 5;
+    }
+    message Upgrade
+    {
+        enum Method {
+            MTHD_SKIP = 0;
+            MTHD_ATTEMPT = 1;
+            MTHD_FORCED = 2;
+        }
+        string id = 1;
+        Method download = 2;
+        Method deploy = 3;
+        bool maintenance = 4;
+        repeated Package packages = 5;
+    }
+    uint32 id = 1;
+    Control control = 2;
+    Upgrade upgrade = 3;
+    repeated string depends = 4;
+}
+
+message DetailMessage
+{
+    enum MasterState {
+        MR_UNKNOWN = 0;
+        MR_IDLE = 1;
+        MR_PENDING = 2;
+        MR_READY = 3;
+        MR_DOWNLOAD = 4;
+        MR_VERIFY = 5;
+        MR_DISTRUBUTE = 6;
+        MR_WAIT = 7;
+        MR_DEPLOY = 8;
+        MR_CANCEL = 9;
+        MR_DOWNLOAD_ASK = 10;
+        MR_DEPLOY_ASK = 11;
+        MR_CANCEL_ASK = 12;
+        MR_RESUME_ASK = 13;
+        MR_DONE_ASK = 14;
+        MR_ERROR_ASK = 15;
+    }
+    message Transfer
+    {
+        string domain = 1;
+        bytes name = 2;
+        float progress = 3;
+        uint32 speed = 4;
+        uint32 total = 5;
+        uint32 current = 6;
+        uint32 pass = 7;
+        uint32 left = 8;
+    }
+    message Detail
+    {
+        Domain domain = 1;
+        Package package = 2;
+        repeated Transfer transfers = 3;
+        float progress = 4;
+        uint32 deploy = 5;
+    }
+    uint32 id = 1;
+    MasterState state = 2;
+    MasterState last = 3;
+    bool active = 4;
+    int32 error = 5;
+    float step = 6;
+    float progress = 7;
+    string message = 8;
+    repeated Detail details = 9;
+}
+
+message DomainMessage
+{
+    Domain domain = 1;
+    bool discovery = 2;
+}

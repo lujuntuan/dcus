@@ -1,0 +1,25 @@
+[req]
+default_bits            = 2048
+distinguished_name      = dn_name
+prompt                  = no
+
+[v3_ca_ext]
+basicConstraints        = critical,CA:true
+keyUsage                = critical,digitalSignature,keyCertSign,cRLSign
+subjectKeyIdentifier    = hash
+authorityKeyIdentifier  = keyid:always,issuer
+nsComment               = "OpenSSL Generated Root CA Certificate"
+
+[v3_req_ext]
+basicConstraints        = CA:FALSE
+keyUsage                = nonRepudiation, digitalSignature, keyEncipherment
+subjectAltName          = IP:127.0.0.1,DNS:localhost
+
+[dn_name]
+C                       = CN
+ST                      = GuangZhou
+L                       = ShenZhen
+O                       = Dev
+OU                      = Dev
+CN                      = DCus-CA
+emailAddress            = None
