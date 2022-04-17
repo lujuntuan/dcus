@@ -10,33 +10,37 @@
 #  *History:
 #**********************************************************************************
 
-file(GLOB_RECURSE
+file(GLOB
     DCUS_CORE_SOURCES
-    ${CMAKE_SOURCE_DIR}/include/*
-    ${CMAKE_SOURCE_DIR}/src/base/*
-    ${CMAKE_SOURCE_DIR}/src/importlib/*
-    ${CMAKE_SOURCE_DIR}/src/commonlib/*
-    ${CMAKE_SOURCE_DIR}/src/corelib/*
+    ${CMAKE_SOURCE_DIR}/include/dcus/*.h
+    ${CMAKE_SOURCE_DIR}/include/dcus/utils/*.h
+    ${CMAKE_SOURCE_DIR}/src/*.cpp
+    ${CMAKE_SOURCE_DIR}/src/utils/*.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/*.cpp
+    ${CMAKE_SOURCE_DIR}/src/importlib/*.h
+    ${CMAKE_SOURCE_DIR}/src/importlib/*.cpp
     )
-if(DCUS_BUILD_MASTER)
-    message("** Build master app")
+if(DCUS_BUILD_SERVER)
+    message("** Build server app")
     file(GLOB
-        DCUS_MASTER_SOURCES
-        ${CMAKE_SOURCE_DIR}/src/master/*
+        DCUS_SERVER_SOURCES
+        ${CMAKE_SOURCE_DIR}/include/dcus/server/*.h
+        ${CMAKE_SOURCE_DIR}/src/server/*.cpp
         )
 endif()
-if(DCUS_BUILD_WORKER)
-    message("** Build worker lib")
+if(DCUS_BUILD_CLIENT)
+    message("** Build client lib")
     file(GLOB
-        DCUS_WORKER_SOURCES
-        ${CMAKE_SOURCE_DIR}/src/worker/*
+        DCUS_CLIENT_SOURCES
+        ${CMAKE_SOURCE_DIR}/include/dcus/client/*.h
+        ${CMAKE_SOURCE_DIR}/src/client/*.cpp
         )
 endif()
 add_library(
     ${CMAKE_PROJECT_NAME}
     ${DCUS_CORE_SOURCES}
-    ${DCUS_MASTER_SOURCES}
-    ${DCUS_WORKER_SOURCES}
+    ${DCUS_SERVER_SOURCES}
+    ${DCUS_CLIENT_SOURCES}
     )
 target_include_directories(
     ${CMAKE_PROJECT_NAME}
@@ -85,8 +89,8 @@ else()
         )
 endif()
 unset(DCUS_CORE_SOURCES)
-unset(DCUS_MASTER_SOURCES)
-unset(DCUS_WORKER_SOURCES)
+unset(DCUS_SERVER_SOURCES)
+unset(DCUS_CLIENT_SOURCES)
 
 ##########
 
@@ -165,21 +169,35 @@ install(
     ${CMAKE_SOURCE_DIR}/include/${CMAKE_PROJECT_NAME}
     DESTINATION
     include
-    PATTERN "master" EXCLUDE
-    PATTERN "worker" EXCLUDE
+    PATTERN "ServerEngine" EXCLUDE
+    PATTERN "ClientEngine" EXCLUDE
+    PATTERN "server" EXCLUDE
+    PATTERN "client" EXCLUDE
     )
-if(DCUS_BUILD_MASTER)
+if(DCUS_BUILD_SERVER)
+    install(
+        FILES
+        ${CMAKE_SOURCE_DIR}/include/${CMAKE_PROJECT_NAME}/ServerEngine
+        DESTINATION
+        include/${CMAKE_PROJECT_NAME}
+        )
     install(
         DIRECTORY
-        ${CMAKE_SOURCE_DIR}/include/${CMAKE_PROJECT_NAME}/master
+        ${CMAKE_SOURCE_DIR}/include/${CMAKE_PROJECT_NAME}/server
         DESTINATION
         include/${CMAKE_PROJECT_NAME}
         )
 endif()
-if(DCUS_BUILD_WORKER)
+if(DCUS_BUILD_CLIENT)
+    install(
+        FILES
+        ${CMAKE_SOURCE_DIR}/include/${CMAKE_PROJECT_NAME}/ClientEngine
+        DESTINATION
+        include/${CMAKE_PROJECT_NAME}
+        )
     install(
         DIRECTORY
-        ${CMAKE_SOURCE_DIR}/include/${CMAKE_PROJECT_NAME}/worker
+        ${CMAKE_SOURCE_DIR}/include/${CMAKE_PROJECT_NAME}/client
         DESTINATION
         include/${CMAKE_PROJECT_NAME}
         )

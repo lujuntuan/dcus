@@ -4,7 +4,7 @@
   <name>dcus_interfaces_ros</name>
   <version>1.0.0</version>
   <description>Domain Controllers Upgrade Solution</description>
-  <maintainer email="lujuntuan@neusoft.com">user</maintainer>
+  <maintainer email="lujuntuan1@gmail.com">user</maintainer>
   <license>MIT</license>
   <buildtool_depend>ament_cmake</buildtool_depend>
   <build_depend>builtin_interfaces</build_depend>

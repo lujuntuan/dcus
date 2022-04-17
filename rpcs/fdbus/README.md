@@ -2,17 +2,17 @@
 
 ## Unix
 
-- Master
+- Server
 
 ```shell
 host_server &
 name_server &
-dcus_master_fdbus &
+dcus_server_fdbus &
 ```
 
-- Worker
+- Client
 
 ```shell
 name_server -u tcp://ip_of_host1:60000 &
-dcus_worker_simple &
+dcus_client_simple &
 ```

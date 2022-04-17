@@ -3,14 +3,14 @@ package DCusInterfaces;
 
 enum MsgID {
     TP_UNKNOWN = 0;
-    TP_CONTROL_MSG = 1; //[master => worker] (broadcast) ControlMessage
-    TP_DETAIL_MSG = 2; //[master => worker] (broadcast) DetailMessage
-    TP_DOMAIN_MSG = 3; //[worker => master] (invoke) DomainMessage
+    TP_CONTROL_MSG = 1; //[server => client] (broadcast) ControlMessage
+    TP_DETAIL_MSG = 2; //[server => client] (broadcast) DetailMessage
+    TP_DOMAIN_MSG = 3; //[client => server] (invoke) DomainMessage
 }
 
 message Domain
 {
-    enum WorkerState {
+    enum ClientState {
         WR_UNKNOWN = 0;
         WR_ERROR = 1;
         WR_IDLE = 2;
@@ -28,8 +28,8 @@ message Domain
     }
     string name = 1;
 	string guid = 2;
-    WorkerState state = 3;
-    WorkerState last = 4;
+    ClientState state = 3;
+    ClientState last = 4;
     bool watcher = 5;
     uint32 error = 6;
     string version = 7;
@@ -90,7 +90,7 @@ message ControlMessage
 
 message DetailMessage
 {
-    enum MasterState {
+    enum ServerState {
         MR_UNKNOWN = 0;
         MR_IDLE = 1;
         MR_PENDING = 2;
@@ -128,8 +128,8 @@ message DetailMessage
         uint32 deploy = 5;
     }
     uint32 id = 1;
-    MasterState state = 2;
-    MasterState last = 3;
+    ServerState state = 2;
+    ServerState last = 3;
     bool active = 4;
     int32 error = 5;
     float step = 6;

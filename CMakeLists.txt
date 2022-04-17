@@ -117,10 +117,10 @@ endif()
 ###############
 ###Src
 ###############
-option(DCUS_BUILD_MASTER "DCus build master app" ON)
-option(DCUS_BUILD_WORKER "DCus build worker lib" ON)
+option(DCUS_BUILD_SERVER "DCus build server app" ON)
+option(DCUS_BUILD_CLIENT "DCus build client lib" ON)
 option(DCUS_USE_HTTPS "DCus use https" OFF)
-if(NOT DCUS_BUILD_MASTER AND NOT DCUS_BUILD_WORKER)
+if(NOT DCUS_BUILD_SERVER AND NOT DCUS_BUILD_CLIENT)
     message(FATAL_ERROR "** There are no projects to build")
 endif()
 include(cmake/subproject.cmake)
@@ -143,7 +143,7 @@ endif()
 ###############
 ###Examples
 ###############
-if(DCUS_BUILD_RPCS AND DCUS_BUILD_WORKER)
+if(DCUS_BUILD_RPCS AND DCUS_BUILD_CLIENT)
     option(DCUS_BUILD_EXAMPLES "DCus build examples" ON)
     if(DCUS_BUILD_EXAMPLES)
         include(cmake/find_qt5widgets.cmake)

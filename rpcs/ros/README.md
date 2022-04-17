@@ -2,16 +2,16 @@
 
 ## Unix
 
-- Master
+- Server
 
 ```shell
 :TODO
-dcus_master_ros &
+dcus_server_ros &
 ```
 
-- Worker
+- Client
 
 ```shell
 :TODO
-dcus_worker_simple &
+dcus_client_simple &
 ```

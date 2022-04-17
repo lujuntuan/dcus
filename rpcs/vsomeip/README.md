@@ -2,18 +2,18 @@
 
 ## Unix
 
-- Master
+- Server
 
 ```shell
 export COMMONAPI_CONFIG=/etc/commonapi-dcus
-export VSOMEIP_CONFIGURATION=/etc/vsomeip-dcus-master.json
-dcus_master_vsomeip &
+export VSOMEIP_CONFIGURATION=/etc/vsomeip-dcus-server.json
+dcus_server_vsomeip &
 ```
 
-- Worker
+- Client
 
 ```shell
 export COMMONAPI_CONFIG=/etc/commonapi-dcus
-export VSOMEIP_CONFIGURATION=/etc/vsomeip-dcus-worker.json
-dcus_worker_simple &
+export VSOMEIP_CONFIGURATION=/etc/vsomeip-dcus-client.json
+dcus_client_simple &
 ```

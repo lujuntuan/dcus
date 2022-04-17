@@ -37,12 +37,12 @@
 #define DCUS_MALLOC "@DCUS_MALLOC@"
 #endif
 
-#ifndef DCUS_BUILD_MASTER
-#cmakedefine DCUS_BUILD_MASTER
+#ifndef DCUS_BUILD_SERVER
+#cmakedefine DCUS_BUILD_SERVER
 #endif
 
-#ifndef DCUS_BUILD_WORKER
-#cmakedefine DCUS_BUILD_WORKER
+#ifndef DCUS_BUILD_CLIENT
+#cmakedefine DCUS_BUILD_CLIENT
 #endif
 
 #ifndef DCUS_USE_HTTPS

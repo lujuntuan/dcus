@@ -17,7 +17,7 @@ interface DCusInterfaces {
             DetailMessage detailMessage
         }
     }
-    enumeration MasterState {
+    enumeration ServerState {
         MR_UNKNOWN = 0
         MR_IDLE = 1
         MR_PENDING = 2
@@ -35,7 +35,7 @@ interface DCusInterfaces {
         MR_DONE_ASK = 14
         MR_ERROR_ASK = 15
     }
-    enumeration WorkerState {
+    enumeration ClientState {
         WR_UNKNOWN = 0
         WR_ERROR = 1
         WR_IDLE = 2
@@ -72,8 +72,8 @@ interface DCusInterfaces {
     struct Domain {
         String name
         String guid
-        WorkerState state_
-        WorkerState last
+        ClientState state_
+        ClientState last
         Boolean watcher
         UInt32 error_
         String version_
@@ -134,8 +134,8 @@ interface DCusInterfaces {
     }
     struct DetailMessage {
         UInt32 id
-        MasterState state_
-        MasterState last
+        ServerState state_
+        ServerState last
         Boolean active
         Int32 error_
         Float step

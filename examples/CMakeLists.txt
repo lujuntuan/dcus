@@ -33,11 +33,11 @@ endif()
 macro(add_example_library)
     target_link_libraries(
         ${PROJECT_NAME}
-        dcus_worker_${DCUS_EXAMPLES_LNK_RPC}
+        dcus_client_${DCUS_EXAMPLES_LNK_RPC}
         )
 endmacro(add_example_library)
 
-add_subdirectory(worker_simple)
+add_subdirectory(client_simple)
 if(QT5WIDGETS_ENABLE)
-    add_subdirectory(worker_viewer)
+    add_subdirectory(client_viewer)
 endif()

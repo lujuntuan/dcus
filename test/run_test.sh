@@ -32,7 +32,7 @@ export LD_LIBRARY_PATH=$DCUS_PART_LIBDIR:$LD_LIBRARY_PATH
 for i in $(seq 1 $DCUS_TEST_COUNT)
 do
     echo "Start ${DCUS_NAME_PREFIX}_${i}..."
-    ${DCUS_PART_BINDIR}/dcus_worker_simple --name=${DCUS_NAME_PREFIX}_${i} &
+    ${DCUS_PART_BINDIR}/dcus_client_simple --name=${DCUS_NAME_PREFIX}_${i} &
     usleep 100000
 done
 
@@ -43,7 +43,7 @@ if [ "${USER_KILL}" = "n" -o "${USER_KILL}" = "N" ]; then
     exit 0
 fi
 
-killall -9 dcus_worker_simple
+killall -9 dcus_client_simple
 
 echo "Done."
 

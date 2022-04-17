@@ -1,0 +1,22 @@
+{
+    "tenant":"DEFAULT",
+    "id":"123456789",
+    "token":"abcdefg",
+    "web_url":"http://localhost:8080",
+    "web_timeout":3000,
+    "web_username":"root",
+    "web_password":"123",
+    "web_proxy_url":"http://xxx",
+    "web_proxy_username":"root",
+    "web_proxy_password":"123",
+    "web_ca_cert_path":"/usr/share/dcus/ssl/web/web-ca.crt",
+    "web_server_cert_path":"/usr/share/dcus/ssl/local/local-server.crt",
+    "web_server_key_path":"/usr/share/dcus/ssl/local/local-server.key",
+    "web_html_dir":"/usr/share/dcus/html_dir",
+    "net_interface":"eth0",
+    "distribute_url":"0.0.0.0",
+    "distribute_port":8081,
+    "download_dir":"/tmp/dcus_server",
+    "cache_dir":"/tmp",
+    "upgrade_check_interval":5000
+}

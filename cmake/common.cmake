@@ -43,7 +43,7 @@ macro(install_etc _target)
         COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_SOURCE_DIR}/etc/ ${COMMON_ETC_OUTPUT_PATH}
         )
     get_filename_component(_PREFIX_RELATIVE_PATH ${CMAKE_INSTALL_PREFIX} REALPATH)
-    if(${_PREFIX_RELATIVE_PATH} MATCHES "/usr" OR ${_PREFIX_RELATIVE_PATH} MATCHES "/usr/local")
+    if(${_PREFIX_RELATIVE_PATH} MATCHES "^/usr")
         #use root
         install(
             DIRECTORY
