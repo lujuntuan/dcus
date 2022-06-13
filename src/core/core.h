@@ -13,8 +13,8 @@
 #ifndef DCUS_CORE_H
 #define DCUS_CORE_H
 
-#include "dcus/transfer.h"
-#include "dcus/upgrade.h"
+#include "dcus/base/transfer.h"
+#include "dcus/base/upgrade.h"
 #include "dcus/config.h"
 #include "status.h"
 #include <atomic>

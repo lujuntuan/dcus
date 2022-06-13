@@ -1,8 +1,8 @@
 /*********************************************************************************
- *Copyright(C): Juntuan.Lu 2021
+ *Copyright(C): Juntuan.Lu 2022
  *Author:  Juntuan.Lu
  *Version: 1.0
- *Date:  2021/04/22
+ *Date:  2022/04/01
  *Phone: 15397182986
  *Description:
  *Others:
@@ -13,7 +13,7 @@
 #ifndef DCUS_UTILS_STRING_H
 #define DCUS_UTILS_STRING_H
 
-#include "dcus/define.h"
+#include "dcus/base/define.h"
 #include <string>
 #include <vector>
 

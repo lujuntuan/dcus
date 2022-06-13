@@ -13,7 +13,7 @@
 #ifndef DCUS_CORE_STATUS_H
 #define DCUS_CORE_STATUS_H
 
-#include "dcus/define.h"
+#include "dcus/base/define.h"
 #include <functional>
 
 DCUS_NAMESPACE_BEGIN

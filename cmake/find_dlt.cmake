@@ -1,8 +1,8 @@
 #*********************************************************************************
-#  *Copyright(C): Juntuan.Lu 2021
+#  *Copyright(C): Juntuan.Lu 2022
 #  *Author:  Juntuan.Lu
 #  *Version: 1.0
-#  *Date:  2021/04/22
+#  *Date:  2022/04/01
 #  *Phone: 15397182986
 #  *Description:
 #  *Others:
@@ -10,7 +10,7 @@
 #  *History:
 #**********************************************************************************
 find_package(automotive-dlt QUIET)
-start_3rdparty_search(dlt)
+begin_3rdparty_search(dlt)
 find_path(DLT_INCLUDE_DIR
     NAMES
     dlt/dlt.h

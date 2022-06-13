@@ -1,14 +1,14 @@
 /*********************************************************************************
-  *Copyright(C): Juntuan.Lu 2021
-  *Author:  Juntuan.Lu
-  *Version: 1.0
-  *Date:  2021/04/22
-  *Phone: 15397182986
-  *Description:
-  *Others:
-  *Function List:
-  *History:
-**********************************************************************************/
+ *Copyright(C): Juntuan.Lu 2022
+ *Author:  Juntuan.Lu
+ *Version: 1.0
+ *Date:  2022/04/01
+ *Phone: 15397182986
+ *Description:
+ *Others:
+ *Function List:
+ *History:
+ **********************************************************************************/
 
 #include "dcus/utils/time.h"
 #include <chrono>
@@ -21,15 +21,15 @@ DCUS_NAMESPACE_BEGIN
 namespace Utils {
 
 template <typename RTYPE, typename TTYPE>
-inline RTYPE getCurrent_T() noexcept
+inline RTYPE _getCurrent_T() noexcept
 {
-    const auto& now = std::chrono::steady_clock::now();
+    const auto& now = std::chrono::steady_clock().now();
     const auto& duration = std::chrono::duration_cast<TTYPE>(now.time_since_epoch());
     return (RTYPE)duration.count();
 }
 
 template <typename RTYPE, typename TTYPE>
-inline void sleep_T(RTYPE time) noexcept
+inline void _sleep_T(RTYPE time) noexcept
 {
     std::this_thread::sleep_for(TTYPE(time));
 }
@@ -53,42 +53,42 @@ uint32_t getCurrentTimeSecForString(const std::string& time_str, const char* for
 
 uint32_t getCurrent() noexcept
 {
-    return getCurrent_T<uint32_t, std::chrono::seconds>();
+    return _getCurrent_T<uint32_t, std::chrono::seconds>();
 }
 
 uint32_t getMilliCurrent() noexcept
 {
-    return getCurrent_T<uint32_t, std::chrono::milliseconds>();
+    return _getCurrent_T<uint32_t, std::chrono::milliseconds>();
 }
 
 uint64_t getMicroCurrent() noexcept
 {
-    return getCurrent_T<uint64_t, std::chrono::microseconds>();
+    return _getCurrent_T<uint64_t, std::chrono::microseconds>();
 }
 
 uint64_t getNanoCurrent() noexcept
 {
-    return getCurrent_T<uint64_t, std::chrono::nanoseconds>();
+    return _getCurrent_T<uint64_t, std::chrono::nanoseconds>();
 }
 
 void sleep(uint32_t s) noexcept
 {
-    sleep_T<uint32_t, std::chrono::seconds>(s);
+    _sleep_T<uint32_t, std::chrono::seconds>(s);
 }
 
 void sleepMilli(uint32_t milli_s) noexcept
 {
-    sleep_T<uint32_t, std::chrono::milliseconds>(milli_s);
+    _sleep_T<uint32_t, std::chrono::milliseconds>(milli_s);
 }
 
 void sleepMicro(uint64_t micro_s) noexcept
 {
-    sleep_T<uint64_t, std::chrono::microseconds>(micro_s);
+    _sleep_T<uint64_t, std::chrono::microseconds>(micro_s);
 }
 
 void sleepNano(uint64_t nano_s) noexcept
 {
-    sleep_T<uint64_t, std::chrono::nanoseconds>(nano_s);
+    _sleep_T<uint64_t, std::chrono::nanoseconds>(nano_s);
 }
 
 }

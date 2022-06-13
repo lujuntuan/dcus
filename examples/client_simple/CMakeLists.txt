@@ -10,7 +10,7 @@
 #  *History:
 #**********************************************************************************
 
-start_sub_project(app)
+begin_sub_project(app)
 
 add_executable(
     ${PROJECT_NAME}

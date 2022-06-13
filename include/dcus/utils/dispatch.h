@@ -13,7 +13,7 @@
 #ifndef DCUS_UTILS_DISPATCH_H
 #define DCUS_UTILS_DISPATCH_H
 
-#include "dcus/define.h"
+#include "dcus/base/define.h"
 #include <functional>
 #include <string>
 

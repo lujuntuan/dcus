@@ -10,7 +10,7 @@
  *History:
  **********************************************************************************/
 
-#include "dcus/setting.h"
+#include "dcus/base/setting.h"
 #if (defined(DCUS_BUILD_SERVER) && defined(DCUS_USE_PULL_HTTP))
 #include "core.h"
 

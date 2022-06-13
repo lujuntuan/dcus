@@ -1,8 +1,8 @@
 /*********************************************************************************
- *Copyright(C): Juntuan.Lu 2021
+ *Copyright(C): Juntuan.Lu 2022
  *Author:  Juntuan.Lu
  *Version: 1.0
- *Date:  2021/04/22
+ *Date:  2022/04/01
  *Phone: 15397182986
  *Description:
  *Others:
@@ -44,7 +44,7 @@ typedef struct ifconfig_s {
     char mac[32];
 } ifconfig_t;
 #ifdef _WIN32
-inline int ifconfig(std::vector<ifconfig_t>& ifcs)
+static int _ifconfig(std::vector<ifconfig_t>& ifcs) noexcept
 {
     PIP_ADAPTER_ADDRESSES pAddrs = NULL;
     ULONG buflen = 0;
@@ -110,7 +110,7 @@ inline int ifconfig(std::vector<ifconfig_t>& ifcs)
     return 0;
 }
 #else // POSIX
-inline int ifconfig(std::vector<ifconfig_t>& ifcs)
+static int _ifconfig(std::vector<ifconfig_t>& ifcs) noexcept
 {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
@@ -208,7 +208,7 @@ DCUS_NAMESPACE_BEGIN
 
 namespace Utils {
 
-std::string getExePath()
+std::string getExePath() noexcept
 {
 #ifdef _WIN32
     char buffer[MAX_PATH * 2 + 1] = { 0 };
@@ -246,7 +246,7 @@ std::string getExePath()
 #endif
     return filePath;
 }
-std::string getExeDir(const std::string& path)
+std::string getExeDir(const std::string& path) noexcept
 {
     std::string exePath = path;
     if (exePath.empty()) {
@@ -254,7 +254,7 @@ std::string getExeDir(const std::string& path)
     }
     return exePath.substr(0, exePath.rfind('/'));
 }
-std::string getExeName(const std::string& path)
+std::string getExeName(const std::string& path) noexcept
 {
     std::string exePath = path;
     if (exePath.empty()) {
@@ -263,10 +263,10 @@ std::string getExeName(const std::string& path)
     return exePath.substr(exePath.rfind('/'));
 }
 
-std::string getIpAddress(const std::string& ethName)
+std::string getIpAddress(const std::string& ethName) noexcept
 {
     std::vector<ifconfig_t> devList;
-    if (ifconfig(devList) != 0) {
+    if (_ifconfig(devList) != 0) {
         return "";
     }
     for (const auto& dev : devList) {
@@ -281,24 +281,45 @@ std::string getIpAddress(const std::string& ethName)
     return "";
 }
 
-std::string getHostName()
+std::string getHostName() noexcept
 {
     char name[128] = { 0 };
     ::gethostname(name, sizeof(name));
     return name;
 }
 
-std::string getEnvironment(const std::string& key)
+std::string getEnvironment(const std::string& key, const std::string& defaultValue) noexcept
 {
-    const char* value = ::getenv(key.c_str());
-    if (!value) {
+    try {
+        const char* value = ::getenv(key.c_str());
+        if (!value) {
+            return defaultValue;
+        }
+        std::string strValue(value);
+#ifdef _WIN32
+        std::replace(strValue.begin(), strValue.end(), '\\', '/');
+#endif
+        return strValue;
+    } catch (...) {
         return "";
     }
-    std::string strValue(value);
+}
+
+bool setEnvironment(const std::string& key, const std::string& value, bool force) noexcept
+{
+    try {
 #ifdef _WIN32
-    std::replace(strValue.begin(), strValue.end(), '\\', '/');
+        (void)force;
+        if (::_putenv_s(key.c_str(), value.c_str()) == 0) {
+#else
+        if (::setenv(key.c_str(), value.c_str(), (int)force) == 0) {
 #endif
-    return strValue;
+            return true;
+        }
+        return false;
+    } catch (...) {
+        return false;
+    }
 }
 
 }

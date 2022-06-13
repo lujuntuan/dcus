@@ -10,7 +10,7 @@
 #  *History:
 #**********************************************************************************
 
-start_sub_project(app)
+begin_sub_project(app)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -26,7 +26,7 @@ add_executable(
 
 target_link_libraries(
     ${PROJECT_NAME}
-    Qt5::Widgets
+    Qt${QT_VERSION_MAJOR}::Widgets
     )
 
 add_example_library()

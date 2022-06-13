@@ -13,19 +13,19 @@
 #ifndef DCUS_SERVER_ENGINE_H
 #define DCUS_SERVER_ENGINE_H
 
-#include "dcus/application.h"
-#include "dcus/data.h"
-#include "dcus/domain.h"
-#include "dcus/queue.h"
-#include "dcus/singleton.h"
-#include "dcus/upgrade.h"
+#include "dcus/base/application.h"
+#include "dcus/base/data.h"
+#include "dcus/base/domain.h"
+#include "dcus/base/queue.h"
+#include "dcus/base/singleton.h"
+#include "dcus/base/upgrade.h"
 
 #define server_engine ServerEngine::getInstance()
 #define server_config ServerEngine::getInstance()->config()
 
 DCUS_NAMESPACE_BEGIN
 
-class DCUS_EXPORT ServerEngine : public Queue, public Application, public Singleton<ServerEngine> {
+class DCUS_EXPORT ServerEngine : public Queue, public Application, public SingletonProxy<ServerEngine> {
 public:
     explicit ServerEngine(int argc, char** argv);
     virtual ~ServerEngine();

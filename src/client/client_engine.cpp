@@ -11,11 +11,11 @@
  **********************************************************************************/
 
 #include "dcus/client/client_engine.h"
-#include "dcus/utils/dir.h"
 #include "core/core.h"
-#include "dcus/setting.h"
-#include "dcus/thread.h"
+#include "dcus/base/setting.h"
+#include "dcus/base/thread.h"
 #include "dcus/client/client_event.h"
+#include "dcus/utils/dir.h"
 
 #define m_hpr m_clientHelper
 

@@ -10,13 +10,13 @@
  *History:
  **********************************************************************************/
 
-#include "dcus/setting.h"
+#include "dcus/base/setting.h"
 #if (defined(DCUS_BUILD_CLIENT) && defined(DCUS_USE_PATCH_BSDIFF))
+#include "core.h"
+#include "dcus/base/log.h"
 #include "dcus/utils/dir.h"
 #include "dcus/utils/dispatch.h"
 #include "dcus/utils/verify.h"
-#include "core.h"
-#include "dcus/log.h"
 #include "helper.h"
 #include "importlib/httplib.hpp"
 

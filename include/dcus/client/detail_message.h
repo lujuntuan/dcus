@@ -13,8 +13,8 @@
 #ifndef DCUS_DETAIL_MESSAGE_H
 #define DCUS_DETAIL_MESSAGE_H
 
-#include "dcus/domain.h"
-#include "dcus/upgrade.h"
+#include "dcus/base/domain.h"
+#include "dcus/base/upgrade.h"
 
 DCUS_NAMESPACE_BEGIN
 

@@ -13,9 +13,9 @@
 #ifndef DCUS_WEB_EVENT_H
 #define DCUS_WEB_EVENT_H
 
-#include "dcus/data.h"
-#include "dcus/event.h"
-#include "dcus/setting.h"
+#include "dcus/base/data.h"
+#include "dcus/base/event.h"
+#include "dcus/base/setting.h"
 #include "dcus/server/web_feed.h"
 #include "dcus/server/web_init.h"
 

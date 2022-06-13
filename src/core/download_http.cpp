@@ -10,15 +10,15 @@
  *History:
  **********************************************************************************/
 
-#include "dcus/setting.h"
+#include "dcus/base/setting.h"
 #if (defined(DCUS_BUILD_CLIENT) && defined(DCUS_USE_DOWNLOAD_HTTP)) || (defined(DCUS_BUILD_SERVER) && defined(DCUS_USE_PULL_HTTP))
+#include "config_http.h"
+#include "core.h"
+#include "dcus/base/elapsed.h"
+#include "dcus/base/log.h"
 #include "dcus/utils/dir.h"
 #include "dcus/utils/string.h"
 #include "dcus/utils/time.h"
-#include "config_http.h"
-#include "core.h"
-#include "dcus/elapsed.h"
-#include "dcus/log.h"
 #include "helper.h"
 #include "importlib/httplib.hpp"
 

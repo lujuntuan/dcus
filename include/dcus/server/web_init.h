@@ -13,7 +13,7 @@
 #ifndef DCUS_WEB_INIT_H
 #define DCUS_WEB_INIT_H
 
-#include "dcus/define.h"
+#include "dcus/base/define.h"
 #include <string>
 
 DCUS_NAMESPACE_BEGIN

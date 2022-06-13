@@ -13,10 +13,10 @@
 #ifndef DCUS_CLIENT_ENGINE_H
 #define DCUS_CLIENT_ENGINE_H
 
-#include "dcus/application.h"
-#include "dcus/domain.h"
-#include "dcus/queue.h"
-#include "dcus/singleton.h"
+#include "dcus/base/application.h"
+#include "dcus/base/domain.h"
+#include "dcus/base/queue.h"
+#include "dcus/base/singleton.h"
 #include "dcus/client/detail_message.h"
 
 #define client_engine ClientEngine::getInstance()
@@ -29,7 +29,7 @@ DCUS_NAMESPACE_BEGIN
 
 using FilePaths = std::vector<std::string>;
 
-class DCUS_EXPORT ClientEngine : public Queue, public Application, public Singleton<ClientEngine> {
+class DCUS_EXPORT ClientEngine : public Queue, public Application, public SingletonProxy<ClientEngine> {
 public:
     using DeployFunction = std::function<void(const std::string& dir, const FilePaths& filePaths)>;
     using DetailFunction = std::function<void(const DetailMessage& detailMessage, bool stateChanged)>;

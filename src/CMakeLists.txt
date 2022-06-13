@@ -12,28 +12,29 @@
 
 file(GLOB
     DCUS_CORE_SOURCES
-    ${CMAKE_SOURCE_DIR}/include/dcus/*.h
-    ${CMAKE_SOURCE_DIR}/include/dcus/utils/*.h
-    ${CMAKE_SOURCE_DIR}/src/*.cpp
-    ${CMAKE_SOURCE_DIR}/src/utils/*.cpp
-    ${CMAKE_SOURCE_DIR}/src/core/*.cpp
-    ${CMAKE_SOURCE_DIR}/src/importlib/*.h
-    ${CMAKE_SOURCE_DIR}/src/importlib/*.cpp
+    ${CMAKE_SOURCE_DIR}/include/dcus/*.*
+    ${CMAKE_SOURCE_DIR}/include/dcus/base/*.*
+    ${CMAKE_SOURCE_DIR}/include/dcus/utils/*.*
+    ${CMAKE_SOURCE_DIR}/include/dcus/rpc/*.*
+    ${CMAKE_SOURCE_DIR}/src/base/*.*
+    ${CMAKE_SOURCE_DIR}/src/utils/*.*
+    ${CMAKE_SOURCE_DIR}/src/core/*.*
+    ${CMAKE_SOURCE_DIR}/src/importlib/*.*
     )
 if(DCUS_BUILD_SERVER)
     message("** Build server app")
     file(GLOB
         DCUS_SERVER_SOURCES
-        ${CMAKE_SOURCE_DIR}/include/dcus/server/*.h
-        ${CMAKE_SOURCE_DIR}/src/server/*.cpp
+        ${CMAKE_SOURCE_DIR}/include/dcus/server/*.*
+        ${CMAKE_SOURCE_DIR}/src/server/*.*
         )
 endif()
 if(DCUS_BUILD_CLIENT)
     message("** Build client lib")
     file(GLOB
         DCUS_CLIENT_SOURCES
-        ${CMAKE_SOURCE_DIR}/include/dcus/client/*.h
-        ${CMAKE_SOURCE_DIR}/src/client/*.cpp
+        ${CMAKE_SOURCE_DIR}/include/dcus/client/*.*
+        ${CMAKE_SOURCE_DIR}/src/client/*.*
         )
 endif()
 add_library(

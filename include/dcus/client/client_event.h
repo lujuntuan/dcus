@@ -13,10 +13,10 @@
 #ifndef DCUS_CLIENT_EVENT_H
 #define DCUS_CLIENT_EVENT_H
 
-#include "dcus/domain.h"
-#include "dcus/event.h"
-#include "dcus/setting.h"
-#include "dcus/upgrade.h"
+#include "dcus/base/domain.h"
+#include "dcus/base/event.h"
+#include "dcus/base/setting.h"
+#include "dcus/base/upgrade.h"
 #include "dcus/client/detail_message.h"
 
 DCUS_NAMESPACE_BEGIN

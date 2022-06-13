@@ -10,10 +10,10 @@
 #  *History:
 #**********************************************************************************
 
-start_3rdparty_search(dcus)
+begin_3rdparty_search(dcus)
 find_path(DCUS_INCLUDE_DIR
     NAMES
-    dcus/application.h
+    dcus/base/application.h
     PATHS
     ${3RD_INC_SEARCH_PATH}
     )

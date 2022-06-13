@@ -10,7 +10,7 @@
  *History:
  **********************************************************************************/
 
-#include "dcus/semaphore.h"
-#include "dcus/setting.h"
-#include "dcus/thread.h"
+#include "dcus/base/semaphore.h"
+#include "dcus/base/setting.h"
+#include "dcus/base/thread.h"
 #include "dcus/client/client_engine.h"

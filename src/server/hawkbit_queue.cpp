@@ -11,11 +11,11 @@
  **********************************************************************************/
 
 #include "dcus/server/hawkbit_queue.h"
+#include "core/core.h"
+#include "dcus/base/setting.h"
+#include "dcus/server/server_engine.h"
 #include "dcus/utils/string.h"
 #include "dcus/utils/time.h"
-#include "core/core.h"
-#include "dcus/setting.h"
-#include "dcus/server/server_engine.h"
 #include "importlib/json11.hpp"
 
 #define m_hpr m_hawkbitHelper

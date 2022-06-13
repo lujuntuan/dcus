@@ -13,8 +13,8 @@
 #ifndef DCUS_WEB_QUEUE_H
 #define DCUS_WEB_QUEUE_H
 
-#include "dcus/queue.h"
-#include "dcus/upgrade.h"
+#include "dcus/base/queue.h"
+#include "dcus/base/upgrade.h"
 #include "dcus/server/web_feed.h"
 #include "dcus/server/web_init.h"
 

@@ -1,8 +1,8 @@
 #*********************************************************************************
-#  *Copyright(C): Juntuan.Lu 2021
+#  *Copyright(C): Juntuan.Lu 2022
 #  *Author:  Juntuan.Lu
 #  *Version: 1.0
-#  *Date:  2021/04/22
+#  *Date:  2022/04/01
 #  *Phone: 15397182986
 #  *Description:
 #  *Others:
@@ -10,20 +10,25 @@
 #  *History:
 #**********************************************************************************
 
-macro(start_sub_project)
+macro(begin_sub_project)
     if(${ARGV0} MATCHES "lib" OR ${ARGV0} MATCHES "LIB")
         set(SUB_PROJECT_TYPE "lib")
-    else()
+    elseif(${ARGV0} MATCHES "plugin" OR ${ARGV0} MATCHES "PLUGIN")
+        set(SUB_PROJECT_TYPE "plugin")
+    elseif(${ARGV0} MATCHES "app" OR ${ARGV0} MATCHES "APP")
         set(SUB_PROJECT_TYPE "app")
+    else()
+        message(FATAL_ERROR "Sub project not support")
     endif()
     string(REGEX REPLACE ".*/(.*)" "\\1" PROJECT_DIR_NAME ${CMAKE_CURRENT_LIST_DIR})
     if("${ARGV1}" STREQUAL "")
         set(SUB_PROJECT_NAME ${PROJECT_DIR_NAME})
     else()
-        set(SUB_PROJECT_NAME ${PROJECT_DIR_NAME}_${ARGV1})
+        set(SUB_PROJECT_NAME ${ARGV1}_${PROJECT_DIR_NAME})
     endif()
+    set(SUB_PROJECT_PLUGIN_PREFIX ${ARGV2})
     project(${CMAKE_PROJECT_NAME}_${SUB_PROJECT_NAME} VERSION ${CMAKE_PROJECT_VERSION} LANGUAGES C CXX)
-endmacro(start_sub_project)
+endmacro(begin_sub_project)
 
 macro(end_sub_project)
     add_dependencies(${PROJECT_NAME} ${CMAKE_PROJECT_NAME})
@@ -31,22 +36,22 @@ macro(end_sub_project)
         ${PROJECT_NAME}
         ${CMAKE_PROJECT_NAME}
         )
-    install(
-        TARGETS
-        ${PROJECT_NAME}
-        EXPORT
-        ${PROJECT_NAME}Config
-        RUNTIME
-        DESTINATION
-        bin
-        ARCHIVE
-        DESTINATION
-        lib
-        LIBRARY
-        DESTINATION
-        lib
-        )
     if(${SUB_PROJECT_TYPE} MATCHES "lib")
+        install(
+            TARGETS
+            ${PROJECT_NAME}
+            EXPORT
+            ${PROJECT_NAME}Config
+            RUNTIME
+            DESTINATION
+            bin
+            ARCHIVE
+            DESTINATION
+            lib
+            LIBRARY
+            DESTINATION
+            lib
+            )
         install(
             EXPORT
             ${PROJECT_NAME}Config
@@ -61,8 +66,8 @@ macro(end_sub_project)
         if(EXISTS ${PROJECT_SOURCE_DIR}/include)
             target_include_directories(
                 ${PROJECT_NAME}
-                PRIVATE
-                ${PROJECT_SOURCE_DIR}/include
+                PUBLIC
+                $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/>
                 )
             install(
                 DIRECTORY
@@ -71,14 +76,77 @@ macro(end_sub_project)
                 include
                 )
         endif()
-    else()
+    elseif(${SUB_PROJECT_TYPE} MATCHES "plugin")
+        install(
+            TARGETS
+            ${PROJECT_NAME}
+            EXPORT
+            ${PROJECT_NAME}Config
+            RUNTIME
+            DESTINATION
+            lib/${SUB_PROJECT_PLUGIN_PREFIX}
+            ARCHIVE
+            DESTINATION
+            lib/${SUB_PROJECT_PLUGIN_PREFIX}
+            LIBRARY
+            DESTINATION
+            lib/${SUB_PROJECT_PLUGIN_PREFIX}
+            )
+        set_target_properties(
+            ${PROJECT_NAME}
+            PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY
+            ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${SUB_PROJECT_PLUGIN_PREFIX}
+        )
+        set_target_properties(
+            ${PROJECT_NAME}
+            PROPERTIES
+            ARCHIVE_OUTPUT_DIRECTORY
+            ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/${SUB_PROJECT_PLUGIN_PREFIX}
+        )
+        set_target_properties(
+            ${PROJECT_NAME}
+            PROPERTIES
+            LIBRARY_OUTPUT_DIRECTORY
+            ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${SUB_PROJECT_PLUGIN_PREFIX}
+        )
+        set_target_properties(
+            ${PROJECT_NAME}
+            PROPERTIES
+            PREFIX
+            ""
+        )
+        target_compile_definitions(
+            ${PROJECT_NAME}
+            PRIVATE
+            ${DCUS_LIBRARY_DEF}
+            )
+    elseif(${SUB_PROJECT_TYPE} MATCHES "app")
+        install(
+            TARGETS
+            ${PROJECT_NAME}
+            EXPORT
+            ${PROJECT_NAME}Config
+            RUNTIME
+            DESTINATION
+            bin
+            ARCHIVE
+            DESTINATION
+            lib
+            LIBRARY
+            DESTINATION
+            lib
+            )
         target_compile_definitions(
             ${PROJECT_NAME}
             PRIVATE
             ${DCUS_LIBRARY_APPDEF}
             )
     endif()
+    install_etc(${PROJECT_NAME})
+    install_share(${PROJECT_NAME})
     unset(PROJECT_DIR_NAME)
     unset(SUB_PROJECT_TYPE)
     unset(SUB_PROJECT_NAME)
+    unset(SUB_PROJECT_PLUGIN_PREFIX)
 endmacro(end_sub_project)

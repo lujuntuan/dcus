@@ -13,7 +13,7 @@
 #ifndef DCUS_UTILS_VERIFY_H
 #define DCUS_UTILS_VERIFY_H
 
-#include "dcus/define.h"
+#include "dcus/base/define.h"
 #include <functional>
 #include <string>
 

@@ -1,8 +1,8 @@
 #*********************************************************************************
-#  *Copyright(C): Juntuan.Lu 2021
+#  *Copyright(C): Juntuan.Lu 2022
 #  *Author:  Juntuan.Lu
 #  *Version: 1.0
-#  *Date:  2021/04/22
+#  *Date:  2022/04/01
 #  *Phone: 15397182986
 #  *Description:
 #  *Others:
@@ -33,6 +33,9 @@ macro(get_git_commit _git_hash)
 endmacro()
 
 macro(install_etc _target)
+    if(NOT EXISTS ${PROJECT_SOURCE_DIR}/etc)
+        return()
+    endif()
     if("${_target}" STREQUAL "")
         message(FATAL_ERROR "Target not set")
     endif()
@@ -59,5 +62,27 @@ macro(install_etc _target)
             etc
             )
     endif()
+    unset(_PREFIX_RELATIVE_PATH)
+endmacro()
+
+macro(install_share _target)
+    if(NOT EXISTS ${PROJECT_SOURCE_DIR}/share)
+        return()
+    endif()
+    if("${_target}" STREQUAL "")
+        message(FATAL_ERROR "Target not set")
+    endif()
+    add_custom_command(
+        TARGET
+        ${_target}
+        PRE_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_SOURCE_DIR}/share/ ${COMMON_SHARE_OUTPUT_PATH}
+        )
+    install(
+        DIRECTORY
+        ${PROJECT_SOURCE_DIR}/share/
+        DESTINATION
+        share/${CMAKE_PROJECT_NAME}
+        )
     unset(_PREFIX_RELATIVE_PATH)
 endmacro()

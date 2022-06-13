@@ -1,8 +1,8 @@
 /*********************************************************************************
- *Copyright(C): Juntuan.Lu 2021
+ *Copyright(C): Juntuan.Lu 2022
  *Author:  Juntuan.Lu
  *Version: 1.0
- *Date:  2021/04/22
+ *Date:  2022/04/01
  *Phone: 15397182986
  *Description:
  *Others:
@@ -19,7 +19,7 @@ DCUS_NAMESPACE_BEGIN
 namespace Utils {
 
 template <bool is_file>
-std::vector<std::string> _getByName(const std::string& path, bool maxFirst)
+std::vector<std::string> _getByName_T(const std::string& path, bool maxFirst) noexcept
 {
     std::vector<std::string> dirs;
     try {
@@ -60,7 +60,7 @@ std::vector<std::string> _getByName(const std::string& path, bool maxFirst)
 }
 
 template <bool is_file>
-std::vector<std::string> _getByLastDate(const std::string& path, bool newFirst)
+std::vector<std::string> _getByLastDate_T(const std::string& path, bool newFirst) noexcept
 {
     std::vector<std::string> dirs;
     try {
@@ -88,7 +88,7 @@ std::vector<std::string> _getByLastDate(const std::string& path, bool newFirst)
     }
 }
 
-bool mkPath(const std::string& path)
+bool mkPath(const std::string& path) noexcept
 {
     try {
         return fs::create_directories(path);
@@ -96,7 +96,7 @@ bool mkPath(const std::string& path)
         return false;
     }
 }
-bool exists(const std::string& path)
+bool exists(const std::string& path) noexcept
 {
     try {
         return fs::exists(path);
@@ -105,7 +105,7 @@ bool exists(const std::string& path)
     }
 }
 
-bool remove(const std::string& path)
+bool remove(const std::string& path) noexcept
 {
     try {
         return fs::remove(path);
@@ -114,7 +114,7 @@ bool remove(const std::string& path)
     }
 }
 
-bool removeAll(const std::string& path)
+bool removeAll(const std::string& path) noexcept
 {
     try {
         return fs::remove_all(path);
@@ -123,7 +123,7 @@ bool removeAll(const std::string& path)
     }
 }
 
-bool isFile(const std::string& path)
+bool isFile(const std::string& path) noexcept
 {
     try {
         return fs::is_regular_file(path);
@@ -132,7 +132,7 @@ bool isFile(const std::string& path)
     }
 }
 
-bool isDir(const std::string& path)
+bool isDir(const std::string& path) noexcept
 {
     try {
         return fs::is_directory(path);
@@ -141,7 +141,26 @@ bool isDir(const std::string& path)
     }
 }
 
-std::vector<std::string> getFiles(const std::string& path, const std::string& suffix)
+bool setCurrentPath(const std::string& path) noexcept
+{
+    try {
+        fs::current_path(path);
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+
+std::string getCurrentPath() noexcept
+{
+    try {
+        return fs::current_path().string();
+    } catch (...) {
+        return "";
+    }
+}
+
+std::vector<std::string> getFiles(const std::string& path, const std::string& suffix) noexcept
 {
     std::vector<std::string> files;
     try {
@@ -162,7 +181,7 @@ std::vector<std::string> getFiles(const std::string& path, const std::string& su
     }
 }
 
-std::vector<std::string> getAllFiles(const std::string& path, const std::string& suffix)
+std::vector<std::string> getAllFiles(const std::string& path, const std::string& suffix) noexcept
 {
     std::vector<std::string> files;
     std::function<void(const std::string& dir)> progressAllFiles = [&](const std::string& dir) {
@@ -189,27 +208,27 @@ std::vector<std::string> getAllFiles(const std::string& path, const std::string&
     return files;
 }
 
-std::vector<std::string> getFilesByName(const std::string& path, bool maxFirst)
+std::vector<std::string> getFilesByName(const std::string& path, bool maxFirst) noexcept
 {
-    return _getByName<true>(path, maxFirst);
+    return _getByName_T<true>(path, maxFirst);
 }
 
-std::vector<std::string> getFilesByLastDate(const std::string& path, bool newFirst)
+std::vector<std::string> getFilesByLastDate(const std::string& path, bool newFirst) noexcept
 {
-    return _getByName<true>(path, newFirst);
+    return _getByName_T<true>(path, newFirst);
 }
 
-std::vector<std::string> getDirsByName(const std::string& path, bool maxFirst)
+std::vector<std::string> getDirsByName(const std::string& path, bool maxFirst) noexcept
 {
-    return _getByName<false>(path, maxFirst);
+    return _getByName_T<false>(path, maxFirst);
 }
 
-std::vector<std::string> getDirsByLastDate(const std::string& path, bool newFirst)
+std::vector<std::string> getDirsByLastDate(const std::string& path, bool newFirst) noexcept
 {
-    return _getByName<false>(path, newFirst);
+    return _getByName_T<false>(path, newFirst);
 }
 
-std::string getPathFileName(const std::string& path)
+std::string getPathFileName(const std::string& path) noexcept
 {
     try {
         return fs::directory_entry(path).path().filename().string();
@@ -218,7 +237,7 @@ std::string getPathFileName(const std::string& path)
     }
 }
 
-std::string getPathBaseName(const std::string& path)
+std::string getPathBaseName(const std::string& path) noexcept
 {
     try {
         return fs::directory_entry(path).path().stem().string();
@@ -227,7 +246,7 @@ std::string getPathBaseName(const std::string& path)
     }
 }
 
-std::string getPathSuffixName(const std::string& path)
+std::string getPathSuffixName(const std::string& path) noexcept
 {
     try {
         return fs::directory_entry(path).path().extension().string();
@@ -236,7 +255,7 @@ std::string getPathSuffixName(const std::string& path)
     }
 }
 
-std::string getTempDir()
+std::string getTempDir() noexcept
 {
     try {
         std::string tempDir = fs::temp_directory_path().string();
@@ -252,7 +271,7 @@ std::string getTempDir()
     }
 }
 
-void removeSubOldDirs(const std::string& dir, int keepCount)
+void removeSubOldDirs(const std::string& dir, int keepCount) noexcept
 {
     if (!exists(dir)) {
         return;

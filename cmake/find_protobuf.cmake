@@ -1,8 +1,8 @@
 #*********************************************************************************
-#  *Copyright(C): Juntuan.Lu 2021
+#  *Copyright(C): Juntuan.Lu 2022
 #  *Author:  Juntuan.Lu
 #  *Version: 1.0
-#  *Date:  2021/04/22
+#  *Date:  2022/04/01
 #  *Phone: 15397182986
 #  *Description:
 #  *Others:
@@ -12,7 +12,7 @@
 
 option(PROTOBUF_USE_C "" OFF)
 
-start_3rdparty_search(protobuf)
+begin_3rdparty_search(protobuf)
 find_program(PROTOBUF_GENERATOR_EXE
     NAMES
     protoc
@@ -48,7 +48,7 @@ else()
 endif()
 
 if(PROTOBUF_USE_C)
-    start_3rdparty_search(protobuf_c)
+    begin_3rdparty_search(protobuf_c)
     find_program(PROTOBUF_C_GENERATOR_EXE
         NAMES
         protoc-c

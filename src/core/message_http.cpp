@@ -10,11 +10,11 @@
  *History:
  **********************************************************************************/
 
-#include "dcus/setting.h"
+#include "dcus/base/setting.h"
 #if (defined(DCUS_BUILD_SERVER) && defined(DCUS_USE_MESSAGE_HTTP))
 #include "config_http.h"
 #include "core.h"
-#include "dcus/log.h"
+#include "dcus/base/log.h"
 #include "helper.h"
 #include "importlib/httplib.hpp"
 

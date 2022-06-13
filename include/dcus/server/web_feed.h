@@ -13,7 +13,7 @@
 #ifndef DCUS_WEB_FEED_H
 #define DCUS_WEB_FEED_H
 
-#include "dcus/define.h"
+#include "dcus/base/define.h"
 #include <string>
 #include <vector>
 

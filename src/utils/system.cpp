@@ -1,8 +1,8 @@
 /*********************************************************************************
- *Copyright(C): Juntuan.Lu 2021
+ *Copyright(C): Juntuan.Lu 2022
  *Author:  Juntuan.Lu
  *Version: 1.0
- *Date:  2021/04/22
+ *Date:  2022/04/01
  *Phone: 15397182986
  *Description:
  *Others:
@@ -11,6 +11,7 @@
  **********************************************************************************/
 
 #include "dcus/utils/system.h"
+#include "dcus/utils/dir.h"
 #include <csignal>
 #ifdef _WIN32
 #include <Windows.h>
@@ -19,7 +20,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-inline int lockfile(int fd)
+static int _lockfile(int fd) noexcept
 {
     struct flock fl;
     fl.l_type = F_WRLCK;
@@ -29,19 +30,19 @@ inline int lockfile(int fd)
     return (fcntl(fd, F_SETLK, &fl));
 }
 
-inline bool proc_is_singleton(const char* proc_name)
+static bool _proc_is_singleton(const char* temp_dir, const char* proc_name) noexcept
 {
     int fd;
     char buf[16] = { 0 };
     char filename[100] = { 0 };
-    sprintf(filename, "/tmp/%s.pid", proc_name);
+    sprintf(filename, "%s/%s.pid", temp_dir, proc_name);
     fd = open(filename, O_RDWR | O_CREAT, (S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH));
     if (fd < 0) {
         printf("open file \"%s\" failed!!!\n", filename);
         fflush(stdout);
         return false;
     }
-    if (lockfile(fd) == -1) {
+    if (_lockfile(fd) == -1) {
         printf("file \"%s\" locked. proc already exit!!!\n", filename);
         fflush(stdout);
         close(fd);
@@ -57,7 +58,7 @@ inline bool proc_is_singleton(const char* proc_name)
 DCUS_NAMESPACE_BEGIN
 namespace Utils {
 
-bool programCheckSingleton(const std::string& programName)
+bool programCheckSingleton(const std::string& programName) noexcept
 {
 #ifdef _WIN32
     HANDLE hObject = CreateMutex(NULL, FALSE, programName.c_str());
@@ -66,14 +67,14 @@ bool programCheckSingleton(const std::string& programName)
         return false;
     }
 #else
-    if (!proc_is_singleton(programName.c_str())) {
+    if (!_proc_is_singleton(getTempDir().c_str(), programName.c_str())) {
         return false;
     }
 #endif
     return true;
 }
 
-bool programRegisterTerminate(void (*ExitCallBack)(int))
+bool programRegisterTerminate(void (*ExitCallBack)(int)) noexcept
 {
 #ifdef _WIN32
     typedef void (*SignalHandlerPointer)(int);

@@ -1,8 +1,8 @@
 #*********************************************************************************
-#  *Copyright(C): Juntuan.Lu 2021
+#  *Copyright(C): Juntuan.Lu 2022
 #  *Author:  Juntuan.Lu
 #  *Version: 1.0
-#  *Date:  2021/04/22
+#  *Date:  2022/04/01
 #  *Phone: 15397182986
 #  *Description:
 #  *Others:
@@ -16,7 +16,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/find_commonapi_someip.cmake)
 find_package(vsomeip QUIET)
 find_package(vsomeip3 QUIET)
 
-start_3rdparty_search(vsomeip)
+begin_3rdparty_search(vsomeip)
 find_path(VSOMEIP_INCLUDE_DIR
     NAMES
     vsomeip/vsomeip.h
