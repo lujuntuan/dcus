@@ -2,7 +2,7 @@
 #  *Copyright(C): Juntuan.Lu 2021
 #  *Author:  Juntuan.Lu
 #  *Version: 1.0
-#  *Date:  2021/04/22
+#  *Date:  2022/04/01
 #  *Phone: 15397182986
 #  *Description:
 #  *Others:
@@ -128,22 +128,22 @@ include(cmake/find_dlt.cmake)
 add_subdirectory(src)
 
 ###############
-###Plugins
+###Rpcs
 ###############
 include(cmake/find_ros.cmake)
 include(cmake/find_vsomeip.cmake)
 include(cmake/find_fdbus.cmake)
-set(DCUS_BUILD_PLUGINS OFF)
+set(DCUS_BUILD_RPCS OFF)
 if(ROS_ENABLE OR VSOMEIP_ENABLE OR FDBUS_ENABLE)
-    set(DCUS_BUILD_PLUGINS ON)
-    message("** Build plugins")
-    add_subdirectory(plugins)
+    set(DCUS_BUILD_RPCS ON)
+    message("** Build rpcs")
+    add_subdirectory(rpcs)
 endif()
 
 ###############
 ###Examples
 ###############
-if(DCUS_BUILD_PLUGINS AND DCUS_BUILD_CLIENT)
+if(DCUS_BUILD_RPCS AND DCUS_BUILD_CLIENT)
     option(DCUS_BUILD_EXAMPLES "DCus build examples" ON)
     if(DCUS_BUILD_EXAMPLES)
         include(cmake/find_qtwidgets.cmake)

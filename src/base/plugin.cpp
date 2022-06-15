@@ -56,7 +56,9 @@ std::deque<std::string> Plugin::defaultSearchPath()
 
 void Plugin::clear()
 {
+    std::map<std::string, std::shared_ptr<dylib>> tmp;
     m_hpr->pluginMap.clear();
+    m_hpr->pluginMap.swap(tmp);
 }
 
 Plugin::Handle Plugin::load(const std::string& pluginId,

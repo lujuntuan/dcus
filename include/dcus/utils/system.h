@@ -21,6 +21,7 @@ DCUS_NAMESPACE_BEGIN
 namespace Utils {
 extern DCUS_EXPORT bool programCheckSingleton(const std::string& programName) noexcept;
 extern DCUS_EXPORT bool programRegisterTerminate(void (*ExitCallBack)(int)) noexcept;
+extern DCUS_EXPORT bool freeUnusedMemory() noexcept;
 }
 
 DCUS_NAMESPACE_END

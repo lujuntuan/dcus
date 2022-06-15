@@ -31,9 +31,6 @@ public:
 protected:
     static void setInstance(T* instance)
     {
-        if (m_instance && instance) {
-            LOG_WARNING("instance has set");
-        }
         m_instance = instance;
     }
 

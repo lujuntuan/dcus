@@ -2,7 +2,7 @@
  *Copyright(C): Juntuan.Lu 2021
  *Author:  Juntuan.Lu
  *Version: 1.0
- *Date:  2021/04/22
+ *Date:  2022/04/01
  *Phone: 15397182986
  *Description:
  *Others:
@@ -13,10 +13,10 @@
 #ifndef DCUS_CLIENT_EVENT_H
 #define DCUS_CLIENT_EVENT_H
 
-#include "dcus/base/domain.h"
+#include "dcus/domain.h"
 #include "dcus/base/event.h"
 #include "dcus/base/setting.h"
-#include "dcus/base/upgrade.h"
+#include "dcus/upgrade.h"
 #include "dcus/client/detail_message.h"
 
 DCUS_NAMESPACE_BEGIN

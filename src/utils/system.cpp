@@ -18,6 +18,7 @@
 #else
 #include <cstring>
 #include <fcntl.h>
+#include <malloc.h>
 #include <unistd.h>
 
 static int _lockfile(int fd) noexcept
@@ -147,6 +148,20 @@ bool programRegisterTerminate(void (*ExitCallBack)(int)) noexcept
         return false;
     }
     return true;
+#endif
+}
+
+bool freeUnusedMemory() noexcept
+{
+#ifdef WIN32
+    return false;
+#elif __linux__
+    if (malloc_trim(0) == 1) {
+        return true;
+    }
+    return false;
+#else
+    return false;
 #endif
 }
 

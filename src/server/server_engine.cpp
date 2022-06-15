@@ -2,7 +2,7 @@
  *Copyright(C): Juntuan.Lu 2021
  *Author:  Juntuan.Lu
  *Version: 1.0
- *Date:  2021/04/22
+ *Date:  2022/04/01
  *Phone: 15397182986
  *Description:
  *Others:
@@ -11,11 +11,12 @@
  **********************************************************************************/
 
 #include "dcus/server/server_engine.h"
-#include "dcus/utils/dir.h"
-#include "dcus/utils/string.h"
 #include "dcus/server/hawkbit_queue.h"
 #include "dcus/server/server_event.h"
 #include "dcus/server/web_event.h"
+#include "dcus/utils/dir.h"
+#include "dcus/utils/string.h"
+#include <dcus/utils/system.h>
 
 #define m_hpr m_serverHelper
 
@@ -80,7 +81,7 @@ ServerEngine::ServerEngine(int argc, char** argv)
     : Queue(DCUS_QUEUE_ID_SERVER)
     , Application(argc, argv, "dcus_server")
 {
-    if (getInstance()) {
+    if (getInstance(false)) {
         std::terminate();
         return;
     }
@@ -220,8 +221,8 @@ void ServerEngine::processDomainMessage(Domain&& domain, bool discovery)
 void ServerEngine::begin()
 {
     std::string cacheDir = Utils::getTempDir();
-    if (server_config.value("cache_dir").valid()) {
-        cacheDir = server_config.value("cache_dir").toString();
+    if (dcus_server_config.value("cache_dir").valid()) {
+        cacheDir = dcus_server_config.value("cache_dir").toString();
     }
     if (!Utils::exists(cacheDir)) {
         Utils::mkPath(cacheDir);
@@ -916,6 +917,7 @@ void ServerEngine::feedback(bool finished, int error)
     } else {
         idle();
     }
+    Utils::freeUnusedMemory();
 }
 
 void ServerEngine::sendControlMessage(Control control, bool cache)

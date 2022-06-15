@@ -1,5 +1,5 @@
 /*********************************************************************************
- *Copyright @ Fibocom Technologies Co., Ltd. 2019-2030. All rights reserved.
+ *Copyright(C): Juntuan.Lu 2021
  *Author:  Juntuan.Lu
  *Version: 1.0
  *Date:  2022/04/01
@@ -10,14 +10,14 @@
  *History:
  **********************************************************************************/
 
-#ifndef FIBOIVI_INTERFACE_H
-#define FIBOIVI_INTERFACE_H
+#ifndef DCUS_INTERFACE_H
+#define DCUS_INTERFACE_H
 
-#include "fiboivi/base/define.h"
-#include "fiboivi/base/log.h"
+#include "dcus/base/define.h"
+#include "dcus/base/log.h"
 #include <memory>
 
-FIBOIVI_NAMESPACE_BEGIN
+DCUS_NAMESPACE_BEGIN
 
 class InterfaceBase {
     CLASS_DISSABLE_COPY_AND_ASSIGN(InterfaceBase)
@@ -51,6 +51,6 @@ private:
     std::shared_ptr<T> m_interface = nullptr;
 };
 
-FIBOIVI_NAMESPACE_END
+DCUS_NAMESPACE_END
 
-#endif // FIBOIVI_INTERFACE_H
+#endif // DCUS_INTERFACE_H

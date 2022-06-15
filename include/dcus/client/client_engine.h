@@ -2,7 +2,7 @@
  *Copyright(C): Juntuan.Lu 2021
  *Author:  Juntuan.Lu
  *Version: 1.0
- *Date:  2021/04/22
+ *Date:  2022/04/01
  *Phone: 15397182986
  *Description:
  *Others:
@@ -14,13 +14,13 @@
 #define DCUS_CLIENT_ENGINE_H
 
 #include "dcus/base/application.h"
-#include "dcus/base/domain.h"
+#include "dcus/domain.h"
 #include "dcus/base/queue.h"
 #include "dcus/base/singleton.h"
 #include "dcus/client/detail_message.h"
 
-#define client_engine ClientEngine::getInstance()
-#define client_config ClientEngine::getInstance()->config()
+#define dcus_client_engine ClientEngine::getInstance()
+#define dcus_client_config ClientEngine::getInstance()->config()
 #define DCUS_CLIENT_REGISTER(...) ClientEngine::registerDomain(__VA_ARGS__)
 #define DCUS_CLIENT_CREATE(argc, argv) ClientEngine::create(argc, argv)
 #define DCUS_CLIENT_DESTROY() ClientEngine::destroy()

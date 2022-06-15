@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QMap>
 #include <dcus/ClientEngine>
 
 QT_BEGIN_NAMESPACE
@@ -49,5 +50,6 @@ private:
     QWidget* m_statusFlag = nullptr;
     QTimer* m_flagTimer = nullptr;
     QTimer* m_messageTimer = nullptr;
+    QMap<QTreeWidgetItem*, Detail> m_itemToDetail;
 };
 #endif // MAINWINDOW_H

@@ -2,7 +2,7 @@
 #  *Copyright(C): Juntuan.Lu 2021
 #  *Author:  Juntuan.Lu
 #  *Version: 1.0
-#  *Date:  2021/04/22
+#  *Date:  2022/04/01
 #  *Phone: 15397182986
 #  *Description:
 #  *Others:
@@ -12,29 +12,26 @@
 
 file(GLOB
     DCUS_CORE_SOURCES
-    ${CMAKE_SOURCE_DIR}/include/dcus/*.*
-    ${CMAKE_SOURCE_DIR}/include/dcus/base/*.*
-    ${CMAKE_SOURCE_DIR}/include/dcus/utils/*.*
-    ${CMAKE_SOURCE_DIR}/include/dcus/rpc/*.*
-    ${CMAKE_SOURCE_DIR}/src/base/*.*
-    ${CMAKE_SOURCE_DIR}/src/utils/*.*
-    ${CMAKE_SOURCE_DIR}/src/core/*.*
-    ${CMAKE_SOURCE_DIR}/src/importlib/*.*
+    ${CMAKE_SOURCE_DIR}/src/*.cpp
+    ${CMAKE_SOURCE_DIR}/src/base/*.cpp
+    ${CMAKE_SOURCE_DIR}/src/utils/*.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/*.cpp
+    ${CMAKE_SOURCE_DIR}/src/importlib/*.cpp
     )
 if(DCUS_BUILD_SERVER)
     message("** Build server app")
     file(GLOB
         DCUS_SERVER_SOURCES
-        ${CMAKE_SOURCE_DIR}/include/dcus/server/*.*
-        ${CMAKE_SOURCE_DIR}/src/server/*.*
+        ${CMAKE_SOURCE_DIR}/include/dcus/server/*.cpp
+        ${CMAKE_SOURCE_DIR}/src/server/*.cpp
         )
 endif()
 if(DCUS_BUILD_CLIENT)
     message("** Build client lib")
     file(GLOB
         DCUS_CLIENT_SOURCES
-        ${CMAKE_SOURCE_DIR}/include/dcus/client/*.*
-        ${CMAKE_SOURCE_DIR}/src/client/*.*
+        ${CMAKE_SOURCE_DIR}/include/dcus/client/*.cpp
+        ${CMAKE_SOURCE_DIR}/src/client/*.cpp
         )
 endif()
 add_library(

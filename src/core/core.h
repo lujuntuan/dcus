@@ -2,7 +2,7 @@
  *Copyright(C): Juntuan.Lu 2021
  *Author:  Juntuan.Lu
  *Version: 1.0
- *Date:  2021/04/22
+ *Date:  2022/04/01
  *Phone: 15397182986
  *Description:
  *Others:
@@ -13,8 +13,8 @@
 #ifndef DCUS_CORE_H
 #define DCUS_CORE_H
 
-#include "dcus/base/transfer.h"
-#include "dcus/base/upgrade.h"
+#include "dcus/transfer.h"
+#include "dcus/upgrade.h"
 #include "dcus/config.h"
 #include "status.h"
 #include <atomic>

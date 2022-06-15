@@ -65,5 +65,6 @@ public:                                                    \
 #define DCUS_UNUSED(Var) (void)(Var)
 #define DCUS_STRNAME(Name) #Name
 #define DCUS_GETNAME(Name) DCUS_STRNAME(Name)
+#define DCUS_MEM_ALIGN alignas(8)
 
 #endif // DCUS_DEFINE_H

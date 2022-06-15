@@ -2,7 +2,7 @@
  *Copyright(C): Juntuan.Lu 2021
  *Author:  Juntuan.Lu
  *Version: 1.0
- *Date:  2021/04/22
+ *Date:  2022/04/01
  *Phone: 15397182986
  *Description:
  *Others:
@@ -15,13 +15,13 @@
 
 #include "dcus/base/application.h"
 #include "dcus/base/data.h"
-#include "dcus/base/domain.h"
+#include "dcus/domain.h"
 #include "dcus/base/queue.h"
 #include "dcus/base/singleton.h"
-#include "dcus/base/upgrade.h"
+#include "dcus/upgrade.h"
 
-#define server_engine ServerEngine::getInstance()
-#define server_config ServerEngine::getInstance()->config()
+#define dcus_server_engine ServerEngine::getInstance()
+#define dcus_server_config ServerEngine::getInstance()->config()
 
 DCUS_NAMESPACE_BEGIN
 

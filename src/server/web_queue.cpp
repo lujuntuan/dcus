@@ -2,7 +2,7 @@
  *Copyright(C): Juntuan.Lu 2021
  *Author:  Juntuan.Lu
  *Version: 1.0
- *Date:  2021/04/22
+ *Date:  2022/04/01
  *Phone: 15397182986
  *Description:
  *Others:
@@ -44,23 +44,23 @@ WebQueue::WebQueue()
     if (!m_hpr) {
         m_hpr = new WebHelper;
     }
-    if (server_config.value("net_interface").valid()) {
-        m_hpr->ipAddress = Utils::getIpAddress(server_config.value("net_interface").toString());
+    if (dcus_server_config.value("net_interface").valid()) {
+        m_hpr->ipAddress = Utils::getIpAddress(dcus_server_config.value("net_interface").toString());
     } else {
         m_hpr->ipAddress = Utils::getIpAddress();
     }
-    if (server_config.value("download_dir").valid()) {
-        m_hpr->downloadDir = server_config.value("download_dir").toString();
+    if (dcus_server_config.value("download_dir").valid()) {
+        m_hpr->downloadDir = dcus_server_config.value("download_dir").toString();
     } else {
         m_hpr->downloadDir = Utils::getTempDir() + "/dcus_server_tmp";
     }
-    if (server_config.value("distribute_url").valid()) {
-        m_hpr->distributeUrl = server_config.value("distribute_url").toString();
+    if (dcus_server_config.value("distribute_url").valid()) {
+        m_hpr->distributeUrl = dcus_server_config.value("distribute_url").toString();
     } else {
         m_hpr->distributeUrl = "0.0.0.0";
     }
-    if (server_config.value("distribute_port").valid()) {
-        m_hpr->distributePort = server_config.value("distribute_port").toInt();
+    if (dcus_server_config.value("distribute_port").valid()) {
+        m_hpr->distributePort = dcus_server_config.value("distribute_port").toInt();
     } else {
 #ifdef DCUS_USE_HTTPS
         m_hpr->distributePort = 9443;
@@ -68,8 +68,8 @@ WebQueue::WebQueue()
         m_hpr->distributePort = 9080;
 #endif
     }
-    if (server_config.value("upgrade_check_interval").valid()) {
-        m_hpr->checkInterval = (uint32_t)server_config.value("upgrade_check_interval").toInt();
+    if (dcus_server_config.value("upgrade_check_interval").valid()) {
+        m_hpr->checkInterval = (uint32_t)dcus_server_config.value("upgrade_check_interval").toInt();
     }
 #if defined(DCUS_USE_DOWNLOAD_HTTP) && defined(DCUS_USE_DISTRIBUTE_HTTP)
 #ifdef DCUS_USE_HTTPS
@@ -139,7 +139,7 @@ void WebQueue::eventChanged(Event* event)
             break;
         }
         bool success = init(webInitEvent->webInit());
-        server_engine->postEvent(new ServerEvent(ServerEvent::RES_INIT, Data { { "success", success } }));
+        dcus_server_engine->postEvent(new ServerEvent(ServerEvent::RES_INIT, Data { { "success", success } }));
         if (success) {
             checkUpgrade();
             m_hpr->checkTimer->start();
@@ -188,7 +188,7 @@ void WebQueue::eventChanged(Event* event)
             }
         }
         if (canPull) {
-            server_engine->postEvent(new ServerEvent(ServerEvent::REQ_PULL));
+            dcus_server_engine->postEvent(new ServerEvent(ServerEvent::REQ_PULL));
         }
         break;
     }
@@ -216,7 +216,7 @@ void WebQueue::eventChanged(Event* event)
             break;
         }
         bool success = feedback(webFeedEvent->webFeed());
-        server_engine->postEvent(new ServerEvent(ServerEvent::RES_FEEDBACK_DONE, Data { { "success", success } }));
+        dcus_server_engine->postEvent(new ServerEvent(ServerEvent::RES_FEEDBACK_DONE, Data { { "success", success } }));
         break;
     }
     default:
@@ -226,34 +226,34 @@ void WebQueue::eventChanged(Event* event)
 
 void WebQueue::postError(int errorCode)
 {
-    server_engine->postEvent(new ServerEvent(ServerEvent::RES_ERROR, Data { { "error", errorCode } }));
+    dcus_server_engine->postEvent(new ServerEvent(ServerEvent::RES_ERROR, Data { { "error", errorCode } }));
 }
 
 void WebQueue::postIdle()
 {
-    server_engine->postEvent(new ServerEvent(ServerEvent::REQ_IDLE));
+    dcus_server_engine->postEvent(new ServerEvent(ServerEvent::REQ_IDLE));
 }
 
 void WebQueue::postUpgrade(Upgrade&& upgrade)
 {
     lock();
-    if (server_engine->upgrade() == upgrade) {
+    if (dcus_server_engine->upgrade() == upgrade) {
         unlock();
         return;
     }
     unlock();
-    server_engine->postEvent(new ServerUpgradeEvent(upgrade));
+    dcus_server_engine->postEvent(new ServerUpgradeEvent(upgrade));
 }
 
 void WebQueue::postCancel(std::string&& id)
 {
     lock();
-    if (server_engine->cancelId() == id) {
+    if (dcus_server_engine->cancelId() == id) {
         unlock();
         return;
     }
     unlock();
-    server_engine->postEvent(new ServerEvent(ServerEvent::REQ_CANCEL, Data { { "id", id } }));
+    dcus_server_engine->postEvent(new ServerEvent(ServerEvent::REQ_CANCEL, Data { { "id", id } }));
 }
 
 void WebQueue::setCheckTimerInterval(int interval)
@@ -264,16 +264,16 @@ void WebQueue::setCheckTimerInterval(int interval)
 void WebQueue::checkUpgrade()
 {
     bool active = detect();
-    if (server_engine->isActive() != active) {
-        server_engine->postEvent(new ServerEvent(ServerEvent::REQ_ACTIVE, Data { { "active", active } }));
+    if (dcus_server_engine->isActive() != active) {
+        dcus_server_engine->postEvent(new ServerEvent(ServerEvent::REQ_ACTIVE, Data { { "active", active } }));
     }
 }
 
 void WebQueue::removeCache(bool all)
 {
     lock();
-    std::string id = server_engine->upgrade().id();
-    std::string cancelId = server_engine->cancelId();
+    std::string id = dcus_server_engine->upgrade().id();
+    std::string cancelId = dcus_server_engine->cancelId();
     unlock();
     std::string downloadDir = m_hpr->downloadDir;
     if (all) {
@@ -308,10 +308,10 @@ void WebQueue::stopThread(bool force)
 void WebQueue::transformFiles(std::string& id, Files& files, bool webInstead)
 {
     lock();
-    id = server_engine->upgrade().id();
+    id = dcus_server_engine->upgrade().id();
     files.clear();
     files.shrink_to_fit();
-    for (const Package& package : server_engine->upgrade().packages()) {
+    for (const Package& package : dcus_server_engine->upgrade().packages()) {
         for (File file : package.files()) {
             if (webInstead) {
                 file.url() = file.web_url();
@@ -326,15 +326,15 @@ void WebQueue::download(const std::string& id, const Files& files)
 {
     Utils::removeSubOldDirs(m_hpr->downloadDir, DCUS_DOWNLOAD_KEEP_FILE_COUNT);
     auto status = Core::pull(
-        m_hpr->downloadDir + "/" + id, files, server_config,
+        m_hpr->downloadDir + "/" + id, files, dcus_server_config,
         [this]() {
             return m_hpr->workThread.isReadyFinished();
         },
         [](const Transfers& transfers) {
-            server_engine->postEvent(new ServerTransferEvent(Transfers(transfers)));
+            dcus_server_engine->postEvent(new ServerTransferEvent(Transfers(transfers)));
         });
     if (status.state() == Core::SUCCEED) {
-        server_engine->postEvent(new ServerEvent(ServerEvent::RES_DOWNLOAD_DONE));
+        dcus_server_engine->postEvent(new ServerEvent(ServerEvent::RES_DOWNLOAD_DONE));
     } else if (status.state() == Core::FAILED) {
         postError(status.error());
     }
@@ -349,10 +349,10 @@ void WebQueue::verify(const std::string& id, const Files& files)
         },
         [](const Transfers& transfers) {
             Transfers t = transfers;
-            server_engine->postEvent(new ServerTransferEvent(Transfers(transfers)));
+            dcus_server_engine->postEvent(new ServerTransferEvent(Transfers(transfers)));
         });
     if (status.state() == Core::SUCCEED) {
-        server_engine->postEvent(new ServerEvent(ServerEvent::RES_VERIFY_DONE));
+        dcus_server_engine->postEvent(new ServerEvent(ServerEvent::RES_VERIFY_DONE));
     } else if (status.state() == Core::FAILED) {
         postError(status.error());
     }
@@ -362,16 +362,16 @@ void WebQueue::distribute(const std::string& id, const Files& files)
 {
     auto status = Core::distribute(
         m_hpr->distributeHandle,
-        m_hpr->distributeUrl, m_hpr->distributePort, m_hpr->downloadDir + "/" + id, files, server_config,
+        m_hpr->distributeUrl, m_hpr->distributePort, m_hpr->downloadDir + "/" + id, files, dcus_server_config,
         [this]() {
             return m_hpr->workThread.isReadyFinished();
         },
         [](const Transfers& transfers) {
             Transfers t = transfers;
-            server_engine->postEvent(new ServerTransferEvent(Transfers(transfers)));
+            dcus_server_engine->postEvent(new ServerTransferEvent(Transfers(transfers)));
         });
     if (status.state() == Core::SUCCEED) {
-        server_engine->postEvent(new ServerEvent(ServerEvent::RES_DISTRUBUTE_DONE));
+        dcus_server_engine->postEvent(new ServerEvent(ServerEvent::RES_DISTRUBUTE_DONE));
     } else if (status.state() == Core::FAILED) {
         postError(status.error());
     }

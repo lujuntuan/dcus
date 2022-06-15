@@ -2,7 +2,7 @@
  *Copyright(C): Juntuan.Lu 2021
  *Author:  Juntuan.Lu
  *Version: 1.0
- *Date:  2021/04/22
+ *Date:  2022/04/01
  *Phone: 15397182986
  *Description:
  *Others:
@@ -56,7 +56,7 @@ bool HawkbitQueue::detect()
 {
     Core::Status status;
     std::string body;
-    status = Core::getMessage(m_hpr->url, m_hpr->path, body, server_config, m_hpr->token);
+    status = Core::getMessage(m_hpr->url, m_hpr->path, body, dcus_server_config, m_hpr->token);
     if (status.state() != Core::SUCCEED) {
         // postError(801);
         return false;
@@ -87,12 +87,12 @@ bool HawkbitQueue::detect()
         rootJson["id"] = json11::Json("");
         rootJson["time"] = json11::Json(Utils::getCurrentTimeString("%Y%m%dT%H%M%S"));
         lock();
-        std::string attributesStr = server_engine->attributes().toStream();
+        std::string attributesStr = dcus_server_engine->attributes().toStream();
         unlock();
         rootJson["data"] = json11::Json::parse(attributesStr, errorString);
         std::string contentStr;
         json11::Json(std::move(rootJson)).dump(contentStr);
-        status = Core::putMessage(m_hpr->url, path, std::move(contentStr), server_config, m_hpr->token);
+        status = Core::putMessage(m_hpr->url, path, std::move(contentStr), dcus_server_config, m_hpr->token);
         if (status.state() != Core::SUCCEED) {
             LOG_WARNING("put json error");
             // postError(status.error());
@@ -108,7 +108,7 @@ bool HawkbitQueue::detect()
     if (path.empty()) {
         return true;
     }
-    status = Core::getMessage(m_hpr->url, path, body, server_config, m_hpr->token);
+    status = Core::getMessage(m_hpr->url, path, body, dcus_server_config, m_hpr->token);
     if (status.state() != Core::SUCCEED) {
         LOG_WARNING("get deployment url error");
         // postError(802);
@@ -191,7 +191,7 @@ bool HawkbitQueue::feedback(const WebFeed& webFeed)
     //
     std::string contentStr;
     json11::Json(std::move(rootJson)).dump(contentStr);
-    Core::Status status = Core::postMessage(m_hpr->url, m_hpr->path + urlStr, std::move(contentStr), server_config, m_hpr->token);
+    Core::Status status = Core::postMessage(m_hpr->url, m_hpr->path + urlStr, std::move(contentStr), dcus_server_config, m_hpr->token);
     if (status.state() != Core::SUCCEED) {
         postError(status.error());
         return false;

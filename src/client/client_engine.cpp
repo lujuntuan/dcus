@@ -2,7 +2,7 @@
  *Copyright(C): Juntuan.Lu 2021
  *Author:  Juntuan.Lu
  *Version: 1.0
- *Date:  2021/04/22
+ *Date:  2022/04/01
  *Phone: 15397182986
  *Description:
  *Others:
@@ -16,6 +16,7 @@
 #include "dcus/base/thread.h"
 #include "dcus/client/client_event.h"
 #include "dcus/utils/dir.h"
+#include "dcus/utils/system.h"
 
 #define m_hpr m_clientHelper
 
@@ -62,7 +63,7 @@ bool ClientHelper::_hasRegister = false;
 
 void ClientEngine::registerDomain(const std::string& name, const std::string& guid)
 {
-    if (client_engine) {
+    if (dcus_client_engine) {
         LOG_WARNING("must be registered in client engine creation");
         return;
     }
@@ -82,7 +83,7 @@ ClientEngine::ClientEngine(int argc, char** argv)
     : Queue(DCUS_QUEUE_ID_CLIENT)
     , Application(argc, argv, "dcus_client")
 {
-    if (getInstance()) {
+    if (getInstance(false)) {
         std::terminate();
         return;
     }
@@ -95,8 +96,8 @@ ClientEngine::ClientEngine(int argc, char** argv)
     static std::mutex mutex;
     setMutex(mutex);
 
-    if (client_config.value("download_dir").valid()) {
-        m_hpr->downloadDir = client_config.value("download_dir").toString();
+    if (dcus_client_config.value("download_dir").valid()) {
+        m_hpr->downloadDir = dcus_client_config.value("download_dir").toString();
     } else {
         m_hpr->downloadDir = Utils::getTempDir() + "/dcus_client_tmp";
     }
@@ -417,6 +418,7 @@ void ClientEngine::eventChanged(Event* event)
             m_hpr->detail.domain().answer() = ANS_UNKNOWN;
             m_hpr->detail.domain().progress() = .0f;
             m_hpr->detail.domain().message() = "";
+            Utils::freeUnusedMemory();
             break;
         }
         default:
@@ -665,7 +667,7 @@ void ClientEngine::download(const std::string& id, const Files& files)
         if (times > 0) {
             LOG_WARNING("retry download");
         }
-        status = Core::download(m_hpr->downloadDir + "/" + id, files, client_config,
+        status = Core::download(m_hpr->downloadDir + "/" + id, files, dcus_client_config,
             stopFunction);
         if (status.state() != Core::FAILED) {
             break;

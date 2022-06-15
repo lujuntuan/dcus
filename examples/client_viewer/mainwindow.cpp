@@ -157,10 +157,10 @@ MainWindow::MainWindow(QWidget* parent)
         m_flagTimer->stop();
     });
     connect(m_acceptBtn, &QPushButton::clicked, this, []() {
-        client_engine->postDetailAnswer(ANS_ACCEPT);
+        dcus_client_engine->postDetailAnswer(ANS_ACCEPT);
     });
     connect(m_rejectBtn, &QPushButton::clicked, this, []() {
-        client_engine->postDetailAnswer(ANS_REFUSE);
+        dcus_client_engine->postDetailAnswer(ANS_REFUSE);
     });
     QFont font = m_messageLabel->font();
     font.setBold(true);
@@ -204,6 +204,7 @@ void MainWindow::processDetail(const DetailMessage& detailMessage, bool stateCha
                 delete widget;
             }
             QTreeWidgetItem* item = ui->treeWidget_list->takeTopLevelItem(i);
+            m_itemToDetail.remove(item);
             delete item;
             i--;
         }
@@ -236,8 +237,8 @@ void MainWindow::processDetail(const DetailMessage& detailMessage, bool stateCha
         }
         ui->treeWidget_list->setItemWidget(item, DOMAIN_PROGRESS_INDEX, progressBar);
         item->setText(DOMAIN_PROGRESS_INDEX + 1, QString::fromStdString(d.domain().message()));
-        item->setData(0, Qt::UserRole, QVariant::fromValue<Detail>(d));
         ui->treeWidget_list->addTopLevelItem(item);
+        m_itemToDetail.insert(item, d);
     }
     if (!ui->treeWidget_list->currentItem() && ui->treeWidget_list->topLevelItemCount() > 0) {
         ui->treeWidget_list->setCurrentItem(ui->treeWidget_list->topLevelItem(0));
@@ -250,10 +251,10 @@ void MainWindow::processDetail(const DetailMessage& detailMessage, bool stateCha
     ui->lineEdit_active->setText(detailMessage.active() ? QStringLiteral("true") : QStringLiteral("false"));
     ui->lineEdit_error->setText(QString::number(detailMessage.error()));
     if (Domain::mrStateIsBusy(detailMessage.state()) || Domain::mrStateIsAsk(detailMessage.state())) {
-        ui->lineEdit_action->setText(QString::fromStdString(client_engine->upgrade().id()));
-        ui->lineEdit_download->setText(QString::fromStdString(Upgrade::getMethodStr(client_engine->upgrade().download())));
-        ui->lineEdit_deploy->setText(QString::fromStdString(Upgrade::getMethodStr(client_engine->upgrade().deploy())));
-        ui->lineEdit_maintenance->setText(client_engine->upgrade().maintenance() ? QStringLiteral("true") : QStringLiteral("false"));
+        ui->lineEdit_action->setText(QString::fromStdString(dcus_client_engine->upgrade().id()));
+        ui->lineEdit_download->setText(QString::fromStdString(Upgrade::getMethodStr(dcus_client_engine->upgrade().download())));
+        ui->lineEdit_deploy->setText(QString::fromStdString(Upgrade::getMethodStr(dcus_client_engine->upgrade().deploy())));
+        ui->lineEdit_maintenance->setText(dcus_client_engine->upgrade().maintenance() ? QStringLiteral("true") : QStringLiteral("false"));
         ui->label_step->setEnabled(true);
         ui->label_total->setEnabled(true);
         ui->progressBar_step->setEnabled(true);
@@ -341,7 +342,7 @@ void MainWindow::updateProperty(QTreeWidgetItem* listItem)
         ui->treeWidget_value->clear();
         return;
     }
-    const Detail& d = listItem->data(0, Qt::UserRole).value<Detail>();
+    const Detail& d = m_itemToDetail.value(listItem);
     // updateSubProperty(nullptr, QStringLiteral("name"), QString::fromStdString(d.domain().name()));
     updateSubProperty(nullptr, QStringLiteral("guid"), QString::fromStdString(d.domain().guid()));
     // updateSubProperty(nullptr, QStringLiteral("state"), QString::fromStdString(Domain::getWrStateStr(d.domain().state())));
@@ -418,8 +419,8 @@ void MainWindow::updateProperty(QTreeWidgetItem* listItem)
         updateSubProperty(transfersItemRoot, QStringLiteral("current"), QString::fromStdString(File::getSizeStr(transfer.current())));
         updateSubProperty(transfersItemRoot, QStringLiteral("total"), QString::fromStdString(File::getSizeStr(transfer.total())));
         updateSubProperty(transfersItemRoot, QStringLiteral("speed"), QString::fromStdString(File::getSizeStr(transfer.speed())) + "/S");
-        updateSubProperty(transfersItemRoot, QStringLiteral("pass"), QTime(0, 0, transfer.pass()).toString("hh:mm:ss"));
-        updateSubProperty(transfersItemRoot, QStringLiteral("left"), QTime(0, 0, transfer.left()).toString("hh:mm:ss"));
+        updateSubProperty(transfersItemRoot, QStringLiteral("pass"), QTime(0, 0, 0).addSecs(transfer.pass()).toString("hh:mm:ss"));
+        updateSubProperty(transfersItemRoot, QStringLiteral("left"), QTime(0, 0, 0).addSecs(transfer.left()).toString("hh:mm:ss"));
     }
 }
 
