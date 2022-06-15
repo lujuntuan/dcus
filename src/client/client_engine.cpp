@@ -63,7 +63,7 @@ bool ClientHelper::_hasRegister = false;
 
 void ClientEngine::registerDomain(const std::string& name, const std::string& guid)
 {
-    if (dcus_client_engine) {
+    if (ClientEngine::getInstance(false)) {
         LOG_WARNING("must be registered in client engine creation");
         return;
     }
@@ -74,7 +74,7 @@ void ClientEngine::registerDomain(const std::string& name, const std::string& gu
 
 void ClientEngine::destroy()
 {
-    if (getInstance()) {
+    if (getInstance(false)) {
         delete getInstance();
     }
 }

@@ -42,7 +42,7 @@ macro(install_etc _target)
     add_custom_command(
         TARGET
         ${_target}
-        PRE_BUILD
+        POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_SOURCE_DIR}/etc/ ${COMMON_ETC_OUTPUT_PATH}
         )
     get_filename_component(_PREFIX_RELATIVE_PATH ${CMAKE_INSTALL_PREFIX} REALPATH)
@@ -75,7 +75,7 @@ macro(install_share _target)
     add_custom_command(
         TARGET
         ${_target}
-        PRE_BUILD
+        POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_SOURCE_DIR}/share/ ${COMMON_SHARE_OUTPUT_PATH}
         )
     install(

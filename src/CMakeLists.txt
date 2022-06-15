@@ -222,9 +222,15 @@ install(
 add_custom_command(
     TARGET
     ${CMAKE_PROJECT_NAME}
-    PRE_BUILD
+    POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/share/ ${COMMON_SHARE_OUTPUT_PATH}
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/cmake/find_3rdparty.cmake  ${COMMON_CMAKE_OUTPUT_PATH}
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/cmake/find_dcus.cmake ${COMMON_CMAKE_OUTPUT_PATH}
+    )
+add_custom_command(
+    TARGET
+    ${CMAKE_PROJECT_NAME}
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/tests/* ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
     )
 install_etc(${CMAKE_PROJECT_NAME})
