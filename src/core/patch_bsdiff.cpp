@@ -10,7 +10,7 @@
  *History:
  **********************************************************************************/
 
-#include "dcus/base/setting.h"
+#include "dcus/setting.h"
 #if (defined(DCUS_BUILD_CLIENT) && defined(DCUS_USE_PATCH_BSDIFF))
 #include "core.h"
 #include "dcus/base/log.h"

@@ -10,7 +10,7 @@
  *History:
  **********************************************************************************/
 
-#include "dcus/base/setting.h"
+#include "dcus/setting.h"
 #if (defined(DCUS_USE_VERIFY_OPENSSL))
 #include "core.h"
 #include "dcus/base/elapsed.h"

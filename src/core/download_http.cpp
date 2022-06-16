@@ -10,7 +10,7 @@
  *History:
  **********************************************************************************/
 
-#include "dcus/base/setting.h"
+#include "dcus/setting.h"
 #if (defined(DCUS_BUILD_CLIENT) && defined(DCUS_USE_DOWNLOAD_HTTP)) || (defined(DCUS_BUILD_SERVER) && defined(DCUS_USE_PULL_HTTP))
 #include "config_http.h"
 #include "core.h"

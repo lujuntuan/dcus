@@ -15,6 +15,7 @@ file(GLOB_RECURSE
     ${CMAKE_SOURCE_DIR}/include/*.*
     ${CMAKE_SOURCE_DIR}/src/*.*
 )
+list(REMOVE_ITEM DCUS_SOURCES ${CMAKE_SOURCE_DIR}/src/CMakeLists.txt)
 if(DCUS_BUILD_SERVER)
     message("** Build server app")
 else()

@@ -15,7 +15,7 @@
 
 #include "dcus/base/data.h"
 #include "dcus/base/log.h"
-#include "dcus/base/setting.h"
+#include "dcus/setting.h"
 #include "dcus/utils/host.h"
 #include "importlib/httplib.hpp"
 #include <regex>

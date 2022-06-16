@@ -13,9 +13,9 @@
 #ifndef DCUS_SERVER_EVENT_H
 #define DCUS_SERVER_EVENT_H
 
-#include "dcus/domain.h"
 #include "dcus/base/event.h"
-#include "dcus/base/setting.h"
+#include "dcus/domain.h"
+#include "dcus/setting.h"
 #include "dcus/upgrade.h"
 
 DCUS_NAMESPACE_BEGIN

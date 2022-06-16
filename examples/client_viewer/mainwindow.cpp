@@ -10,7 +10,6 @@
 #include <QPushButton>
 #include <QTime>
 #include <QTimer>
-#include <dcus/config.h>
 
 #define DOMAIN_PROGRESS_INDEX 3
 #define VIEW_ITEM_HEIGHT 30

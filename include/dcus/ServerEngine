@@ -11,6 +11,6 @@
  **********************************************************************************/
 
 #include "dcus/base/semaphore.h"
-#include "dcus/base/setting.h"
+#include "dcus/setting.h"
 #include "dcus/base/thread.h"
 #include "dcus/server/server_engine.h"

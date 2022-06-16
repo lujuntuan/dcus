@@ -12,9 +12,9 @@
 
 #include "dcus/client/client_engine.h"
 #include "core/core.h"
-#include "dcus/base/setting.h"
 #include "dcus/base/thread.h"
 #include "dcus/client/client_event.h"
+#include "dcus/setting.h"
 #include "dcus/utils/dir.h"
 #include "dcus/utils/system.h"
 

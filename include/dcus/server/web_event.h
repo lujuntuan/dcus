@@ -15,9 +15,9 @@
 
 #include "dcus/base/data.h"
 #include "dcus/base/event.h"
-#include "dcus/base/setting.h"
 #include "dcus/server/web_feed.h"
 #include "dcus/server/web_init.h"
+#include "dcus/setting.h"
 
 DCUS_NAMESPACE_BEGIN
 
