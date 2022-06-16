@@ -10,36 +10,35 @@
 #  *History:
 #**********************************************************************************
 
-file(GLOB
-    DCUS_CORE_SOURCES
-    ${CMAKE_SOURCE_DIR}/src/*.cpp
-    ${CMAKE_SOURCE_DIR}/src/base/*.cpp
-    ${CMAKE_SOURCE_DIR}/src/utils/*.cpp
-    ${CMAKE_SOURCE_DIR}/src/core/*.cpp
-    ${CMAKE_SOURCE_DIR}/src/importlib/*.cpp
-    )
+file(GLOB_RECURSE
+    DCUS_SOURCES
+    ${CMAKE_SOURCE_DIR}/include/*.*
+    ${CMAKE_SOURCE_DIR}/src/*.*
+)
 if(DCUS_BUILD_SERVER)
     message("** Build server app")
-    file(GLOB
+else()
+    file(GLOB_RECURSE
         DCUS_SERVER_SOURCES
-        ${CMAKE_SOURCE_DIR}/include/dcus/server/*.cpp
-        ${CMAKE_SOURCE_DIR}/src/server/*.cpp
-        )
+        ${CMAKE_SOURCE_DIR}/include/dcus/server/*.*
+        ${CMAKE_SOURCE_DIR}/src/server/*.*
+    )
+list(REMOVE_ITEM DCUS_SOURCES ${DCUS_SERVER_SOURCES})
 endif()
 if(DCUS_BUILD_CLIENT)
     message("** Build client lib")
-    file(GLOB
+else()
+    file(GLOB_RECURSE
         DCUS_CLIENT_SOURCES
-        ${CMAKE_SOURCE_DIR}/include/dcus/client/*.cpp
-        ${CMAKE_SOURCE_DIR}/src/client/*.cpp
-        )
+        ${CMAKE_SOURCE_DIR}/include/dcus/client/*.*
+        ${CMAKE_SOURCE_DIR}/src/client/*.*
+    )
+list(REMOVE_ITEM DCUS_SOURCES ${DCUS_CLIENT_SOURCES})
 endif()
 add_library(
     ${CMAKE_PROJECT_NAME}
-    ${DCUS_CORE_SOURCES}
-    ${DCUS_SERVER_SOURCES}
-    ${DCUS_CLIENT_SOURCES}
-    )
+    ${DCUS_SOURCES}
+)
 target_include_directories(
     ${CMAKE_PROJECT_NAME}
     PUBLIC
@@ -49,13 +48,13 @@ target_include_directories(
     PRIVATE
     ${CMAKE_SOURCE_DIR}/src
     ${OPENSSL_INCLUDE_DIR}
-    )
+)
 target_link_libraries(
     ${CMAKE_PROJECT_NAME}
     ${OPENSSL_SSL_LIBRARY}
     ${OPENSSL_CRYPTO_LIBRARY}
     ${CMAKE_THREAD_LIBS_INIT}
-    )
+)
 target_compile_definitions(
     ${CMAKE_PROJECT_NAME}
     PRIVATE
@@ -63,7 +62,7 @@ target_compile_definitions(
     "-DPROJECT_NAME=\"${CMAKE_PROJECT_NAME}\""
     "-DPROJECT_VERSION=\"${PROJECT_VERSION}\""
     "-DCPPHTTPLIB_OPENSSL_SUPPORT"
-    )
+)
 set_target_properties(
     ${CMAKE_PROJECT_NAME}
     PROPERTIES
@@ -71,7 +70,7 @@ set_target_properties(
     ${PROJECT_VERSION}
     SOVERSION
     ${PROJECT_VERSION_MAJOR}
-    )
+)
 if(WIN32)
     target_link_libraries(
         ${CMAKE_PROJECT_NAME}
@@ -80,13 +79,13 @@ if(WIN32)
         cryptui
         Iphlpapi
         Shell32
-        )
+    )
 else()
     target_link_libraries(
         ${CMAKE_PROJECT_NAME}
-        )
+    )
 endif()
-unset(DCUS_CORE_SOURCES)
+unset(DCUS_SOURCES)
 unset(DCUS_SERVER_SOURCES)
 unset(DCUS_CLIENT_SOURCES)
 
@@ -99,24 +98,24 @@ if(DLT_ENABLE)
             target_link_libraries(
                 ${CMAKE_PROJECT_NAME}
                 $<BUILD_INTERFACE:Genivi::dlt>
-                )
-        else()
-            target_include_directories(
-                ${CMAKE_PROJECT_NAME}
-                PRIVATE
-                ${DLT_INCLUDE_DIR}
-                )
-            target_link_libraries(
-                ${CMAKE_PROJECT_NAME}
-                $<BUILD_INTERFACE:${DLT_LIBRARY}>
-                )
-        endif()
-        target_compile_definitions(
+            )
+    else()
+        target_include_directories(
             ${CMAKE_PROJECT_NAME}
             PRIVATE
-            "-DDCUS_HAS_DLT"
-            )
-    endif()
+            ${DLT_INCLUDE_DIR}
+        )
+    target_link_libraries(
+        ${CMAKE_PROJECT_NAME}
+        $<BUILD_INTERFACE:${DLT_LIBRARY}>
+    )
+endif()
+target_compile_definitions(
+    ${CMAKE_PROJECT_NAME}
+    PRIVATE
+    "-DDCUS_HAS_DLT"
+)
+endif()
 endif()
 
 include(CMakePackageConfigHelpers)
@@ -125,18 +124,18 @@ configure_file(
     ${COMMON_CMAKE_OUTPUT_PATH}/${CMAKE_PROJECT_NAME}Config.cmake
     IMMEDIATE
     @ONLY
-    )
+)
 configure_file(
     ${CMAKE_SOURCE_DIR}/config.h.in
     ${COMMON_INCLUDE_OUTPUT_PATH}/dcus/config.h
-    )
+)
 write_basic_package_version_file(
     ${COMMON_CMAKE_OUTPUT_PATH}/${CMAKE_PROJECT_NAME}ConfigVersion.cmake
     VERSION
     ${PACKAGE_VERSION}
     COMPATIBILITY
     AnyNewerVersion
-    )
+)
 
 install(
     TARGETS
@@ -155,13 +154,13 @@ install(
     INCLUDES
     DESTINATION
     include
-    )
+)
 install(
     EXPORT
     ${CMAKE_PROJECT_NAME}Targets
     DESTINATION
     lib/cmake/${CMAKE_PROJECT_NAME}
-    )
+)
 install(
     DIRECTORY
     ${CMAKE_SOURCE_DIR}/include/${CMAKE_PROJECT_NAME}
@@ -171,20 +170,20 @@ install(
     PATTERN "ClientEngine" EXCLUDE
     PATTERN "server" EXCLUDE
     PATTERN "client" EXCLUDE
-    )
+)
 if(DCUS_BUILD_SERVER)
     install(
         FILES
         ${CMAKE_SOURCE_DIR}/include/${CMAKE_PROJECT_NAME}/ServerEngine
         DESTINATION
         include/${CMAKE_PROJECT_NAME}
-        )
+    )
     install(
         DIRECTORY
         ${CMAKE_SOURCE_DIR}/include/${CMAKE_PROJECT_NAME}/server
         DESTINATION
         include/${CMAKE_PROJECT_NAME}
-        )
+    )
 endif()
 if(DCUS_BUILD_CLIENT)
     install(
@@ -192,32 +191,32 @@ if(DCUS_BUILD_CLIENT)
         ${CMAKE_SOURCE_DIR}/include/${CMAKE_PROJECT_NAME}/ClientEngine
         DESTINATION
         include/${CMAKE_PROJECT_NAME}
-        )
+    )
     install(
         DIRECTORY
         ${CMAKE_SOURCE_DIR}/include/${CMAKE_PROJECT_NAME}/client
         DESTINATION
         include/${CMAKE_PROJECT_NAME}
-        )
+    )
 endif()
 install(
     DIRECTORY
     ${CMAKE_SOURCE_DIR}/share/
     DESTINATION
     share/${CMAKE_PROJECT_NAME}
-    )
+)
 install(
     DIRECTORY
     ${COMMON_CMAKE_OUTPUT_PATH}/
     DESTINATION
     lib/cmake/${CMAKE_PROJECT_NAME}
-    )
+)
 install(
     DIRECTORY
     ${COMMON_INCLUDE_OUTPUT_PATH}/
     DESTINATION
     include
-    )
+)
 
 add_custom_command(
     TARGET
@@ -226,11 +225,11 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/share/ ${COMMON_SHARE_OUTPUT_PATH}
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/cmake/find_3rdparty.cmake  ${COMMON_CMAKE_OUTPUT_PATH}
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/cmake/find_dcus.cmake ${COMMON_CMAKE_OUTPUT_PATH}
-    )
+)
 add_custom_command(
     TARGET
     ${CMAKE_PROJECT_NAME}
     POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/tests/* ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-    )
+)
 install_etc(${CMAKE_PROJECT_NAME})
