@@ -113,9 +113,9 @@ public:
     VariantList() noexcept = default;
     VariantList(const Variant& values) noexcept;
     VariantList(Variant&& values) noexcept;
-    template <class LIST, typename std::enable_if<std::is_constructible<Variant, decltype(*std::declval<LIST>().begin())>::value, int>::type = 0>
-    VariantList(const LIST& list) noexcept
-        : VariantList(list.begin(), list.end())
+    template <class LIST>
+    VariantList(LIST&& list) noexcept
+        : VariantList(std::forward<LIST>(list))
     {
     }
     void add(const Variant& data) noexcept;
@@ -134,9 +134,9 @@ public:
     VariantMap() noexcept = default;
     VariantMap(const Variant& values) noexcept;
     VariantMap(Variant&& values) noexcept;
-    template <class MAP, typename std::enable_if<std::is_constructible<std::string, decltype(std::declval<MAP>().begin()->first)>::value && std::is_constructible<Variant, decltype(std::declval<MAP>().begin()->second)>::value, int>::type = 0>
-    VariantMap(const MAP& map) noexcept
-        : Variant(map.begin(), map.end())
+    template <class MAP>
+    VariantMap(MAP&& map) noexcept
+        : Variant(std::forward<MAP>(map))
     {
     }
     void add(const std::string& key, const Variant& data) noexcept;
