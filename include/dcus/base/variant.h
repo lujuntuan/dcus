@@ -115,7 +115,7 @@ public:
     VariantList(Variant&& values) noexcept;
     template <class LIST>
     VariantList(LIST&& list) noexcept
-        : VariantList(std::forward<LIST>(list))
+        : std::vector<Variant>(std::forward<LIST>(list))
     {
     }
     void add(const Variant& data) noexcept;
@@ -136,7 +136,7 @@ public:
     VariantMap(Variant&& values) noexcept;
     template <class MAP>
     VariantMap(MAP&& map) noexcept
-        : Variant(std::forward<MAP>(map))
+        : std::map<std::string, Variant>(std::forward<MAP>(map))
     {
     }
     void add(const std::string& key, const Variant& data) noexcept;
