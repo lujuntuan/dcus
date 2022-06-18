@@ -55,7 +55,6 @@ public:
     Variant(VariantList&& values) noexcept;
     Variant(const VariantMap& values) noexcept;
     Variant(VariantMap&& values) noexcept;
-    Variant(const std::initializer_list<std::pair<std::string, Variant>>& values) noexcept;
     template <class LIST, typename std::enable_if<std::is_constructible<Variant, decltype(*std::declval<LIST>().begin())>::value, int>::type = 0>
     Variant(const LIST& list) noexcept
         : Variant(VariantList(list.begin(), list.end()))
