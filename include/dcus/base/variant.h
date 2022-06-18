@@ -113,6 +113,11 @@ public:
     VariantList() noexcept = default;
     VariantList(const Variant& values) noexcept;
     VariantList(Variant&& values) noexcept;
+    template <class LIST, typename std::enable_if<std::is_constructible<Variant, decltype(*std::declval<LIST>().begin())>::value, int>::type = 0>
+    VariantList(const LIST& list) noexcept
+        : VariantList(list.begin(), list.end())
+    {
+    }
     void add(const Variant& data) noexcept;
     bool contains(const Variant& data) const noexcept;
     const Variant& value(int index, const Variant& defaultValue = Variant()) const noexcept;
@@ -129,6 +134,11 @@ public:
     VariantMap() noexcept = default;
     VariantMap(const Variant& values) noexcept;
     VariantMap(Variant&& values) noexcept;
+    template <class MAP, typename std::enable_if<std::is_constructible<std::string, decltype(std::declval<MAP>().begin()->first)>::value && std::is_constructible<Variant, decltype(std::declval<MAP>().begin()->second)>::value, int>::type = 0>
+    VariantMap(const MAP& map) noexcept
+        : Variant(map.begin(), map.end())
+    {
+    }
     void add(const std::string& key, const Variant& data) noexcept;
     void add(int key, const Variant& data) noexcept;
     void sub(const std::string& key) noexcept;

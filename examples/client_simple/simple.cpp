@@ -18,8 +18,8 @@ using namespace DCus;
 int main(int argc, char* argv[])
 {
     DCUS_CLIENT_CREATE(argc, argv);
-    // dcus_client_engine->setMeta(VariantMap({ { "max_deploy_time", 8000 } }));
-    dcus_client_engine->setAttribute(VariantMap({ { "hw_addr", "abcdefg" } }));
+    // dcus_client_engine->setMeta({ { "max_deploy_time", 8000 } });
+    dcus_client_engine->setAttribute({ { "hw_addr", "abcdefg" } });
     dcus_client_engine->setVersion("1.0.0");
     dcus_client_engine->subscibeDeploy(
         [](const std::string& dir, const FilePaths filePaths) {
