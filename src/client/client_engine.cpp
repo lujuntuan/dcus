@@ -35,8 +35,8 @@ struct ClientHelper {
     Thread workThread;
     Upgrade upgrade;
     Detail detail;
-    Data attribute;
-    Data meta;
+    VariantMap attribute;
+    VariantMap meta;
     std::string name;
     std::string guid;
     std::string version;
@@ -96,7 +96,7 @@ ClientEngine::ClientEngine(int argc, char** argv)
     static std::mutex mutex;
     setMutex(mutex);
 
-    if (dcus_client_config.value("download_dir").valid()) {
+    if (dcus_client_config.value("download_dir").isValid()) {
         m_hpr->downloadDir = dcus_client_config.value("download_dir").toString();
     } else {
         m_hpr->downloadDir = Utils::getTempDir() + "/dcus_client_tmp";
@@ -106,10 +106,10 @@ ClientEngine::ClientEngine(int argc, char** argv)
         m_hpr->name = ClientHelper::_clientName;
         m_hpr->guid = ClientHelper::_clientGuid;
     } else {
-        Value name = "unknown";
+        Variant name = "unknown";
         getOptions(name, USAGE_NAME_LIST, "name");
         m_hpr->name = name.toString();
-        Value guid = "";
+        Variant guid = "";
         getOptions(guid, USAGE_GUID_LIST, "guid");
         m_hpr->guid = guid.toString();
     }
@@ -167,17 +167,17 @@ const std::string& ClientEngine::version() const
     return m_hpr->version;
 }
 
-const Data& ClientEngine::attribute() const
+const VariantMap& ClientEngine::attribute() const
 {
     return m_hpr->attribute;
 }
 
-const Data& ClientEngine::meta() const
+const VariantMap& ClientEngine::meta() const
 {
     return m_hpr->meta;
 }
 
-const Data& ClientEngine::packageMeta() const
+const VariantMap& ClientEngine::packageMeta() const
 {
     return m_hpr->detail.package().meta();
 }
@@ -192,12 +192,12 @@ void ClientEngine::setVersion(const std::string& version)
     m_hpr->version = version;
 }
 
-void ClientEngine::setAttribute(const Data& attribute)
+void ClientEngine::setAttribute(const VariantMap& attribute)
 {
     m_hpr->attribute = attribute;
 }
 
-void ClientEngine::setMeta(const Data& meta)
+void ClientEngine::setMeta(const VariantMap& meta)
 {
     m_hpr->meta = meta;
 }
@@ -220,7 +220,7 @@ void ClientEngine::postDeployDone(bool success, int errorCode)
     if (success) {
         this->postEvent(new ClientEvent(ClientEvent::RES_DEPLOY_DONE));
     } else {
-        this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, Data { { "error", errorCode } }));
+        this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, VariantMap { { "error", errorCode } }));
     }
 }
 
@@ -230,7 +230,7 @@ void ClientEngine::postDeployProgress(float progress, const std::string& message
         LOG_WARNING("can not postDeployProgress");
         return;
     }
-    this->postEvent(new ClientEvent(ClientEvent::RES_DEPLOY_PROGRESS, Data { { "progress", progress }, { "message", message } }));
+    this->postEvent(new ClientEvent(ClientEvent::RES_DEPLOY_PROGRESS, VariantMap { { "progress", progress }, { "message", message } }));
 }
 
 void ClientEngine::postCancelDone(bool success, int errorCode)
@@ -242,7 +242,7 @@ void ClientEngine::postCancelDone(bool success, int errorCode)
     if (success) {
         this->postEvent(new ClientEvent(ClientEvent::RES_CANCEL_DONE));
     } else {
-        this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, Data { { "error", errorCode } }));
+        this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, VariantMap { { "error", errorCode } }));
     }
 }
 
@@ -261,7 +261,7 @@ void ClientEngine::postDetailAnswer(Answer answer)
         LOG_WARNING("can not postDetailAnswer");
         return;
     }
-    this->postEvent(new ClientEvent(ClientEvent::RES_ANSWER, Data { { "answer", answer } }));
+    this->postEvent(new ClientEvent(ClientEvent::RES_ANSWER, VariantMap { { "answer", answer } }));
 }
 
 void ClientEngine::begin()
@@ -374,7 +374,7 @@ void ClientEngine::eventChanged(Event* event)
                 break;
             }
             if (!m_hpr->detail.detectVersionVaild()) {
-                this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, Data { { "error", 2900 } }));
+                this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, VariantMap { { "error", 2900 } }));
                 LOG_WARNING("deploy version not vaild(", m_hpr->detail.domain().version(), ")");
                 break;
             }
@@ -393,7 +393,7 @@ void ClientEngine::eventChanged(Event* event)
             setDomainState(WR_CANCEL);
             m_hpr->detail.domain().message() = "Cancel ...";
             if (m_hpr->detail.detectVersionEqual()) {
-                this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, Data { { "error", 2901 } }));
+                this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, VariantMap { { "error", 2901 } }));
                 break;
             }
             if (m_hpr->detail.domain().last() == WR_IDLE) {
@@ -406,7 +406,7 @@ void ClientEngine::eventChanged(Event* event)
                 }
             } else {
                 if (m_hpr->detail.domain().last() == WR_DEPLOY) {
-                    this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, Data { { "error", 2902 } }));
+                    this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, VariantMap { { "error", 2902 } }));
                 }
             }
             break;
@@ -677,7 +677,7 @@ void ClientEngine::download(const std::string& id, const Files& files)
     if (status.state() == Core::SUCCEED) {
         this->postEvent(new ClientEvent(ClientEvent::RES_DOWNLOAD));
     } else if (status.state() == Core::FAILED) {
-        this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, Data { { "error", 2000 + status.error() } }));
+        this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, VariantMap { { "error", 2000 + status.error() } }));
     } else {
         if (m_hpr->hasCancelAction) {
             this->postEvent(new ClientEvent(ClientEvent::RES_CANCEL_DONE));
@@ -707,7 +707,7 @@ void ClientEngine::verify(const std::string& id, const Files& files)
     if (status.state() == Core::SUCCEED) {
         this->postEvent(new ClientEvent(ClientEvent::RES_VERIFY));
     } else if (status.state() == Core::FAILED) {
-        this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, Data { { "error", 2000 + status.error() } }));
+        this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, VariantMap { { "error", 2000 + status.error() } }));
     } else {
         if (m_hpr->hasCancelAction) {
             this->postEvent(new ClientEvent(ClientEvent::RES_CANCEL_DONE));
@@ -740,7 +740,7 @@ void ClientEngine::patch(const FilePaths& patchPaths)
     if (status.state() == Core::SUCCEED) {
         this->postEvent(new ClientEvent(ClientEvent::RES_PATCH));
     } else if (status.state() == Core::FAILED) {
-        this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, Data { { "error", 2000 + status.error() } }));
+        this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, VariantMap { { "error", 2000 + status.error() } }));
     } else {
         if (m_hpr->hasCancelAction) {
             this->postEvent(new ClientEvent(ClientEvent::RES_CANCEL_DONE));
@@ -759,7 +759,7 @@ void ClientEngine::deploy(const std::string& id, const Files& files)
         const std::string& path = dir + "/" + file.name();
         if (!Utils::exists(path)) {
             LOG_WARNING("deploy file is not exists(", path, ")");
-            this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, Data { { "error", 2910 } }));
+            this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, VariantMap { { "error", 2910 } }));
             return;
         }
         filePaths.push_back(path);

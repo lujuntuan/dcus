@@ -13,9 +13,9 @@
 #ifndef DCUS_APPLICATION_H
 #define DCUS_APPLICATION_H
 
-#include "dcus/base/data.h"
 #include "dcus/base/define.h"
 #include "dcus/base/log.h"
+#include "dcus/base/variant.h"
 #include <vector>
 
 DCUS_NAMESPACE_BEGIN
@@ -36,16 +36,16 @@ public:
     const std::string& exeDir() const;
     const std::string& exeName() const;
     const std::string& typeName() const;
-    const Data& config() const;
-    bool getOptions(Value& value, const Value::StringList& optNames, const std::string& configName = "") const;
+    const VariantMap& config() const;
+    bool getOptions(Variant& value, const std::vector<std::string>& optNames, const std::string& configName = "") const;
     virtual void execInthread(int flag = CHECK_SINGLETON | CHECK_TERMINATE);
     virtual int exec(int flag = CHECK_SINGLETON | CHECK_TERMINATE) = 0;
     virtual void exit(int exitCode = 0) = 0;
 
 protected:
     void loadFlagOnExec(int flag);
-    void loadUseage(std::vector<Value::StringList> useage);
-    Data readConfig(const std::string& fileName);
+    void loadUseage(std::vector<std::vector<std::string>> useage);
+    VariantMap readConfig(const std::string& fileName);
 
 private:
     struct ApplicationHelper* m_applicationHelper = nullptr;

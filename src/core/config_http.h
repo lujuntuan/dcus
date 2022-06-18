@@ -13,8 +13,8 @@
 #ifndef DCUS_CORE_CONFIG_HTTP_H
 #define DCUS_CORE_CONFIG_HTTP_H
 
-#include "dcus/base/data.h"
 #include "dcus/base/log.h"
+#include "dcus/base/variant.h"
 #include "dcus/setting.h"
 #include "dcus/utils/host.h"
 #include "importlib/httplib.hpp"
@@ -24,12 +24,12 @@ DCUS_NAMESPACE_BEGIN
 
 namespace Core {
 
-inline bool loadClientConfig(httplib::Client& client, const Data& config)
+inline bool loadClientConfig(httplib::Client& client, const VariantMap& config)
 {
-    if (config.value("net_interface").valid()) {
-        client.set_interface(config.value("net_interface").toStringCStr());
+    if (config.value("net_interface").isValid()) {
+        client.set_interface(config.value("net_interface").toCString());
     }
-    if (config.value("web_timeout").valid()) {
+    if (config.value("web_timeout").isValid()) {
         client.set_read_timeout(config.value("web_timeout").toInt() / 1000);
         client.set_write_timeout(config.value("web_timeout").toInt() / 1000);
     } else {
@@ -37,7 +37,7 @@ inline bool loadClientConfig(httplib::Client& client, const Data& config)
         client.set_write_timeout(DCUS_WEB_TIMEOUT / 1000);
     }
 #ifdef DCUS_USE_HTTPS
-    if (config.value("web_ca_cert_path").valid()) {
+    if (config.value("web_ca_cert_path").isValid()) {
         client.set_ca_cert_path(config.value("web_ca_cert_path").toStringCStr());
         client.enable_server_certificate_verification(true);
     } else {
@@ -47,15 +47,15 @@ inline bool loadClientConfig(httplib::Client& client, const Data& config)
     client.enable_server_certificate_verification(false);
 #endif
     //---------
-    if (config.value("web_username").valid() && config.value("web_password").valid()) {
-        client.set_basic_auth(config.value("web_username").toStringCStr(), config.value("web_password").toStringCStr());
-        client.set_digest_auth(config.value("web_username").toStringCStr(), config.value("web_password").toStringCStr());
+    if (config.value("web_username").isValid() && config.value("web_password").isValid()) {
+        client.set_basic_auth(config.value("web_username").toCString(), config.value("web_password").toCString());
+        client.set_digest_auth(config.value("web_username").toCString(), config.value("web_password").toCString());
     }
-    if (config.value("web_proxy_url").valid() && config.value("web_proxy_port").valid()) {
-        client.set_proxy(config.value("web_proxy_url").toStringCStr(), config.value("web_proxy_port").toInt());
-        if (config.value("web_proxy_username").valid() && config.value("web_proxy_password").valid()) {
-            client.set_proxy_basic_auth(config.value("web_proxy_username").toStringCStr(), config.value("web_proxy_password").toStringCStr());
-            client.set_proxy_digest_auth(config.value("web_proxy_username").toStringCStr(), config.value("web_proxy_password").toStringCStr());
+    if (config.value("web_proxy_url").isValid() && config.value("web_proxy_port").isValid()) {
+        client.set_proxy(config.value("web_proxy_url").toCString(), config.value("web_proxy_port").toInt());
+        if (config.value("web_proxy_username").isValid() && config.value("web_proxy_password").isValid()) {
+            client.set_proxy_basic_auth(config.value("web_proxy_username").toCString(), config.value("web_proxy_password").toCString());
+            client.set_proxy_digest_auth(config.value("web_proxy_username").toCString(), config.value("web_proxy_password").toCString());
         }
     } else {
         std::string proxyUrl;
@@ -86,17 +86,17 @@ inline bool loadClientConfig(httplib::Client& client, const Data& config)
     return true;
 }
 
-inline bool loadServerConfig(httplib::Server& server, const Data& config)
+inline bool loadServerConfig(httplib::Server& server, const VariantMap& config)
 {
-    if (config.value("web_timeout").valid()) {
+    if (config.value("web_timeout").isValid()) {
         server.set_read_timeout(config.value("web_timeout").toInt() / 1000);
         server.set_write_timeout(config.value("web_timeout").toInt() / 1000);
     } else {
         server.set_read_timeout(DCUS_WEB_TIMEOUT / 1000);
         server.set_write_timeout(DCUS_WEB_TIMEOUT / 1000);
     }
-    if (config.value("web_html_dir").valid()) {
-        server.set_base_dir(config.value("web_html_dir").toStringCStr(), "/");
+    if (config.value("web_html_dir").isValid()) {
+        server.set_base_dir(config.value("web_html_dir").toCString(), "/");
     }
     return true;
 }

@@ -44,22 +44,22 @@ WebQueue::WebQueue()
     if (!m_hpr) {
         m_hpr = new WebHelper;
     }
-    if (dcus_server_config.value("net_interface").valid()) {
+    if (dcus_server_config.value("net_interface").isValid()) {
         m_hpr->ipAddress = Utils::getIpAddress(dcus_server_config.value("net_interface").toString());
     } else {
         m_hpr->ipAddress = Utils::getIpAddress();
     }
-    if (dcus_server_config.value("download_dir").valid()) {
+    if (dcus_server_config.value("download_dir").isValid()) {
         m_hpr->downloadDir = dcus_server_config.value("download_dir").toString();
     } else {
         m_hpr->downloadDir = Utils::getTempDir() + "/dcus_server_tmp";
     }
-    if (dcus_server_config.value("distribute_url").valid()) {
+    if (dcus_server_config.value("distribute_url").isValid()) {
         m_hpr->distributeUrl = dcus_server_config.value("distribute_url").toString();
     } else {
         m_hpr->distributeUrl = "0.0.0.0";
     }
-    if (dcus_server_config.value("distribute_port").valid()) {
+    if (dcus_server_config.value("distribute_port").isValid()) {
         m_hpr->distributePort = dcus_server_config.value("distribute_port").toInt();
     } else {
 #ifdef DCUS_USE_HTTPS
@@ -68,7 +68,7 @@ WebQueue::WebQueue()
         m_hpr->distributePort = 9080;
 #endif
     }
-    if (dcus_server_config.value("upgrade_check_interval").valid()) {
+    if (dcus_server_config.value("upgrade_check_interval").isValid()) {
         m_hpr->checkInterval = (uint32_t)dcus_server_config.value("upgrade_check_interval").toInt();
     }
 #if defined(DCUS_USE_DOWNLOAD_HTTP) && defined(DCUS_USE_DISTRIBUTE_HTTP)
@@ -139,7 +139,7 @@ void WebQueue::eventChanged(Event* event)
             break;
         }
         bool success = init(webInitEvent->webInit());
-        dcus_server_engine->postEvent(new ServerEvent(ServerEvent::RES_INIT, Data { { "success", success } }));
+        dcus_server_engine->postEvent(new ServerEvent(ServerEvent::RES_INIT, VariantMap { { "success", success } }));
         if (success) {
             checkUpgrade();
             m_hpr->checkTimer->start();
@@ -216,7 +216,7 @@ void WebQueue::eventChanged(Event* event)
             break;
         }
         bool success = feedback(webFeedEvent->webFeed());
-        dcus_server_engine->postEvent(new ServerEvent(ServerEvent::RES_FEEDBACK_DONE, Data { { "success", success } }));
+        dcus_server_engine->postEvent(new ServerEvent(ServerEvent::RES_FEEDBACK_DONE, VariantMap { { "success", success } }));
         break;
     }
     default:
@@ -226,7 +226,7 @@ void WebQueue::eventChanged(Event* event)
 
 void WebQueue::postError(int errorCode)
 {
-    dcus_server_engine->postEvent(new ServerEvent(ServerEvent::RES_ERROR, Data { { "error", errorCode } }));
+    dcus_server_engine->postEvent(new ServerEvent(ServerEvent::RES_ERROR, VariantMap { { "error", errorCode } }));
 }
 
 void WebQueue::postIdle()
@@ -253,7 +253,7 @@ void WebQueue::postCancel(std::string&& id)
         return;
     }
     unlock();
-    dcus_server_engine->postEvent(new ServerEvent(ServerEvent::REQ_CANCEL, Data { { "id", id } }));
+    dcus_server_engine->postEvent(new ServerEvent(ServerEvent::REQ_CANCEL, VariantMap { { "id", id } }));
 }
 
 void WebQueue::setCheckTimerInterval(int interval)
@@ -265,7 +265,7 @@ void WebQueue::checkUpgrade()
 {
     bool active = detect();
     if (dcus_server_engine->isActive() != active) {
-        dcus_server_engine->postEvent(new ServerEvent(ServerEvent::REQ_ACTIVE, Data { { "active", active } }));
+        dcus_server_engine->postEvent(new ServerEvent(ServerEvent::REQ_ACTIVE, VariantMap { { "active", active } }));
     }
 }
 

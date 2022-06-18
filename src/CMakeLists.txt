@@ -227,10 +227,12 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/cmake/find_3rdparty.cmake  ${COMMON_CMAKE_OUTPUT_PATH}
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/cmake/find_dcus.cmake ${COMMON_CMAKE_OUTPUT_PATH}
 )
-add_custom_command(
-    TARGET
-    ${CMAKE_PROJECT_NAME}
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/tests/* ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-)
+if(UNIX)
+    add_custom_command(
+        TARGET
+        ${CMAKE_PROJECT_NAME}
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/tests/* ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+    )
+endif()
 install_etc(${CMAKE_PROJECT_NAME})

@@ -37,18 +37,18 @@ public:
         RES_CANCEL_DONE,
         RES_DEPLOY_PROGRESS,
     };
-    explicit ClientEvent(ClientEventType type, const Data& data = Data()) noexcept
+    explicit ClientEvent(ClientEventType type, const VariantMap& data = VariantMap()) noexcept
         : Event(DCUS_QUEUE_ID_CLIENT, type)
         , m_data(data)
     {
     }
-    inline const Data& data() const noexcept
+    inline const VariantMap& data() const noexcept
     {
         return m_data;
     }
 
 private:
-    Data m_data;
+    VariantMap m_data;
 };
 
 class ClientControlEvent : public ClientEvent {

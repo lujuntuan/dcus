@@ -12,7 +12,6 @@
 
 #include "dcus/upgrade.h"
 #include "dcus/utils/string.h"
-#include "importlib/json11.hpp"
 #include <iostream>
 
 DCUS_NAMESPACE_BEGIN
@@ -96,7 +95,7 @@ std::ostream& operator<<(std::ostream& ostream, const Package& package) noexcept
     if (package.meta().empty()) {
         ostream << "    [meta]: EMPTY\n";
     } else {
-        ostream << "    [meta]: " << package.meta().toStream() << "\n";
+        ostream << "    [meta]: " << package.meta().toJson() << "\n";
     }
     ostream << package.files();
     ostream << "  }\n";

@@ -31,7 +31,7 @@ struct ApplicationHelper {
     std::string exePath;
     std::string exeDir;
     std::string exeName;
-    Data config;
+    VariantMap config;
 };
 
 Application::Application(int argc, char** argv, const std::string& typeName)
@@ -71,10 +71,10 @@ Application::~Application()
     }
 }
 
-bool Application::getOptions(Value& value, const Value::StringList& optNames, const std::string& configName) const
+bool Application::getOptions(Variant& value, const std::vector<std::string>& optNames, const std::string& configName) const
 {
     switch (value.type()) {
-    case Value::VALUE_TYPE_BOOL:
+    case Variant::TYPE_BOOL:
         for (const std::string& name : optNames) {
             if (_cmd_map->has(name)) {
                 value = getarg<bool>(_cmd_map, value.toBool(), name.c_str());
@@ -82,7 +82,7 @@ bool Application::getOptions(Value& value, const Value::StringList& optNames, co
             }
         }
         break;
-    case Value::VALUE_TYPE_INT:
+    case Variant::TYPE_INT:
         for (const std::string& name : optNames) {
             if (_cmd_map->has(name)) {
                 value = getarg<int>(_cmd_map, value.toInt(), name.c_str());
@@ -90,7 +90,7 @@ bool Application::getOptions(Value& value, const Value::StringList& optNames, co
             }
         }
         break;
-    case Value::VALUE_TYPE_DOUBLE:
+    case Variant::TYPE_DOUBLE:
         for (const std::string& name : optNames) {
             if (_cmd_map->has(name)) {
                 value = getarg<double>(_cmd_map, value.toDouble(), name.c_str());
@@ -98,10 +98,10 @@ bool Application::getOptions(Value& value, const Value::StringList& optNames, co
             }
         }
         break;
-    case Value::VALUE_TYPE_STRING:
+    case Variant::TYPE_STRING:
         for (const std::string& name : optNames) {
             if (_cmd_map->has(name)) {
-                value = getarg(_cmd_map, value.toStringCStr(), name.c_str());
+                value = getarg(_cmd_map, value.toCString(), name.c_str());
                 return true;
             }
         }
@@ -110,7 +110,7 @@ bool Application::getOptions(Value& value, const Value::StringList& optNames, co
         break;
     }
     if (!configName.empty()) {
-        if (m_hpr->config.value(configName).valid()) {
+        if (m_hpr->config.value(configName).isValid()) {
             value = m_hpr->config.value(configName);
             return true;
         }
@@ -154,14 +154,14 @@ const std::string& Application::typeName() const
     return m_hpr->typeName;
 }
 
-const Data& Application::config() const
+const VariantMap& Application::config() const
 {
     return m_hpr->config;
 }
 
-Data Application::readConfig(const std::string& fileName)
+VariantMap Application::readConfig(const std::string& fileName)
 {
-    Data data;
+    VariantMap data;
     std::string expectPath = "/etc/" + fileName;
     std::string configPath = Utils::getEnvironment("DCUS_CONF_DIR") + "/" + fileName;
     if (!Utils::exists(configPath)) {
@@ -185,7 +185,7 @@ Data Application::readConfig(const std::string& fileName)
             }
         }
     }
-    data = Data::read(configPath);
+    data = Variant::readJson(configPath);
     if (data.empty()) {
         // LOG_WARNING("read config data error");
         return data;
@@ -209,7 +209,7 @@ void Application::loadFlagOnExec(int flag)
     }
 }
 
-void Application::loadUseage(std::vector<Value::StringList> useage)
+void Application::loadUseage(std::vector<std::vector<std::string>> useage)
 {
     bool showVersion = getarg(_cmd_map, false, "-v", "--v", "-version", "--version");
     if (showVersion) {

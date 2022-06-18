@@ -18,11 +18,11 @@ DCUS_NAMESPACE_BEGIN
 
 namespace Core {
 
-extern Status httpDownloadCommon(const std::string& dir, const Files& files, const Data& config,
+extern Status httpDownloadCommon(const std::string& dir, const Files& files, const VariantMap& config,
     const BreakFunction& breakFunction,
     const ProgressFunction& progressFunction);
 
-Status pull(const std::string& dir, const Files& files, const Data& config,
+Status pull(const std::string& dir, const Files& files, const VariantMap& config,
     const BreakFunction& breakFunction,
     const ProgressFunction& progressFunction)
 {

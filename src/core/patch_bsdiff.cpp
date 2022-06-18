@@ -49,7 +49,7 @@ Status patch(const std::string& dir, const std::vector<std::string>& paths, File
                 statusHelper.throwError(703);
                 return;
             }
-            const Data& info = Data::read(infoPath);
+            const VariantMap& info = Variant::readJson(infoPath);
             const std::string& oldName = info.value("basename").toString();
             if (oldName.empty()) {
                 statusHelper.throwError(704);

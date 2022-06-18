@@ -16,7 +16,6 @@
 #include "dcus/setting.h"
 #include "dcus/utils/string.h"
 #include "dcus/utils/time.h"
-#include "importlib/json11.hpp"
 
 #define m_hpr m_hawkbitHelper
 
@@ -62,36 +61,35 @@ bool HawkbitQueue::detect()
         return false;
     }
     std::string jsonErrorStr;
-    json11::Json json = json11::Json::parse(body, jsonErrorStr);
-    if (!jsonErrorStr.empty() || json.is_null()) {
+    Variant data = Variant::fromJson(body, &jsonErrorStr);
+    if (!jsonErrorStr.empty() || data.isNull()) {
         LOG_WARNING("error=", jsonErrorStr);
         return false;
     }
-    if (json.is_null()) {
+    if (data.isNull()) {
         return false;
     }
-    if (!json["_links"].is_object()) {
+    if (!data["_links"].isMap()) {
         postIdle();
         return true;
     }
 #if (DCUS_WEB_USE_POLLING)
-    std::string nextTimeStr = json["config"]["polling"]["sleep"].string_value();
+    std::string nextTimeStr = data["config"]["polling"]["sleep"].toString();
     int ms = Utils::getCurrentTimeSecForString(nextTimeStr, "%H:%M:%S") * 1000;
     setCheckTimerInterval(ms); // reset timer
 #endif
-    std::string path = json["_links"]["configData"]["href"].string_value();
+    std::string path = data["_links"]["configData"]["href"].toString();
     if (!path.empty()) {
         std::string errorString;
-        json11::Json::object rootJson;
-        rootJson["mode"] = json11::Json("merge");
-        rootJson["id"] = json11::Json("");
-        rootJson["time"] = json11::Json(Utils::getCurrentTimeString("%Y%m%dT%H%M%S"));
+        VariantMap rootData;
+        rootData["mode"] = Variant("merge");
+        rootData["id"] = Variant("");
+        rootData["time"] = Variant(Utils::getCurrentTimeString("%Y%m%dT%H%M%S"));
         lock();
-        std::string attributesStr = dcus_server_engine->attributes().toStream();
+        std::string attributesStr = dcus_server_engine->attributes().toJson();
         unlock();
-        rootJson["data"] = json11::Json::parse(attributesStr, errorString);
-        std::string contentStr;
-        json11::Json(std::move(rootJson)).dump(contentStr);
+        rootData["data"] = Variant::fromJson(attributesStr, &errorString);
+        std::string contentStr = Variant(std::move(rootData)).toJson();
         status = Core::putMessage(m_hpr->url, path, std::move(contentStr), dcus_server_config, m_hpr->token);
         if (status.state() != Core::SUCCEED) {
             LOG_WARNING("put json error");
@@ -99,11 +97,11 @@ bool HawkbitQueue::detect()
             return true;
         }
     }
-    path = json["_links"]["deploymentBase"]["href"].string_value();
+    path = data["_links"]["deploymentBase"]["href"].toString();
     bool isUpdateAction = true;
     if (path.empty()) {
         isUpdateAction = false;
-        path = json["_links"]["cancelAction"]["href"].string_value();
+        path = data["_links"]["cancelAction"]["href"].toString();
     }
     if (path.empty()) {
         return true;
@@ -128,9 +126,9 @@ bool HawkbitQueue::detect()
             return true;
         }
     } else {
-        json = json11::Json::parse(body, jsonErrorStr);
-        if (jsonErrorStr.empty() && !json.is_null()) {
-            std::string cancelAction = json["cancelAction"]["stopId"].string_value();
+        data = Variant::fromJson(body, &jsonErrorStr);
+        if (jsonErrorStr.empty() && !data.isNull()) {
+            std::string cancelAction = data["cancelAction"]["stopId"].toString();
             if (cancelAction.empty()) {
                 LOG_WARNING("transform cancel error");
                 return true;
@@ -172,25 +170,24 @@ bool HawkbitQueue::feedback(const WebFeed& webFeed)
         postError(807);
         return false;
     }
-    json11::Json::object rootJson;
-    rootJson["id"] = json11::Json(id);
-    rootJson["time"] = json11::Json(Utils::getCurrentTimeString("%Y%m%dT%H%M%S"));
-    json11::Json::object statusJson;
-    statusJson["execution"] = json11::Json(std::move(execution));
-    statusJson["details"] = json11::Json(details);
-    json11::Json::object resultJson;
-    resultJson["finished"] = json11::Json(std::move(result));
+    VariantMap rootData;
+    rootData["id"] = Variant(id);
+    rootData["time"] = Variant(Utils::getCurrentTimeString("%Y%m%dT%H%M%S"));
+    VariantMap statusData;
+    statusData["execution"] = Variant(std::move(execution));
+    statusData["details"] = Variant(details);
+    VariantMap resultData;
+    resultData["finished"] = Variant(std::move(result));
     if (webFeed.type() == WebFeed::TP_DEPLOY) {
-        json11::Json::object progressJson;
+        VariantMap progressJson;
         progressJson["of"] = progress.first;
         progressJson["cnt"] = progress.second;
-        resultJson["progress"] = json11::Json(std::move(progressJson));
+        resultData["progress"] = Variant(std::move(progressJson));
     }
-    statusJson["result"] = json11::Json(std::move(resultJson));
-    rootJson["status"] = json11::Json(std::move(statusJson));
+    statusData["result"] = Variant(std::move(resultData));
+    rootData["status"] = Variant(std::move(statusData));
     //
-    std::string contentStr;
-    json11::Json(std::move(rootJson)).dump(contentStr);
+    std::string contentStr = Variant(std::move(rootData)).toJson();
     Core::Status status = Core::postMessage(m_hpr->url, m_hpr->path + urlStr, std::move(contentStr), dcus_server_config, m_hpr->token);
     if (status.state() != Core::SUCCEED) {
         postError(status.error());
@@ -205,69 +202,71 @@ bool HawkbitQueue::transformUpgrade(Upgrade& upgrade, const std::string& jsonStr
     upgrade.packages().clear();
     upgrade.packages().shrink_to_fit();
     std::string jsonErrorStr;
-    json11::Json json = json11::Json::parse(jsonString, jsonErrorStr);
+    Variant data = Variant::fromJson(jsonString, &jsonErrorStr);
     if (!jsonErrorStr.empty()) {
         return false;
     }
-    if (json["id"].string_value().empty()) {
+    if (data["id"].toString().empty()) {
         return false;
     }
-    upgrade.id() = json["id"].string_value();
-    if (json["deployment"]["download"].string_value() == "attempt") {
+    upgrade.id() = data["id"].toString();
+    if (data["deployment"]["download"].toString() == "attempt") {
         upgrade.download() = Upgrade::MTHD_ATTEMPT;
-    } else if (json["deployment"]["download"].string_value() == "forced") {
+    } else if (data["deployment"]["download"].toString() == "forced") {
         upgrade.download() = Upgrade::MTHD_FORCED;
     } else {
         upgrade.download() = Upgrade::MTHD_SKIP;
     }
-    if (json["deployment"]["update"].string_value() == "attempt") {
+    if (data["deployment"]["update"].toString() == "attempt") {
         upgrade.deploy() = Upgrade::MTHD_ATTEMPT;
-    } else if (json["deployment"]["update"].string_value() == "forced") {
+    } else if (data["deployment"]["update"].toString() == "forced") {
         upgrade.deploy() = Upgrade::MTHD_FORCED;
     } else {
         upgrade.deploy() = Upgrade::MTHD_SKIP;
     }
-    if (json["deployment"]["maintenanceWindow"].string_value() == "available") {
+    if (data["deployment"]["maintenanceWindow"].toString() == "available") {
         upgrade.maintenance() = true;
     } else {
         upgrade.maintenance() = false;
     }
-    for (const json11::Json& packageJson : json["deployment"]["chunks"].array_items()) {
+    for (const auto& packageData : data["deployment"]["chunks"].toList()) {
         Package package;
-        package.domain() = packageJson["name"].string_value();
-        package.part() = packageJson["part"].string_value();
-        package.version() = packageJson["version"].string_value();
-        Data metaData;
-        for (const json11::Json& metaDataJson : packageJson["metadata"].array_items()) {
-            if (metaDataJson["key"].is_null() || metaDataJson["value"].is_null()) {
+        package.domain() = packageData["name"].toString();
+        package.part() = packageData["part"].toString();
+        package.version() = packageData["version"].toString();
+        VariantMap metaData;
+        for (const auto& subMetaData : packageData["metadata"].toList()) {
+            if (subMetaData["key"].isNull() || subMetaData["value"].isNull()) {
                 continue;
             }
-            if (metaDataJson["value"].is_bool()) {
-                metaData.add(metaDataJson["key"].string_value(), metaDataJson["value"].bool_value());
-            } else if (metaDataJson["value"].is_number()) {
-                metaData.add(metaDataJson["key"].string_value(), metaDataJson["value"].number_value());
-            } else if (metaDataJson["value"].is_string()) {
-                metaData.add(metaDataJson["key"].string_value(), metaDataJson["value"].string_value());
+            if (subMetaData["value"].isBool()) {
+                metaData.add(subMetaData["key"].toString(), subMetaData["value"].toBool());
+            } else if (subMetaData["value"].isInt()) {
+                metaData.add(subMetaData["key"].toString(), subMetaData["value"].toInt());
+            } else if (subMetaData["value"].isDouble()) {
+                metaData.add(subMetaData["key"].toString(), subMetaData["value"].toDouble());
+            } else if (subMetaData["value"].isString()) {
+                metaData.add(subMetaData["key"].toString(), subMetaData["value"].toString());
             }
         }
         package.meta() = metaData;
-        for (const json11::Json& fileJson : packageJson["artifacts"].array_items()) {
+        for (const auto& fileData : packageData["artifacts"].toList()) {
             File file;
             file.domain() = package.domain();
-            file.name() = fileJson["filename"].string_value();
+            file.name() = fileData["filename"].toString();
             if (targetLocalUrl.empty()) {
                 file.url() = "";
             } else {
                 file.url() = targetLocalUrl + "/" + package.domain() + "/" + file.name();
             }
-            file.md5() = fileJson["hashes"]["md5"].string_value();
-            // file.sha1() = fileJson["hashes"]["sha1"].string_value();
-            file.sha256() = fileJson["hashes"]["sha256"].string_value();
-            file.size() = fileJson["size"].int_value();
-            if (!fileJson["_links"]["download"]["href"].string_value().empty()) {
-                file.web_url() = fileJson["_links"]["download"]["href"].string_value();
+            file.md5() = fileData["hashes"]["md5"].toString();
+            // file.sha1() = fileData["hashes"]["sha1"].toString();
+            file.sha256() = fileData["hashes"]["sha256"].toString();
+            file.size() = fileData["size"].toInt();
+            if (!fileData["_links"]["download"]["href"].toString().empty()) {
+                file.web_url() = fileData["_links"]["download"]["href"].toString();
             } else {
-                file.web_url() = fileJson["_links"]["download-http"]["href"].string_value();
+                file.web_url() = fileData["_links"]["download-http"]["href"].toString();
             }
             package.files().push_back(std::move(file));
         }

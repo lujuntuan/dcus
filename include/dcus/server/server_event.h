@@ -40,18 +40,18 @@ public:
 
         RES_DOMAIN,
     };
-    explicit ServerEvent(ServerEventType type, const Data& data = Data()) noexcept
+    explicit ServerEvent(ServerEventType type, const VariantMap& data = VariantMap()) noexcept
         : Event(DCUS_QUEUE_ID_SERVER, type)
         , m_data(data)
     {
     }
-    inline const Data& data() const noexcept
+    inline const VariantMap& data() const noexcept
     {
         return m_data;
     }
 
 private:
-    Data m_data;
+    VariantMap m_data;
 };
 
 class ServerUpgradeEvent : public ServerEvent {

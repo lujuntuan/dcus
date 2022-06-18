@@ -13,8 +13,8 @@
 #ifndef DCUS_UPGRADE_H
 #define DCUS_UPGRADE_H
 
-#include "dcus/base/data.h"
 #include "dcus/base/define.h"
+#include "dcus/base/variant.h"
 #include <string>
 #include <vector>
 
@@ -46,7 +46,7 @@ struct DCUS_EXPORT Package final {
     CREATE_PUBLIC_PROPERTY(std::string, domain, "")
     CREATE_PUBLIC_PROPERTY(std::string, part, "")
     CREATE_PUBLIC_PROPERTY(std::string, version, "")
-    CREATE_PUBLIC_PROPERTY(Data, meta, {})
+    CREATE_PUBLIC_PROPERTY(VariantMap, meta, {})
     CREATE_PUBLIC_PROPERTY(Files, files, {})
 public:
     bool operator==(const Package& package) const noexcept;

@@ -21,7 +21,7 @@
 DCUS_NAMESPACE_BEGIN
 
 namespace Core {
-Status getMessage(const std::string& url, const std::string& path, std::string& body, const Data& config,
+Status getMessage(const std::string& url, const std::string& path, std::string& body, const VariantMap& config,
     const Token& token)
 {
     StatusHelper statusHelper;
@@ -58,7 +58,7 @@ Status getMessage(const std::string& url, const std::string& path, std::string& 
     return statusHelper.status;
 }
 
-Status putMessage(const std::string& url, const std::string& path, const std::string& body, const Data& config, const Token& token)
+Status putMessage(const std::string& url, const std::string& path, const std::string& body, const VariantMap& config, const Token& token)
 {
     StatusHelper statusHelper;
     if (path.empty()) {
@@ -87,7 +87,7 @@ Status putMessage(const std::string& url, const std::string& path, const std::st
     return statusHelper.status;
 }
 
-Status postMessage(const std::string& url, const std::string& path, const std::string& body, const Data& config, const Token& token)
+Status postMessage(const std::string& url, const std::string& path, const std::string& body, const VariantMap& config, const Token& token)
 {
     StatusHelper statusHelper;
     if (path.empty()) {

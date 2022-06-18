@@ -14,10 +14,9 @@
 #define DCUS_SERVER_ENGINE_H
 
 #include "dcus/base/application.h"
-#include "dcus/base/data.h"
-#include "dcus/domain.h"
 #include "dcus/base/queue.h"
 #include "dcus/base/singleton.h"
+#include "dcus/domain.h"
 #include "dcus/upgrade.h"
 
 #define dcus_server_engine ServerEngine::getInstance()
@@ -35,7 +34,7 @@ public:
     const Depends& depends() const;
     const std::string& cancelId() const;
     const std::string& message() const;
-    const Data attributes() const;
+    const VariantMap attributes() const;
     ServerState state() const;
     ServerState lastState() const;
     Control control() const;

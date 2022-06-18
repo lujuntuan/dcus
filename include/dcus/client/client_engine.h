@@ -14,10 +14,10 @@
 #define DCUS_CLIENT_ENGINE_H
 
 #include "dcus/base/application.h"
-#include "dcus/domain.h"
 #include "dcus/base/queue.h"
 #include "dcus/base/singleton.h"
 #include "dcus/client/detail_message.h"
+#include "dcus/domain.h"
 
 #define dcus_client_engine ClientEngine::getInstance()
 #define dcus_client_config ClientEngine::getInstance()->config()
@@ -47,14 +47,14 @@ public:
 
     bool cancelEnable() const;
     const std::string& version() const;
-    const Data& attribute() const;
-    const Data& meta() const;
-    const Data& packageMeta() const;
+    const VariantMap& attribute() const;
+    const VariantMap& meta() const;
+    const VariantMap& packageMeta() const;
 
     void setCancelEnable(bool cancelEnable);
     void setVersion(const std::string& version);
-    void setAttribute(const Data& attribute);
-    void setMeta(const Data& meta);
+    void setAttribute(const VariantMap& attribute);
+    void setMeta(const VariantMap& meta);
 
     void subscibeDeploy(const DeployFunction& function);
     void postDeployDone(bool success, int errorCode = 0);

@@ -28,11 +28,11 @@ namespace Core {
 
 #ifdef DCUS_USE_DOWNLOAD_HTTP
 
-extern Status httpDownloadCommon(const std::string& dir, const Files& files, const Data& config,
+extern Status httpDownloadCommon(const std::string& dir, const Files& files, const VariantMap& config,
     const BreakFunction& breakFunction,
     const ProgressFunction& progressFunction);
 
-Status download(const std::string& dir, const Files& files, const Data& config,
+Status download(const std::string& dir, const Files& files, const VariantMap& config,
     const BreakFunction& breakFunction,
     const ProgressFunction& progressFunction)
 {
@@ -41,7 +41,7 @@ Status download(const std::string& dir, const Files& files, const Data& config,
 
 #endif
 
-Status httpDownloadCommon(const std::string& dir, const Files& files, const Data& config,
+Status httpDownloadCommon(const std::string& dir, const Files& files, const VariantMap& config,
     const BreakFunction& breakFunction,
     const ProgressFunction& progressFunction)
 {

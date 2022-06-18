@@ -59,15 +59,6 @@ std::vector<std::string> stringSplit(const std::string& s, const std::string& de
     return elems;
 }
 
-int64_t stringToInt64(const std::string& s) noexcept
-{
-    std::stringstream ss;
-    ss << s;
-    int64_t value = 0;
-    ss >> value;
-    return value;
-}
-
 bool stringEndWith(const std::string& str, const std::string& tail) noexcept
 {
     if (str.empty()) {
@@ -110,29 +101,12 @@ std::pair<std::string, std::string> getIpaddrMethod(const std::string& url) noex
     return pair;
 }
 
-std::string doubleToString(const double& value, int f) noexcept
+std::string doubleToString(double value, int f) noexcept
 {
     std::stringstream ss;
     ss << std::setiosflags(std::ios::fixed) << std::setprecision(f) << value;
     std::string str = ss.str();
     return str;
-}
-
-int getNumForString(const std::string& numStr, bool* ok) noexcept
-{
-    int targetNum = -1;
-    try {
-        targetNum = std::stoi(numStr);
-        if (ok) {
-            *ok = true;
-        }
-    } catch (...) {
-        if (ok) {
-            *ok = false;
-        }
-        targetNum = -1;
-    }
-    return targetNum;
 }
 
 }

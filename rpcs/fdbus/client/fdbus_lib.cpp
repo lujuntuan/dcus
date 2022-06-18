@@ -23,7 +23,7 @@ static Package transformPackage(const DCusInterfaces::Package& pb_package)
     package.domain() = pb_package.domain();
     package.part() = pb_package.part();
     package.version() = pb_package.version();
-    package.meta() = Data::readStream(pb_package.meta());
+    package.meta() = Variant::readJson(pb_package.meta());
     for (int i = 0; i < pb_package.files_size(); i++) {
         File file;
         const auto& pb_file = pb_package.files(i);
@@ -116,8 +116,8 @@ protected:
             domain.watcher() = pb_detail.domain().watcher();
             domain.error() = pb_detail.domain().error();
             domain.version() = pb_detail.domain().version();
-            domain.attribute() = Data::readStream(pb_detail.domain().attribute());
-            domain.meta() = Data::readStream(pb_detail.domain().meta());
+            domain.attribute() = Variant::readJson(pb_detail.domain().attribute());
+            domain.meta() = Variant::readJson(pb_detail.domain().meta());
             domain.progress() = pb_detail.domain().progress();
             domain.message() = pb_detail.domain().message();
             domain.answer() = (Answer)pb_detail.domain().answer();
@@ -169,8 +169,8 @@ private:
         domainMessage.mutable_domain()->set_watcher(domain.watcher());
         domainMessage.mutable_domain()->set_error(domain.error());
         domainMessage.mutable_domain()->set_version(domain.version());
-        domainMessage.mutable_domain()->set_attribute(domain.attribute().toStream());
-        domainMessage.mutable_domain()->set_meta(domain.meta().toStream());
+        domainMessage.mutable_domain()->set_attribute(domain.attribute().toJson());
+        domainMessage.mutable_domain()->set_meta(domain.meta().toJson());
         domainMessage.mutable_domain()->set_progress(domain.progress());
         domainMessage.mutable_domain()->set_message(domain.message());
         domainMessage.mutable_domain()->set_answer((DCusInterfaces::Domain_Answer)domain.answer());

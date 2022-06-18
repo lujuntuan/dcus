@@ -23,7 +23,7 @@ static DCusInterfaces::Package transformPackage(const Package& package)
     pb_package.set_domain(package.domain());
     pb_package.set_part(package.part());
     pb_package.set_version(package.version());
-    pb_package.set_meta(package.meta().toStream());
+    pb_package.set_meta(package.meta().toJson());
     for (const File& file : package.files()) {
         auto* pb_fileList = pb_package.add_files();
         pb_fileList->set_domain(file.domain());
@@ -103,8 +103,8 @@ protected:
             pb_detail->mutable_domain()->set_watcher(d.domain().watcher());
             pb_detail->mutable_domain()->set_error(d.domain().error());
             pb_detail->mutable_domain()->set_version(d.domain().version());
-            pb_detail->mutable_domain()->set_attribute(d.domain().attribute().toStream());
-            pb_detail->mutable_domain()->set_meta(d.domain().meta().toStream());
+            pb_detail->mutable_domain()->set_attribute(d.domain().attribute().toJson());
+            pb_detail->mutable_domain()->set_meta(d.domain().meta().toJson());
             pb_detail->mutable_domain()->set_progress(d.domain().progress());
             pb_detail->mutable_domain()->set_message(d.domain().message());
             pb_detail->mutable_domain()->set_answer((DCusInterfaces::Domain_Answer)d.domain().answer());
@@ -188,8 +188,8 @@ private:
             domain.watcher() = domainMessage.domain().watcher();
             domain.error() = domainMessage.domain().error();
             domain.version() = domainMessage.domain().version();
-            domain.attribute() = Data::readStream(domainMessage.domain().attribute());
-            domain.meta() = Data::readStream(domainMessage.domain().meta());
+            domain.attribute() = Variant::readJson(domainMessage.domain().attribute());
+            domain.meta() = Variant::readJson(domainMessage.domain().meta());
             domain.progress() = domainMessage.domain().progress();
             domain.message() = domainMessage.domain().message();
             domain.answer() = (Answer)domainMessage.domain().answer();

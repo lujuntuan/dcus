@@ -25,7 +25,7 @@
 DCUS_NAMESPACE_BEGIN
 
 namespace Core {
-Status distribute(DistributeHandle& handle, const std::string& url, int port, const std::string& dir, const Files& files, const Data& config,
+Status distribute(DistributeHandle& handle, const std::string& url, int port, const std::string& dir, const Files& files, const VariantMap& config,
     const BreakFunction& breakFunction,
     const ProgressFunction& progressFunction)
 {
@@ -64,7 +64,7 @@ Status distribute(DistributeHandle& handle, const std::string& url, int port, co
     };
     std::vector<Helper*> helpers;
 #ifdef DCUS_USE_HTTPS
-    if (!config.value("web_server_cert_path").valid() || !config.value("web_server_key_path").valid()) {
+    if (!config.value("web_server_cert_path").isValid() || !config.value("web_server_key_path").isValid()) {
         statusHelper.throwError(304);
         LOG_WARNING("distribute web_server_cert_path or web_server_key_path  is empty");
         return statusHelper.status;
@@ -151,7 +151,11 @@ Status distribute(DistributeHandle& handle, const std::string& url, int port, co
                 range.erase(0, 6);
                 const auto& vr = Utils::stringSplit(std::move(range), "-");
                 if (vr.size() >= 1) {
-                    helper->beginPos = Utils::stringToInt64(vr[0]);
+                    try {
+                        helper->beginPos = std::strtol(vr[0].c_str(), nullptr, 10);
+                    } catch (...) {
+                        LOG_WARNING("strtol error!");
+                    }
                 }
             }
             if (helper->beginPos > file.size()) {

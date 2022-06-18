@@ -213,10 +213,10 @@ std::ostream& operator<<(std::ostream& ostream, const Domain& domain) noexcept
         ostream << "  [version]: " << domain.version() << "\n";
     }
     if (!domain.attribute().empty()) {
-        ostream << "  [attribute]: " << domain.attribute().toStream() << "\n";
+        ostream << "  [attribute]: " << domain.attribute().toJson() << "\n";
     }
     if (!domain.meta().empty()) {
-        ostream << "  [meta]: " << domain.meta().toStream() << "\n";
+        ostream << "  [meta]: " << domain.meta().toJson() << "\n";
     }
     if (domain.progress() != 0) {
         ostream << "  [progress]: " << Utils::doubleToString(domain.progress()) << "\n";
@@ -257,19 +257,25 @@ bool Detail::detectVersionVaild() const noexcept
     if (m_domain.version().empty() || m_package.version().empty()) {
         return false;
     }
-    bool numOk = false;
     const auto currentVersionList = Utils::stringSplit(m_domain.version(), ".");
     const auto targetVersionList = Utils::stringSplit(m_package.version(), ".");
     if (currentVersionList.size() != targetVersionList.size()) {
         return false;
     }
     for (unsigned i = 0; i < currentVersionList.size(); i++) {
-        int selfNum = Utils::getNumForString(currentVersionList[i], &numOk);
-        if (numOk == false || selfNum < 0) {
+        int selfNum = -1;
+        try {
+            selfNum = std::stoi(currentVersionList[i]);
+        } catch (...) {
             return false;
         }
-        int targetNum = Utils::getNumForString(targetVersionList[i], &numOk);
-        if (numOk == false || targetNum < 0) {
+        int targetNum = -1;
+        try {
+            targetNum = std::stoi(targetVersionList[i]);
+        } catch (...) {
+            return false;
+        }
+        if (targetNum < -1) {
             return false;
         }
         if (targetNum > selfNum) {
@@ -279,7 +285,7 @@ bool Detail::detectVersionVaild() const noexcept
     return false;
 }
 
-inline static std::vector<std::string> getDependsNames(const Data& meta)
+inline static std::vector<std::string> getDependsNames(const VariantMap& meta)
 {
     std::vector<std::string> depends;
     std::string dependsStr = meta.value("depends").toString();

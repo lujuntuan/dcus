@@ -349,8 +349,8 @@ void MainWindow::updateProperty(QTreeWidgetItem* listItem)
     updateSubProperty(nullptr, QStringLiteral("watcher"), d.domain().watcher() ? QStringLiteral("true") : QStringLiteral("false"));
     updateSubProperty(nullptr, QStringLiteral("error"), QString::number(d.domain().error()));
     // updateSubProperty(nullptr, QStringLiteral("version"), QString::fromStdString(d.domain().version()));
-    updateSubProperty(nullptr, QStringLiteral("attribute"), QString::fromStdString(d.domain().attribute().toStream()));
-    updateSubProperty(nullptr, QStringLiteral("meta"), QString::fromStdString(d.domain().meta().toStream()));
+    updateSubProperty(nullptr, QStringLiteral("attribute"), QString::fromStdString(d.domain().attribute().toJson()));
+    updateSubProperty(nullptr, QStringLiteral("meta"), QString::fromStdString(d.domain().meta().toJson()));
     // updateSubProperty(nullptr, QStringLiteral("progress"), d.progress(), true);
     // updateSubProperty(nullptr, QStringLiteral("message"), QString::fromStdString(d.domain().message()));
     updateSubProperty(nullptr, QStringLiteral("deploy"), QTime(0, 0, d.deploy().get() / 1000.0).toString("hh:mm:ss"));
@@ -358,7 +358,7 @@ void MainWindow::updateProperty(QTreeWidgetItem* listItem)
     // updateSubProperty(packagesItem, QStringLiteral("domain"), QString::fromStdString(d.package().domain()));
     updateSubProperty(packagesItem, QStringLiteral("part"), QString::fromStdString(d.package().part()));
     updateSubProperty(packagesItem, QStringLiteral("version"), QString::fromStdString(d.package().version()));
-    updateSubProperty(packagesItem, QStringLiteral("meta"), QString::fromStdString(d.package().meta().toStream()));
+    updateSubProperty(packagesItem, QStringLiteral("meta"), QString::fromStdString(d.package().meta().toJson()));
     QTreeWidgetItem* filesItem = updateSubProperty(packagesItem, QStringLiteral("files"), QString());
     for (int i = 0; i < filesItem->childCount(); i++) {
         bool find = false;

@@ -65,9 +65,9 @@ struct ServerHelper {
     std::string lastlId;
     std::string lastCancelId;
     Timer* processDomainsTimer = nullptr;
-    Data attributes;
-    Data domainsConfig;
-    Data cacheStatus;
+    VariantMap attributes;
+    VariantMap domainsConfig;
+    VariantMap cacheStatus;
     Depends cacheDepends;
     HawkbitQueue webQueue;
     Upgrade upgrade;
@@ -131,7 +131,7 @@ const std::string& ServerEngine::message() const
     return m_hpr->message;
 }
 
-const Data ServerEngine::attributes() const
+const VariantMap ServerEngine::attributes() const
 {
     return m_hpr->attributes;
 }
@@ -178,13 +178,13 @@ void ServerEngine::startWebEngine()
         return;
     }
 
-    Value webUrl = "http://localhost:8080";
+    Variant webUrl = "http://localhost:8080";
     getOptions(webUrl, USAGE_URL_LIST, "web_url");
-    Value tenant = "DEFAULT";
+    Variant tenant = "DEFAULT";
     getOptions(tenant, USAGE_TENANT_LIST, "tenant");
-    Value id = "123456789";
+    Variant id = "123456789";
     getOptions(id, USAGE_ID_LIST, "id");
-    Value token = "";
+    Variant token = "";
     getOptions(token, USAGE_TOKEN_LIST, "token");
 
     // GatewayToken or TargetToken
@@ -221,7 +221,7 @@ void ServerEngine::processDomainMessage(Domain&& domain, bool discovery)
 void ServerEngine::begin()
 {
     std::string cacheDir = Utils::getTempDir();
-    if (dcus_server_config.value("cache_dir").valid()) {
+    if (dcus_server_config.value("cache_dir").isValid()) {
         cacheDir = dcus_server_config.value("cache_dir").toString();
     }
     if (!Utils::exists(cacheDir)) {
@@ -772,7 +772,7 @@ void ServerEngine::setState(ServerState state)
         m_hpr->cacheStatus.add("state", m_hpr->state);
         m_hpr->cacheStatus.add("last", m_hpr->lastState);
         m_hpr->cacheStatus.add("depends", m_hpr->depends);
-        m_hpr->cacheStatus.save(m_hpr->statusFilePath);
+        m_hpr->cacheStatus.saveJson(m_hpr->statusFilePath, Variant::PARSER_OUT_FORMAT);
         LOG_PROPERTY("State", Domain::getMrStateStr(state));
         m_hpr->stateElapsed.restart();
         configState();
@@ -791,7 +791,7 @@ void ServerEngine::setState(ServerState state)
 
 void ServerEngine::readState()
 {
-    m_hpr->cacheStatus = Data::read(m_hpr->statusFilePath);
+    m_hpr->cacheStatus = Variant::readJson(m_hpr->statusFilePath);
     int state = m_hpr->cacheStatus.value("state").toInt();
     if (state >= 0) {
         m_hpr->cacheState = (ServerState)state;
