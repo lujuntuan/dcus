@@ -12,15 +12,17 @@
 
 #include "dcus/base/variant.h"
 #include <algorithm>
+#include <cmath>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <sstream>
 
-#define PARSER_MAX_DEPTH 500
+#define VAR_PARSER_MAX_DEPTH 500
+#define VAR_PARSER_FORMAT_SPACE "    "
+#define VAR_DOUBLE_PRECISION (double)0.0000001
 
 DCUS_NAMESPACE_BEGIN
-
-static Variant _emptyVariant;
 
 struct NullStruct {
     bool operator==(NullStruct) const { return true; }
@@ -47,21 +49,21 @@ private:
     friend class Variant;
 
 public:
-    static void formatEnter(std::string& out, int depth)
+    static void formatEnter(std::string& out, int depth) noexcept
     {
         if (depth < 0) {
             return;
         }
         out += "\n";
-        for (int i = 0; i < depth; i++) {
-            out += "  ";
+        for (size_t i = 0; i < depth; i++) {
+            out += VAR_PARSER_FORMAT_SPACE;
         }
     }
-    static void dump(NullStruct, std::string& out, int depth)
+    static void dump(NullStruct, std::string& out, int depth) noexcept
     {
         out += "null";
     }
-    static void dump(double value, std::string& out, int depth)
+    static void dump(double value, std::string& out, int depth) noexcept
     {
         if (std::isfinite(value)) {
             char buf[32];
@@ -71,17 +73,17 @@ public:
             out += "null";
         }
     }
-    static void dump(int value, std::string& out, int depth)
+    static void dump(int value, std::string& out, int depth) noexcept
     {
         char buf[32];
         snprintf(buf, sizeof buf, "%d", value);
         out += buf;
     }
-    static void dump(bool value, std::string& out, int depth)
+    static void dump(bool value, std::string& out, int depth) noexcept
     {
         out += value ? "true" : "false";
     }
-    static void dump(const std::string& value, std::string& out, int depth)
+    static void dump(const std::string& value, std::string& out, int depth) noexcept
     {
         out += '"';
         for (size_t i = 0; i < value.length(); i++) {
@@ -118,43 +120,59 @@ public:
         }
         out += '"';
     }
-    static void dump(const VariantList& values, std::string& out, int depth)
+    static void dump(const VariantList& values, std::string& out, int depth) noexcept
     {
-        depth++;
+        if (depth >= 0) {
+            if (depth > VAR_PARSER_MAX_DEPTH) {
+                out.clear();
+                return;
+            }
+            depth++;
+        }
         bool first = true;
         out += "[";
-        for (const auto& value : values) {
-            if (!first) {
-                out += ", ";
+        if (!values.empty()) {
+            for (const auto& value : values) {
+                if (!first) {
+                    out += ", ";
+                }
+                formatEnter(out, depth);
+                value.m_ptr->dump(out, depth);
+                first = false;
             }
-            formatEnter(out, depth);
-            value.m_ptr->dump(out, depth);
-            first = false;
+            formatEnter(out, depth - 1);
         }
-        formatEnter(out, depth);
         out += "]";
     }
-    static void dump(const VariantMap& values, std::string& out, int depth)
+    static void dump(const VariantMap& values, std::string& out, int depth) noexcept
     {
-        depth++;
+        if (depth >= 0) {
+            if (depth > VAR_PARSER_MAX_DEPTH) {
+                out.clear();
+                return;
+            }
+            depth++;
+        }
         bool first = true;
         out += "{";
-        for (const auto& kv : values) {
-            if (!first) {
-                out += ", ";
+        if (!values.empty()) {
+            for (const auto& kv : values) {
+                if (!first) {
+                    out += ", ";
+                }
+                formatEnter(out, depth);
+                dump(kv.first, out, depth);
+                out += ": ";
+                kv.second.m_ptr->dump(out, depth);
+                first = false;
             }
-            formatEnter(out, depth);
-            dump(kv.first, out, depth);
-            out += ": ";
-            kv.second.m_ptr->dump(out, depth);
-            first = false;
+            formatEnter(out, depth - 1);
         }
-        formatEnter(out, depth);
         out += "}";
     }
 
 public:
-    static inline std::string esc(char c)
+    static inline std::string esc(char c) noexcept
     {
         char buf[12];
         if (static_cast<uint8_t>(c) >= 0x20 && static_cast<uint8_t>(c) <= 0x7f) {
@@ -164,16 +182,16 @@ public:
         }
         return std::string(buf);
     }
-    static inline bool inRange(long x, long lower, long upper)
+    static inline bool inRange(long x, long lower, long upper) noexcept
     {
         return (x >= lower && x <= upper);
     }
-    Variant fail(std::string&& msg)
+    Variant fail(std::string&& msg) noexcept
     {
         return fail(move(msg), Variant());
     }
     template <typename T>
-    T fail(std::string&& msg, const T err_ret)
+    T fail(std::string&& msg, const T err_ret) noexcept
     {
         if (!_isFailed) {
             if (_errorString) {
@@ -183,12 +201,12 @@ public:
         _isFailed = true;
         return err_ret;
     }
-    void consumeWhitespace()
+    void consumeWhitespace() noexcept
     {
         while (_string[_index] == ' ' || _string[_index] == '\r' || _string[_index] == '\n' || _string[_index] == '\t')
             _index++;
     }
-    bool consumeComment()
+    bool consumeComment() noexcept
     {
         bool commentFound = false;
         if (_string[_index] == '/') {
@@ -221,7 +239,7 @@ public:
         }
         return commentFound;
     }
-    void consumeGarbage()
+    void consumeGarbage() noexcept
     {
         consumeWhitespace();
         if (_parserType == Variant::PARSER_IN_COMMENTS) {
@@ -235,7 +253,7 @@ public:
             } while (comment_found);
         }
     }
-    char getNextToken()
+    char getNextToken() noexcept
     {
         consumeGarbage();
         if (_isFailed) {
@@ -246,7 +264,7 @@ public:
         }
         return _string[_index++];
     }
-    void encodeUtf8(long pt, std::string& out)
+    void encodeUtf8(long pt, std::string& out) noexcept
     {
         if (pt < 0) {
             return;
@@ -267,7 +285,7 @@ public:
             out += static_cast<char>((pt & 0x3F) | 0x80);
         }
     }
-    std::string parseString()
+    std::string parseString() noexcept
     {
         std::string out;
         long lastEscapedCodepoint = -1;
@@ -333,10 +351,9 @@ public:
             }
         }
     }
-    Variant parseNumber()
+    Variant parseNumber() noexcept
     {
         size_t startPos = _index;
-        bool isDouble = false;
         if (_string[_index] == '-') {
             _index++;
         }
@@ -354,10 +371,13 @@ public:
             return fail("invalid " + esc(_string[_index]) + " in number");
         }
         if (_string[_index] != '.' && _string[_index] != 'e' && _string[_index] != 'E' && (_index - startPos) <= static_cast<size_t>(std::numeric_limits<int>::digits10)) {
-            return std::atoi(_string.c_str() + startPos);
+            try {
+                return (int)std::atoi(_string.c_str() + startPos);
+            } catch (...) {
+                return fail("invalid " + esc(_string[_index]) + " in int");
+            }
         }
         if (_string[_index] == '.') {
-            isDouble = true;
             _index++;
             if (!inRange(_string[_index], '0', '9')) {
                 return fail("at least one digit required in fractional part");
@@ -378,12 +398,13 @@ public:
                 _index++;
             }
         }
-        if (isDouble) {
-            return std::strtod(_string.c_str() + startPos, nullptr);
+        try {
+            return (double)std::strtod(_string.c_str() + startPos, nullptr);
+        } catch (...) {
+            return fail("invalid " + esc(_string[_index]) + " in double");
         }
-        return std::stoi(_string.c_str() + startPos, nullptr);
     }
-    Variant expect(const std::string& expected, Variant res)
+    Variant expect(const std::string& expected, Variant res) noexcept
     {
         if (_index == 0) {
             return fail("parse error: expected " + expected + ", index can not be zero");
@@ -396,9 +417,9 @@ public:
             return fail("parse error: expected " + expected + ", got " + _string.substr(_index, expected.length()));
         }
     }
-    Variant formJson(int depth)
+    Variant formJson(int depth) noexcept
     {
-        if (depth > PARSER_MAX_DEPTH) {
+        if (depth > VAR_PARSER_MAX_DEPTH) {
             return fail("exceeded maximum nesting depth");
         }
         char ch = getNextToken();
@@ -483,134 +504,163 @@ public:
 };
 
 template <Variant::Type _type, typename T>
-class VariantValue : public Value {
+class VariantValueProxy : public VariantValue {
 public:
-    explicit VariantValue(const T& value) noexcept
+    explicit VariantValueProxy(const T& value) noexcept
         : m_value(value)
     {
     }
-    explicit VariantValue(T&& value) noexcept
+    explicit VariantValueProxy(T&& value) noexcept
         : m_value(std::move(value))
     {
     }
 
 protected:
-    inline Variant::Type type() const override
+    inline Variant::Type type() const noexcept override
     {
         return _type;
     }
-    inline virtual bool isEqual(const Value* value) const override
+    inline virtual bool isEqual(const VariantValue* value) const noexcept override
     {
-        return m_value == static_cast<const VariantValue<_type, T>*>(value)->m_value;
+        return m_value == static_cast<const VariantValueProxy<_type, T>*>(value)->m_value;
     }
-    inline virtual bool isLess(const Value* value) const override
+    inline virtual bool isLess(const VariantValue* value) const noexcept override
     {
-        return m_value < static_cast<const VariantValue<_type, T>*>(value)->m_value;
+        return m_value < static_cast<const VariantValueProxy<_type, T>*>(value)->m_value;
     }
-    inline virtual void dump(std::string& json, int depth) const override
+    inline virtual void dump(std::string& json, int depth) const noexcept override
     {
         return VariantParser::dump(m_value, json, depth);
     }
     const T m_value;
 };
 
-class VariantNull final : public VariantValue<Variant::TYPE_NULL, NullStruct> {
+class VariantNull final : public VariantValueProxy<Variant::TYPE_NULL, NullStruct> {
 public:
     VariantNull() noexcept
-        : VariantValue({})
+        : VariantValueProxy({})
     {
     }
 };
 
-class VariantInt final : public VariantValue<Variant::TYPE_INT, int> {
-    inline virtual int toInt() const override
-    {
-        return m_value;
-    }
-    inline virtual double toDouble() const override
-    {
-        return m_value;
-    }
-    inline virtual bool isEqual(const Value* other) const override
-    {
-        return m_value == other->toInt();
-    }
-    inline virtual bool isLess(const Value* other) const override
-    {
-        return m_value < other->toInt();
-    }
-
-public:
-    explicit VariantInt(int value) noexcept
-        : VariantValue(value)
-    {
-    }
-};
-
-class VariantBool final : public VariantValue<Variant::TYPE_BOOL, bool> {
-    inline virtual bool toBool() const override
+class VariantBool final : public VariantValueProxy<Variant::TYPE_BOOL, bool> {
+    inline virtual bool toBool() const noexcept override
     {
         return m_value;
     }
 
 public:
     explicit VariantBool(bool value) noexcept
-        : VariantValue(value)
+        : VariantValueProxy(value)
     {
     }
 };
 
-class VariantDouble final : public VariantValue<Variant::TYPE_DOUBLE, double> {
-    inline virtual int toInt() const override
-    {
-        return static_cast<int>(m_value);
-    }
-    inline virtual double toDouble() const override
+// Static globals - static-init-safe
+
+struct VariantStatics {
+    const std::shared_ptr<VariantValue> nullValue = std::make_shared<VariantNull>();
+    const std::shared_ptr<VariantValue> trueValue = std::make_shared<VariantBool>(true);
+    const std::shared_ptr<VariantValue> falseValue = std::make_shared<VariantBool>(false);
+    const std::string emptyString;
+    const VariantList emptyList;
+    const VariantMap emptyMap;
+    VariantStatics() { }
+};
+
+static const VariantStatics& variantStatics()
+{
+    static const VariantStatics statics {};
+    return statics;
+}
+
+static const Variant& variantStaticNull()
+{
+    static const Variant data;
+    return data;
+}
+
+//
+
+class VariantInt final : public VariantValueProxy<Variant::TYPE_INT, int> {
+    inline virtual int toInt() const noexcept override
     {
         return m_value;
     }
-    inline virtual bool isEqual(const Value* value) const override
+    inline virtual double toDouble() const noexcept override
     {
-        return m_value == value->toDouble();
+        return m_value;
     }
-    inline virtual bool isLess(const Value* value) const override
+    inline virtual bool isEqual(const VariantValue* value) const noexcept override
+    {
+        return m_value == value->toInt();
+    }
+    inline virtual bool isLess(const VariantValue* value) const noexcept override
+    {
+        return m_value < value->toInt();
+    }
+
+public:
+    explicit VariantInt(int value) noexcept
+        : VariantValueProxy(value)
+    {
+    }
+};
+
+class VariantDouble final : public VariantValueProxy<Variant::TYPE_DOUBLE, double> {
+    inline virtual int toInt() const noexcept override
+    {
+        return static_cast<int>(m_value);
+    }
+    inline virtual double toDouble() const noexcept override
+    {
+        return m_value;
+    }
+    inline virtual bool isEqual(const VariantValue* value) const noexcept override
+    {
+        if (m_value - value->toDouble() > -VAR_DOUBLE_PRECISION && value->toDouble() - m_value < VAR_DOUBLE_PRECISION) {
+            return true;
+        }
+        return false;
+    }
+    inline virtual bool isLess(const VariantValue* value) const noexcept override
     {
         return m_value < value->toDouble();
     }
 
 public:
     explicit VariantDouble(double value) noexcept
-        : VariantValue(value)
+        : VariantValueProxy(value)
     {
     }
 };
 
-class VariantString final : public VariantValue<Variant::TYPE_STRING, std::string> {
-    inline virtual const std::string& toString() const override
+class VariantString final : public VariantValueProxy<Variant::TYPE_STRING, std::string> {
+    inline virtual const std::string& toString() const noexcept override
     {
         return m_value;
     }
 
 public:
     explicit VariantString(const std::string& value) noexcept
-        : VariantValue(value)
+        : VariantValueProxy(value)
     {
     }
     explicit VariantString(std::string&& value) noexcept
-        : VariantValue(std::move(value))
+        : VariantValueProxy(std::move(value))
     {
     }
 };
 
-class VariantArray final : public VariantValue<Variant::TYPE_LIST, VariantList> {
-    inline virtual const VariantList& toList() const override
+class VariantArray final : public VariantValueProxy<Variant::TYPE_LIST, VariantList> {
+    inline virtual const VariantList& toList() const noexcept override
     {
         return m_value;
     }
-    inline virtual const Variant& operator[](size_t i) const override
+    inline virtual const Variant& operator[](size_t i) const noexcept override
     {
         if (i < 0 || i >= m_value.size()) {
-            return _emptyVariant;
+            return variantStaticNull();
         } else {
             return m_value[i];
         }
@@ -618,49 +668,49 @@ class VariantArray final : public VariantValue<Variant::TYPE_LIST, VariantList> 
 
 public:
     explicit VariantArray(const VariantList& value) noexcept
-        : VariantValue(value)
+        : VariantValueProxy(value)
     {
     }
     explicit VariantArray(VariantList&& value) noexcept
-        : VariantValue(std::move(value))
+        : VariantValueProxy(std::move(value))
     {
     }
 };
 
-class VariantObject final : public VariantValue<Variant::TYPE_MAP, VariantMap> {
-    inline virtual const VariantMap& toMap() const override
+class VariantObject final : public VariantValueProxy<Variant::TYPE_MAP, VariantMap> {
+    inline virtual const VariantMap& toMap() const noexcept override
     {
         return m_value;
     }
-    inline virtual const Variant& operator[](const std::string& key) const override
+    inline virtual const Variant& operator[](const std::string& key) const noexcept override
     {
         auto it = m_value.find(key);
-        return (it == m_value.end()) ? _emptyVariant : it->second;
+        return (it == m_value.end()) ? variantStaticNull() : it->second;
     }
 
 public:
     explicit VariantObject(const VariantMap& value) noexcept
-        : VariantValue(value)
+        : VariantValueProxy(value)
     {
     }
     explicit VariantObject(VariantMap&& value) noexcept
-        : VariantValue(std::move(value))
+        : VariantValueProxy(std::move(value))
     {
     }
 };
 
 Variant::Variant() noexcept
-    : m_ptr(std::make_shared<VariantNull>())
+    : m_ptr(variantStatics().nullValue)
 {
 }
 
 Variant::Variant(std::nullptr_t value) noexcept
-    : m_ptr(std::make_shared<VariantNull>())
+    : m_ptr(variantStatics().nullValue)
 {
 }
 
 Variant::Variant(bool value) noexcept
-    : m_ptr(std::make_shared<VariantBool>(value))
+    : m_ptr(value ? variantStatics().trueValue : variantStatics().falseValue)
 {
 }
 
@@ -709,57 +759,57 @@ Variant::Variant(VariantMap&& values) noexcept
 {
 }
 
-Variant::Type Variant::type() const
+Variant::Type Variant::type() const noexcept
 {
     return m_ptr->type();
 }
 
-bool Variant::isValid() const
+bool Variant::isValid() const noexcept
 {
     return m_ptr->type() != TYPE_NULL;
 }
 
-bool Variant::isNull() const
+bool Variant::isNull() const noexcept
 {
     return m_ptr->type() == TYPE_NULL;
 }
 
-bool Variant::isInt() const
+bool Variant::isInt() const noexcept
 {
     return m_ptr->type() == TYPE_INT;
 }
 
-bool Variant::isDouble() const
+bool Variant::isDouble() const noexcept
 {
     return m_ptr->type() == TYPE_DOUBLE;
 }
 
-bool Variant::isNumber() const
+bool Variant::isNumber() const noexcept
 {
     return m_ptr->type() == TYPE_INT || m_ptr->type() == TYPE_DOUBLE;
 }
 
-bool Variant::isBool() const
+bool Variant::isBool() const noexcept
 {
     return m_ptr->type() == TYPE_BOOL;
 }
 
-bool Variant::isString() const
+bool Variant::isString() const noexcept
 {
     return m_ptr->type() == TYPE_STRING;
 }
 
-bool Variant::isList() const
+bool Variant::isList() const noexcept
 {
     return m_ptr->type() == TYPE_LIST;
 }
 
-bool Variant::isMap() const
+bool Variant::isMap() const noexcept
 {
     return m_ptr->type() == TYPE_MAP;
 }
 
-bool Variant::toBool(bool defaultValue) const
+bool Variant::toBool(bool defaultValue) const noexcept
 {
     if (isBool()) {
         return m_ptr->toBool();
@@ -767,7 +817,7 @@ bool Variant::toBool(bool defaultValue) const
     return defaultValue;
 }
 
-int Variant::toInt(int defaultValue) const
+int Variant::toInt(int defaultValue) const noexcept
 {
     if (isNumber()) {
         return m_ptr->toInt();
@@ -775,7 +825,7 @@ int Variant::toInt(int defaultValue) const
     return defaultValue;
 }
 
-double Variant::toDouble(double defaultValue) const
+double Variant::toDouble(double defaultValue) const noexcept
 {
     if (isNumber()) {
         return m_ptr->toDouble();
@@ -783,7 +833,7 @@ double Variant::toDouble(double defaultValue) const
     return defaultValue;
 }
 
-const std::string& Variant::toString(const std::string& defaultValue) const
+const std::string& Variant::toString(const std::string& defaultValue) const noexcept
 {
     if (isString()) {
         return m_ptr->toString();
@@ -791,7 +841,7 @@ const std::string& Variant::toString(const std::string& defaultValue) const
     return defaultValue;
 }
 
-const char* Variant::toCString(const char* defaultValue) const
+const char* Variant::toCString(const char* defaultValue) const noexcept
 {
     if (isString()) {
         return m_ptr->toString().c_str();
@@ -799,44 +849,56 @@ const char* Variant::toCString(const char* defaultValue) const
     return defaultValue;
 }
 
-std::vector<std::string> Variant::toStringList() const
+std::vector<int> Variant::toIntList() const noexcept
 {
-    const auto& list = m_ptr->toList();
-    if (list.empty()) {
-        return std::vector<std::string>();
+    std::vector<int> out;
+    for (const auto& sub : m_ptr->toList()) {
+        if (!sub.isString()) {
+            out.clear();
+            return out;
+        }
+        out.push_back(sub.toInt());
     }
-    return std::vector<std::string>();
+    return out;
 }
 
-std::vector<int> Variant::toIntList() const
+std::vector<double> Variant::toDoubleList() const noexcept
 {
-    const auto& list = m_ptr->toList();
-    if (list.empty()) {
-        return std::vector<int>();
+    std::vector<double> out;
+    for (const auto& sub : m_ptr->toList()) {
+        if (!sub.isString()) {
+            out.clear();
+            return out;
+        }
+        out.push_back(sub.toDouble());
     }
-    return std::vector<int>();
+    return out;
 }
 
-std::vector<double> Variant::toDoubleList() const
+std::vector<std::string> Variant::toStringList() const noexcept
 {
-    const auto& list = m_ptr->toList();
-    if (list.empty()) {
-        return std::vector<double>();
+    std::vector<std::string> out;
+    for (const auto& sub : m_ptr->toList()) {
+        if (!sub.isString()) {
+            out.clear();
+            return out;
+        }
+        out.push_back(sub.toString());
     }
-    return std::vector<double>();
+    return out;
 }
 
-const VariantList& Variant::toList() const
+const VariantList& Variant::toList() const noexcept
 {
     return m_ptr->toList();
 }
 
-const VariantMap& Variant::toMap() const
+const VariantMap& Variant::toMap() const noexcept
 {
     return m_ptr->toMap();
 }
 
-const Variant& Variant::listValue(int index, const Variant& defaultValue)
+const Variant& Variant::listValue(int index, const Variant& defaultValue) noexcept
 {
     const auto& var = (*m_ptr)[index];
     if (var.isNull()) {
@@ -845,7 +907,7 @@ const Variant& Variant::listValue(int index, const Variant& defaultValue)
     return var;
 }
 
-const Variant& Variant::mapValue(const std::string& key, const Variant& defaultValue)
+const Variant& Variant::mapValue(const std::string& key, const Variant& defaultValue) noexcept
 {
     const auto& var = (*m_ptr)[key];
     if (var.isNull()) {
@@ -854,17 +916,17 @@ const Variant& Variant::mapValue(const std::string& key, const Variant& defaultV
     return var;
 }
 
-const Variant& Variant::operator[](size_t i) const
+const Variant& Variant::operator[](size_t i) const noexcept
 {
     return (*m_ptr)[i];
 }
 
-const Variant& Variant::operator[](const std::string& key) const
+const Variant& Variant::operator[](const std::string& key) const noexcept
 {
     return (*m_ptr)[key];
 }
 
-bool Variant::operator==(const Variant& rhs) const
+bool Variant::operator==(const Variant& rhs) const noexcept
 {
     if (m_ptr == rhs.m_ptr) {
         return true;
@@ -875,7 +937,7 @@ bool Variant::operator==(const Variant& rhs) const
     return m_ptr->isEqual(rhs.m_ptr.get());
 }
 
-bool Variant::operator<(const Variant& rhs) const
+bool Variant::operator<(const Variant& rhs) const noexcept
 {
     if (m_ptr == rhs.m_ptr) {
         return false;
@@ -886,34 +948,30 @@ bool Variant::operator<(const Variant& rhs) const
     return m_ptr->isLess(rhs.m_ptr.get());
 }
 
-bool Variant::operator!=(const Variant& rhs) const
+bool Variant::operator!=(const Variant& rhs) const noexcept
 {
     return !(*this == rhs);
 }
 
-bool Variant::operator<=(const Variant& rhs) const
+bool Variant::operator<=(const Variant& rhs) const noexcept
 {
     return !(rhs < *this);
 }
 
-bool Variant::operator>(const Variant& rhs) const
+bool Variant::operator>(const Variant& rhs) const noexcept
 {
     return (rhs < *this);
 }
 
-bool Variant::operator>=(const Variant& rhs) const
+bool Variant::operator>=(const Variant& rhs) const noexcept
 {
     return !(*this < rhs);
 }
 
-std::string Variant::toJson(ParserType parserType) const
+std::string Variant::toJson(ParserType parserType) const noexcept
 {
     std::string json;
-    int depth = -1;
-    if (parserType == PARSER_OUT_FORMAT) {
-        depth = 0;
-    }
-    m_ptr->dump(json, depth);
+    m_ptr->dump(json, parserType == PARSER_OUT_FORMAT ? 0 : -1);
     return json;
 }
 
@@ -939,7 +997,7 @@ bool Variant::saveJson(const std::string& filePath, ParserType parserType) const
     return saveJsonTemplate<Variant>(*this, filePath, parserType);
 }
 
-Variant Variant::fromJson(const std::string& json, std::string* errorString, ParserType parserType)
+Variant Variant::fromJson(const std::string& json, std::string* errorString, ParserType parserType) noexcept
 {
     VariantParser parser(json, errorString, parserType);
     Variant result = parser.formJson(0);
@@ -972,47 +1030,44 @@ std::ostream& operator<<(std::ostream& ostream, const Variant& data) noexcept
     return ostream;
 }
 
-bool Value::toBool() const
+bool VariantValue::toBool() const noexcept
 {
     return false;
 }
 
-int Value::toInt() const
+int VariantValue::toInt() const noexcept
 {
     return 0;
 }
 
-double Value::toDouble() const
+double VariantValue::toDouble() const noexcept
 {
     return 0;
 }
 
-const std::string& Value::toString() const
+const std::string& VariantValue::toString() const noexcept
 {
-    static std::string emptyString;
-    return emptyString;
+    return variantStatics().emptyString;
 }
 
-const VariantList& Value::toList() const
+const VariantList& VariantValue::toList() const noexcept
 {
-    static VariantList emptyList;
-    return emptyList;
+    return variantStatics().emptyList;
 }
 
-const VariantMap& Value::toMap() const
+const VariantMap& VariantValue::toMap() const noexcept
 {
-    static VariantMap emptyMap;
-    return emptyMap;
+    return variantStatics().emptyMap;
 }
 
-const Variant& Value::operator[](size_t i) const
+const Variant& VariantValue::operator[](size_t i) const noexcept
 {
-    return _emptyVariant;
+    return variantStaticNull();
 }
 
-const Variant& Value::operator[](const std::string& key) const
+const Variant& VariantValue::operator[](const std::string& key) const noexcept
 {
-    return _emptyVariant;
+    return variantStaticNull();
 }
 
 VariantList::VariantList(const Variant& values) noexcept
@@ -1025,17 +1080,17 @@ VariantList::VariantList(Variant&& values) noexcept
     *this = std::move(values.toList());
 }
 
-void VariantList::add(const Variant& data)
+void VariantList::add(const Variant& data) noexcept
 {
     push_back(data);
 }
 
-bool VariantList::contains(const Variant& data) const
+bool VariantList::contains(const Variant& data) const noexcept
 {
     return std::any_of(begin(), end(), [&](const auto& sub) { return sub == data; });
 }
 
-const Variant& VariantList::value(int index, const Variant& defaultValue) const
+const Variant& VariantList::value(int index, const Variant& defaultValue) const noexcept
 {
     if (index < 0 || index >= this->size()) {
         return defaultValue;
@@ -1043,21 +1098,27 @@ const Variant& VariantList::value(int index, const Variant& defaultValue) const
     return (*this)[index];
 }
 
-Variant VariantList::toVariant() const
+Variant VariantList::toVariant() const noexcept
 {
     return Variant(*this);
 }
 
-std::string VariantList::toJson(Variant::ParserType parserType) const
+std::string VariantList::toJson(Variant::ParserType parserType) const noexcept
 {
     std::string json;
-    VariantParser::dump(*this, json, parserType);
+    VariantParser::dump(*this, json, parserType == Variant::PARSER_OUT_FORMAT ? 0 : -1);
     return json;
 }
 
 bool VariantList::saveJson(const std::string& filePath, Variant::ParserType parserType) const noexcept
 {
     return saveJsonTemplate<Variant>(*this, filePath, parserType);
+}
+
+std::ostream& operator<<(std::ostream& ostream, const VariantList& data) noexcept
+{
+    ostream << data.toJson(Variant::PARSER_OUT_FORMAT);
+    return ostream;
 }
 
 VariantMap::VariantMap(const Variant& values) noexcept
@@ -1070,7 +1131,7 @@ VariantMap::VariantMap(Variant&& values) noexcept
     *this = std::move(values.toMap());
 }
 
-void VariantMap::add(const std::string& key, const Variant& data)
+void VariantMap::add(const std::string& key, const Variant& data) noexcept
 {
     auto it = find(key);
     if (it != end()) {
@@ -1079,42 +1140,48 @@ void VariantMap::add(const std::string& key, const Variant& data)
     emplace(key, data);
 }
 
-void VariantMap::add(int key, const Variant& data)
+void VariantMap::add(int key, const Variant& data) noexcept
 {
     add(std::to_string(key), data);
 }
 
-void VariantMap::sub(const std::string& key)
+void VariantMap::sub(const std::string& key) noexcept
 {
     erase(key);
 }
 
-bool VariantMap::contains(const std::string& key) const
+bool VariantMap::contains(const std::string& key) const noexcept
 {
     return std::any_of(begin(), end(), [&](const auto& sub) { return sub.first == key; });
 }
 
-const Variant& VariantMap::value(const std::string& key, const Variant& defaultValue) const
+const Variant& VariantMap::value(const std::string& key, const Variant& defaultValue) const noexcept
 {
     auto it = find(key);
     return (it == end()) ? defaultValue : it->second;
 }
 
-Variant VariantMap::toVariant() const
+Variant VariantMap::toVariant() const noexcept
 {
     return Variant(*this);
 }
 
-std::string VariantMap::toJson(Variant::ParserType parserType) const
+std::string VariantMap::toJson(Variant::ParserType parserType) const noexcept
 {
     std::string json;
-    VariantParser::dump(*this, json, parserType);
+    VariantParser::dump(*this, json, parserType == Variant::PARSER_OUT_FORMAT ? 0 : -1);
     return json;
 }
 
 bool VariantMap::saveJson(const std::string& filePath, Variant::ParserType parserType) const noexcept
 {
     return saveJsonTemplate<Variant>(*this, filePath, parserType);
+}
+
+std::ostream& operator<<(std::ostream& ostream, const VariantMap& data) noexcept
+{
+    ostream << data.toJson(Variant::PARSER_OUT_FORMAT);
+    return ostream;
 }
 
 DCUS_NAMESPACE_END

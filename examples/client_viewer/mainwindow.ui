@@ -608,7 +608,7 @@
      <string>Help(&amp;H)</string>
     </property>
     <addaction name="actionAbout_A"/>
-    <addaction name="actionAboutQt"/>
+    <addaction name="actionAboutQt_T"/>
    </widget>
    <widget class="QMenu" name="menuStart_S">
     <property name="title">
@@ -629,9 +629,9 @@
     <string>About this(&amp;A)</string>
    </property>
   </action>
-  <action name="actionAboutQt">
+  <action name="actionAboutQt_T">
    <property name="text">
-    <string>About Qt</string>
+    <string>About Qt(&amp;T)</string>
    </property>
   </action>
  </widget>

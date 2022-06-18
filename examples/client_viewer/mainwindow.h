@@ -29,14 +29,14 @@ public:
     ~MainWindow();
 
 public slots:
-    void processDetail(const QVariant& data, bool stateChanged);
-    void processDetail(const DetailMessage& detail, bool stateChanged);
+    void processVariant(const QVariant& data, bool stateChanged);
+    void processDetail(const DCus::DetailMessage& detail, bool stateChanged);
     void updateProperty(QTreeWidgetItem* listItem);
 
 private slots:
     void on_actionQuit_Q_triggered();
     void on_actionAbout_A_triggered();
-    void on_actionAboutQt_triggered();
+    void on_actionAboutQt_T_triggered();
 
 private:
     QTreeWidgetItem* updateSubProperty(QTreeWidgetItem* item, const QString& property, const QVariant& value, bool useProgress = false);

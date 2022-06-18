@@ -175,13 +175,13 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::processDetail(const QVariant& data, bool stateChanged)
+void MainWindow::processVariant(const QVariant& data, bool stateChanged)
 {
     const DetailMessage& detailMessage = data.value<DetailMessage>();
     processDetail(detailMessage, stateChanged);
 }
 
-void MainWindow::processDetail(const DetailMessage& detailMessage, bool stateChanged)
+void MainWindow::processDetail(const DCus::DetailMessage& detailMessage, bool stateChanged)
 {
     m_statusFlag->setEnabled(true);
     m_flagTimer->stop();
@@ -480,7 +480,7 @@ void MainWindow::on_actionAbout_A_triggered()
             .arg(QStringLiteral(DCUS_PROJECT_VERSION), QStringLiteral(DCUS_PROJECT_COMMITID)));
 }
 
-void MainWindow::on_actionAboutQt_triggered()
+void MainWindow::on_actionAboutQt_T_triggered()
 {
     QMessageBox::aboutQt(this);
 }

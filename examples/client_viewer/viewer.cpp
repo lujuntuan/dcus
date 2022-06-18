@@ -21,7 +21,7 @@ int main(int argc, char* argv[])
     QApplication a(argc, argv);
     MainWindow window;
     dcus_client_engine->subscibeDetail([&window](const DetailMessage& detail, bool stateChanged) {
-        QMetaObject::invokeMethod(&window, "processDetail", Qt::QueuedConnection, Q_ARG(QVariant, QVariant::fromValue<DetailMessage>(detail)), Q_ARG(bool, stateChanged));
+        QMetaObject::invokeMethod(&window, "processVariant", Qt::QueuedConnection, Q_ARG(QVariant, QVariant::fromValue<DetailMessage>(detail)), Q_ARG(bool, stateChanged));
     });
     dcus_client_engine->execInthread(ClientEngine::CHECK_SINGLETON);
     window.show();

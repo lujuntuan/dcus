@@ -25,7 +25,7 @@ static msg::Package transformPackage(const Package& package)
     msg_package.domain = package.domain();
     msg_package.part = package.part();
     msg_package.version = package.version();
-    msg_package.meta = package.meta().toStream();
+    msg_package.meta = package.meta().toJson();
     for (const File& file : package.files()) {
         msg::File msg_file;
         msg_file.domain = file.domain();
@@ -101,8 +101,8 @@ protected:
             msg_detail.domain.watcher = d.domain().watcher();
             msg_detail.domain.error = d.domain().error();
             msg_detail.domain.version = d.domain().version();
-            msg_detail.domain.attribute = d.domain().attribute().toStream();
-            msg_detail.domain.meta = d.domain().meta().toStream();
+            msg_detail.domain.attribute = d.domain().attribute().toJson();
+            msg_detail.domain.meta = d.domain().meta().toJson();
             msg_detail.domain.progress = d.domain().progress();
             msg_detail.domain.message = d.domain().message();
             msg_detail.domain.answer = d.domain().answer();
@@ -133,8 +133,8 @@ protected:
         domain.watcher() = msg_domain->domain.watcher;
         domain.error() = msg_domain->domain.error;
         domain.version() = msg_domain->domain.version;
-        domain.attribute() = Data::readStream(msg_domain->domain.attribute);
-        domain.meta() = Data::readStream(msg_domain->domain.meta);
+        domain.attribute() = Variant::readJson(msg_domain->domain.attribute);
+        domain.meta() = Variant::readJson(msg_domain->domain.meta);
         domain.progress() = msg_domain->domain.progress;
         domain.message() = msg_domain->domain.message;
         domain.answer() = (Answer)msg_domain->domain.answer;

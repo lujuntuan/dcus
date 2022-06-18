@@ -24,7 +24,7 @@ static Package transformPackage(const DCusInterfaces::Package& ci_package)
     package.domain() = ci_package.getDomain();
     package.part() = ci_package.getPart();
     package.version() = ci_package.getVersion_();
-    package.meta() = Data::readStream(ci_package.getMeta());
+    package.meta() = Variant::readJson(ci_package.getMeta());
     for (const auto& ci_file : ci_package.getFiles()) {
         File file;
         file.domain() = ci_file.getDomain();
@@ -114,8 +114,8 @@ protected:
             domain.watcher() = ci_detail.getDomain().getWatcher();
             domain.error() = ci_detail.getDomain().getError_();
             domain.version() = ci_detail.getDomain().getVersion_();
-            domain.attribute() = Data::readStream(ci_detail.getDomain().getAttribute_());
-            domain.meta() = Data::readStream(ci_detail.getDomain().getMeta());
+            domain.attribute() = Variant::readJson(ci_detail.getDomain().getAttribute_());
+            domain.meta() = Variant::readJson(ci_detail.getDomain().getMeta());
             domain.progress() = ci_detail.getDomain().getProgress();
             domain.message() = ci_detail.getDomain().getMessage();
             domain.answer() = (Answer)ci_detail.getDomain().getAnswer().value_;
@@ -176,8 +176,8 @@ private:
         ci_domain.setWatcher(domain.watcher());
         ci_domain.setError_(domain.error());
         ci_domain.setVersion_(domain.version());
-        ci_domain.setAttribute_(domain.attribute().toStream());
-        ci_domain.setMeta(domain.meta().toStream());
+        ci_domain.setAttribute_(domain.attribute().toJson());
+        ci_domain.setMeta(domain.meta().toJson());
         ci_domain.setProgress(domain.progress());
         ci_domain.setMessage(domain.message());
         ci_domain.setAnswer((DCusInterfaces::Answer::Literal)domain.answer());
