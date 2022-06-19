@@ -23,9 +23,9 @@
 
 DCUS_NAMESPACE_BEGIN
 
-class VariantValue;
 class VariantList;
 class VariantMap;
+class VariantValue;
 
 class DCUS_EXPORT Variant final {
 public:
