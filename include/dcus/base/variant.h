@@ -19,7 +19,7 @@
 #include <string>
 #include <vector>
 
-//#define VAR_USE_OPT_WRITER
+#define VAR_USE_OPT_WRITER 0
 
 DCUS_NAMESPACE_BEGIN
 
@@ -40,8 +40,8 @@ public:
     };
     enum ParseType {
         PARSE_UNKNOWN = 0,
-        PARSE_OUT_FORMAT,
         PARSE_OUT_SMALL,
+        PARSE_OUT_BEAUTIFY,
         PARSE_IN_STANDARD,
         PARSE_IN_COMMENTS
     };
@@ -56,13 +56,13 @@ public:
     Variant(VariantList&& values) noexcept;
     Variant(const VariantMap& values) noexcept;
     Variant(VariantMap&& values) noexcept;
-    template <class LIST, typename std::enable_if<std::is_constructible<Variant, decltype(*std::declval<LIST>().begin())>::value, int>::type = 0>
-    Variant(const LIST& list) noexcept
+    template <class T, typename std::enable_if<std::is_constructible<Variant, decltype(*std::declval<T>().begin())>::value, int>::type = 0>
+    Variant(const T& list) noexcept
         : Variant(VariantList(list.begin(), list.end()))
     {
     }
-    template <class MAP, typename std::enable_if<std::is_constructible<std::string, decltype(std::declval<MAP>().begin()->first)>::value && std::is_constructible<Variant, decltype(std::declval<MAP>().begin()->second)>::value, int>::type = 0>
-    Variant(const MAP& map) noexcept
+    template <class T, typename std::enable_if<std::is_constructible<std::string, decltype(std::declval<T>().begin()->first)>::value && std::is_constructible<Variant, decltype(std::declval<T>().begin()->second)>::value, int>::type = 0>
+    Variant(const T& map) noexcept
         : Variant(VariantMap(map.begin(), map.end()))
     {
     }
@@ -86,13 +86,17 @@ public:
     std::vector<std::string> toStringList() const noexcept;
     const VariantList& toList() const noexcept;
     const VariantMap& toMap() const noexcept;
-    const Variant& listValue(int index, const Variant& defaultValue = Variant()) noexcept;
-    const Variant& mapValue(const std::string& key, const Variant& defaultValue = Variant()) noexcept;
     const Variant& operator[](size_t i) const noexcept;
     const Variant& operator[](const std::string& key) const noexcept;
-#ifdef VAR_USE_OPT_WRITER
-    Variant& operator[](size_t i);
-    Variant& operator[](const std::string& key);
+#if VAR_USE_OPT_WRITER
+    inline Variant& operator[](size_t i)
+    {
+        return _getSubValue(i);
+    }
+    inline Variant& operator[](const std::string& key)
+    {
+        return _getSubValue(key);
+    }
 #endif
     bool operator==(const Variant& rhs) const noexcept;
     bool operator<(const Variant& rhs) const noexcept;
@@ -101,10 +105,14 @@ public:
     bool operator>(const Variant& rhs) const noexcept;
     bool operator>=(const Variant& rhs) const noexcept;
     std::string toJson(ParseType parseType = PARSE_OUT_SMALL) const noexcept;
-    bool saveJson(const std::string& filePath, ParseType parseType = PARSE_OUT_SMALL) const noexcept;
+    bool saveJson(const std::string& filePath, ParseType parseType = PARSE_OUT_BEAUTIFY) const noexcept;
     static Variant fromJson(const std::string& json, std::string* errorString = nullptr, ParseType parseType = PARSE_IN_STANDARD) noexcept;
     static Variant readJson(const std::string& filePath, std::string* errorString = nullptr, ParseType parseType = PARSE_IN_STANDARD) noexcept;
     DCUS_EXPORT friend std::ostream& operator<<(std::ostream& ostream, const Variant& data) noexcept;
+
+private:
+    Variant& _getSubValue(size_t i);
+    Variant& _getSubValue(const std::string& key);
 
 private:
     friend class VariantParser;
@@ -118,15 +126,15 @@ public:
     VariantList() noexcept = default;
     VariantList(const Variant& values) noexcept;
     VariantList(Variant&& values) noexcept;
-    template <class LIST>
-    VariantList(LIST&& list) noexcept
-        : std::vector<Variant>(std::forward<LIST>(list))
+    template <class T>
+    VariantList(T&& list) noexcept
+        : std::vector<Variant>(std::forward<T>(list))
     {
     }
     bool contains(const Variant& data) const noexcept;
     const Variant& value(int index, const Variant& defaultValue = Variant()) const noexcept;
     std::string toJson(Variant::ParseType parseType = Variant::PARSE_OUT_SMALL) const noexcept;
-    bool saveJson(const std::string& filePath, Variant::ParseType parseType = Variant::PARSE_OUT_SMALL) const noexcept;
+    bool saveJson(const std::string& filePath, Variant::ParseType parseType = Variant::PARSE_OUT_BEAUTIFY) const noexcept;
     DCUS_EXPORT friend std::ostream& operator<<(std::ostream& ostream, const VariantList& data) noexcept;
 };
 
@@ -137,9 +145,9 @@ public:
     VariantMap() noexcept = default;
     VariantMap(const Variant& values) noexcept;
     VariantMap(Variant&& values) noexcept;
-    template <class MAP>
-    VariantMap(MAP&& map) noexcept
-        : std::map<std::string, Variant>(std::forward<MAP>(map))
+    template <class T>
+    VariantMap(T&& map) noexcept
+        : std::map<std::string, Variant>(std::forward<T>(map))
     {
     }
     template <class T>
@@ -152,7 +160,7 @@ public:
     bool contains(const std::string& key) const noexcept;
     const Variant& value(const std::string& key, const Variant& defaultValue = Variant()) const noexcept;
     std::string toJson(Variant::ParseType parseType = Variant::PARSE_OUT_SMALL) const noexcept;
-    bool saveJson(const std::string& filePath, Variant::ParseType parseType = Variant::PARSE_OUT_SMALL) const noexcept;
+    bool saveJson(const std::string& filePath, Variant::ParseType parseType = Variant::PARSE_OUT_BEAUTIFY) const noexcept;
     DCUS_EXPORT friend std::ostream& operator<<(std::ostream& ostream, const VariantMap& data) noexcept;
 };
 
@@ -169,12 +177,6 @@ protected:
     virtual const std::string& toString() const noexcept;
     virtual const VariantList& toList() const noexcept;
     virtual const VariantMap& toMap() const noexcept;
-    virtual const Variant& operator[](size_t i) const noexcept;
-    virtual const Variant& operator[](const std::string& key) const noexcept;
-#ifdef VAR_USE_OPT_WRITER
-    virtual Variant& operator[](size_t i);
-    virtual Variant& operator[](const std::string& key);
-#endif
 
 private:
     friend class Variant;

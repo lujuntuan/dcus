@@ -772,7 +772,7 @@ void ServerEngine::setState(ServerState state)
         m_hpr->cacheStatus.insert("state", m_hpr->state);
         m_hpr->cacheStatus.insert("last", m_hpr->lastState);
         m_hpr->cacheStatus.insert("depends", m_hpr->depends);
-        m_hpr->cacheStatus.saveJson(m_hpr->statusFilePath, Variant::PARSE_OUT_FORMAT);
+        m_hpr->cacheStatus.saveJson(m_hpr->statusFilePath);
         LOG_PROPERTY("State", Domain::getMrStateStr(state));
         m_hpr->stateElapsed.restart();
         configState();

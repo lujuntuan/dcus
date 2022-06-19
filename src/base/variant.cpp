@@ -14,9 +14,7 @@
 #include <algorithm>
 #include <cmath>
 #include <fstream>
-#include <iostream>
 #include <limits>
-#include <memory.h>
 #include <sstream>
 
 #define VAR_PARSE_MAX_DEPTH 500
@@ -633,7 +631,7 @@ class VariantDouble final : public VariantValueProxy<Variant::TYPE_DOUBLE, doubl
     }
     inline virtual bool isEqual(const VariantValue* value) const noexcept override
     {
-        if (m_value - value->toDouble() > -VAR_DOUBLE_PRECISION && value->toDouble() - m_value < VAR_DOUBLE_PRECISION) {
+        if (std::abs(m_value - value->toDouble()) < VAR_DOUBLE_PRECISION) {
             return true;
         }
         return false;
@@ -672,24 +670,6 @@ class VariantArray final : public VariantValueProxy<Variant::TYPE_LIST, VariantL
     {
         return m_value;
     }
-    inline virtual const Variant& operator[](size_t i) const noexcept override
-    {
-        if (i < 0 || i >= m_value.size()) {
-            return VariantGlobal::virtualData();
-        } else {
-            return m_value[i];
-        }
-    }
-#ifdef VAR_USE_OPT_WRITER
-    inline virtual Variant& operator[](size_t i) override
-    {
-        if (i < 0 || i >= m_value.size()) {
-            throw std::runtime_error("Variant operator[] list index out of bounds");
-        } else {
-            return const_cast<Variant&>(m_value[i]);
-        }
-    }
-#endif
 
 public:
     explicit VariantArray(const VariantList& value) noexcept
@@ -707,26 +687,6 @@ class VariantObject final : public VariantValueProxy<Variant::TYPE_MAP, VariantM
     {
         return m_value;
     }
-    inline virtual const Variant& operator[](const std::string& key) const noexcept override
-    {
-        auto it = m_value.find(key);
-        if (it == m_value.end()) {
-            return VariantGlobal::virtualData();
-        } else {
-            return it->second;
-        }
-    }
-#ifdef VAR_USE_OPT_WRITER
-    inline virtual Variant& operator[](const std::string& key) override
-    {
-        auto it = m_value.find(key);
-        if (it == m_value.end()) {
-            throw std::runtime_error("Variant operator[] map key not exits");
-        } else {
-            return const_cast<Variant&>(it->second);
-        }
-    }
-#endif
 
 public:
     explicit VariantObject(const VariantMap& value) noexcept
@@ -933,44 +893,30 @@ const VariantMap& Variant::toMap() const noexcept
     return m_ptr->toMap();
 }
 
-const Variant& Variant::listValue(int index, const Variant& defaultValue) noexcept
-{
-    const auto& var = (*m_ptr)[index];
-    if (var.isNull()) {
-        return defaultValue;
-    }
-    return var;
-}
-
-const Variant& Variant::mapValue(const std::string& key, const Variant& defaultValue) noexcept
-{
-    const auto& var = (*m_ptr)[key];
-    if (var.isNull()) {
-        return defaultValue;
-    }
-    return var;
-}
-
 const Variant& Variant::operator[](size_t i) const noexcept
 {
-    return m_ptr->operator[](i);
+    if (m_ptr->type() != Variant::TYPE_LIST) {
+        return VariantGlobal::virtualData();
+    }
+    const VariantList& list = m_ptr->toList();
+    if (i < 0 || i >= list.size()) {
+        return VariantGlobal::virtualData();
+    }
+    return list.at(i);
 }
 
 const Variant& Variant::operator[](const std::string& key) const noexcept
 {
-    return m_ptr->operator[](key);
+    if (m_ptr->type() != Variant::TYPE_MAP) {
+        return VariantGlobal::virtualData();
+    }
+    const VariantMap& map = m_ptr->toMap();
+    auto it = map.find(key);
+    if (it == map.end()) {
+        return VariantGlobal::virtualData();
+    }
+    return (it->second);
 }
-
-#ifdef VAR_USE_OPT_WRITER
-Variant& Variant::operator[](size_t i)
-{
-    return (*m_ptr)[i];
-}
-Variant& Variant::operator[](const std::string& key)
-{
-    return (*m_ptr)[key];
-}
-#endif
 
 bool Variant::operator==(const Variant& rhs) const noexcept
 {
@@ -1017,12 +963,12 @@ bool Variant::operator>=(const Variant& rhs) const noexcept
 std::string Variant::toJson(ParseType parseType) const noexcept
 {
     std::string json;
-    m_ptr->parseOut(json, parseType == PARSE_OUT_FORMAT ? 0 : -1);
+    m_ptr->parseOut(json, parseType == PARSE_OUT_BEAUTIFY ? 0 : -1);
     return json;
 }
 
 template <class T>
-static inline bool saveJsonTemplate(const T& data, const std::string& filePath, Variant::ParseType parseType)
+static inline bool saveJsonTemplate(const T& data, const std::string& filePath, Variant::ParseType parseType) noexcept
 {
     std::string jsonStr = data.toJson(parseType);
     if (jsonStr.empty()) {
@@ -1072,8 +1018,32 @@ Variant Variant::readJson(const std::string& filePath, std::string* errorString,
 
 std::ostream& operator<<(std::ostream& ostream, const Variant& data) noexcept
 {
-    ostream << data.toJson(Variant::PARSE_OUT_FORMAT);
+    ostream << data.toJson(Variant::PARSE_OUT_BEAUTIFY);
     return ostream;
+}
+
+Variant& Variant::_getSubValue(size_t i)
+{
+    if (m_ptr->type() != Variant::TYPE_LIST) {
+        throw std::runtime_error("Variant operator[] called on a non-list type");
+    }
+    VariantList& list = const_cast<VariantList&>(m_ptr->toList());
+    if (i < 0 || i >= list.size()) {
+        throw std::runtime_error("Variant operator[] list index out of bounds");
+    }
+    return list[i];
+}
+Variant& Variant::_getSubValue(const std::string& key)
+{
+    if (m_ptr->type() != Variant::TYPE_MAP) {
+        throw std::runtime_error("Variant operator[] called on a non-map type");
+    }
+    VariantMap& map = const_cast<VariantMap&>(m_ptr->toMap());
+    auto it = map.find(key);
+    if (it == map.end()) {
+        throw std::runtime_error("Variant operator[] map key not found");
+    }
+    return (it->second);
 }
 
 bool VariantValue::toBool() const noexcept
@@ -1106,28 +1076,6 @@ const VariantMap& VariantValue::toMap() const noexcept
     return VariantGlobal::emptyMap();
 }
 
-const Variant& VariantValue::operator[](size_t i) const noexcept
-{
-    return VariantGlobal::virtualData();
-}
-
-const Variant& VariantValue::operator[](const std::string& key) const noexcept
-{
-    return VariantGlobal::virtualData();
-}
-
-#ifdef VAR_USE_OPT_WRITER
-Variant& VariantValue::operator[](size_t i)
-{
-    throw std::runtime_error("Variant operator[] called on a non-list type");
-}
-
-Variant& VariantValue::operator[](const std::string& key)
-{
-    throw std::runtime_error("Variant operator[] called on a non-map type");
-}
-#endif
-
 VariantList::VariantList(const Variant& values) noexcept
 {
     *this = values.toList();
@@ -1154,7 +1102,7 @@ const Variant& VariantList::value(int index, const Variant& defaultValue) const 
 std::string VariantList::toJson(Variant::ParseType parseType) const noexcept
 {
     std::string json;
-    VariantParser::parseOut(*this, json, parseType == Variant::PARSE_OUT_FORMAT ? 0 : -1);
+    VariantParser::parseOut(*this, json, parseType == Variant::PARSE_OUT_BEAUTIFY ? 0 : -1);
     return json;
 }
 
@@ -1165,7 +1113,7 @@ bool VariantList::saveJson(const std::string& filePath, Variant::ParseType parse
 
 std::ostream& operator<<(std::ostream& ostream, const VariantList& data) noexcept
 {
-    ostream << data.toJson(Variant::PARSE_OUT_FORMAT);
+    ostream << data.toJson(Variant::PARSE_OUT_BEAUTIFY);
     return ostream;
 }
 
@@ -1203,7 +1151,7 @@ const Variant& VariantMap::value(const std::string& key, const Variant& defaultV
 std::string VariantMap::toJson(Variant::ParseType parseType) const noexcept
 {
     std::string json;
-    VariantParser::parseOut(*this, json, parseType == Variant::PARSE_OUT_FORMAT ? 0 : -1);
+    VariantParser::parseOut(*this, json, parseType == Variant::PARSE_OUT_BEAUTIFY ? 0 : -1);
     return json;
 }
 
@@ -1214,7 +1162,7 @@ bool VariantMap::saveJson(const std::string& filePath, Variant::ParseType parseT
 
 std::ostream& operator<<(std::ostream& ostream, const VariantMap& data) noexcept
 {
-    ostream << data.toJson(Variant::PARSE_OUT_FORMAT);
+    ostream << data.toJson(Variant::PARSE_OUT_BEAUTIFY);
     return ostream;
 }
 

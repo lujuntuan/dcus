@@ -20,7 +20,7 @@
 
 DCUS_NAMESPACE_BEGIN
 
-class DCUS_EXPORT Plugin {
+class DCUS_EXPORT Plugin final {
     CLASS_DISSABLE_COPY_AND_ASSIGN(Plugin)
 public:
     using Handle = void*;
@@ -70,12 +70,12 @@ private:
 DCUS_NAMESPACE_END
 
 #define DCUS_PLUGIN_REGISTER(PluginId) \
-public:                                   \
-    static std::string GetPluginId()      \
-    {                                     \
-        return PluginId;                  \
-    }                                     \
-                                          \
+public:                                \
+    static std::string GetPluginId()   \
+    {                                  \
+        return PluginId;               \
+    }                                  \
+                                       \
 private:
 
 #endif // DCUS_PLUGIN_H
