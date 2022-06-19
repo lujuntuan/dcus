@@ -458,9 +458,9 @@ void ServerEngine::eventChanged(Event* event)
         }
         lock();
         for (const auto& pair : serverDomainEvent->domain().attribute()) {
-            m_hpr->attributes.add(serverDomainEvent->domain().name() + "_" + pair.first, pair.second);
+            m_hpr->attributes.insert(serverDomainEvent->domain().name() + "_" + pair.first, pair.second);
         }
-        m_hpr->attributes.add(serverDomainEvent->domain().name() + "_version", serverDomainEvent->domain().version());
+        m_hpr->attributes.insert(serverDomainEvent->domain().name() + "_version", serverDomainEvent->domain().version());
         unlock();
         Detail* d = m_hpr->details.find(serverDomainEvent->domain().name());
         if (d) {
@@ -769,10 +769,10 @@ void ServerEngine::setState(ServerState state)
     if (m_hpr->state != state) {
         m_hpr->lastState = m_hpr->state;
         m_hpr->state = state;
-        m_hpr->cacheStatus.add("state", m_hpr->state);
-        m_hpr->cacheStatus.add("last", m_hpr->lastState);
-        m_hpr->cacheStatus.add("depends", m_hpr->depends);
-        m_hpr->cacheStatus.saveJson(m_hpr->statusFilePath, Variant::PARSER_OUT_FORMAT);
+        m_hpr->cacheStatus.insert("state", m_hpr->state);
+        m_hpr->cacheStatus.insert("last", m_hpr->lastState);
+        m_hpr->cacheStatus.insert("depends", m_hpr->depends);
+        m_hpr->cacheStatus.saveJson(m_hpr->statusFilePath, Variant::PARSE_OUT_FORMAT);
         LOG_PROPERTY("State", Domain::getMrStateStr(state));
         m_hpr->stateElapsed.restart();
         configState();

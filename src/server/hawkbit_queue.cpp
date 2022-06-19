@@ -61,7 +61,7 @@ bool HawkbitQueue::detect()
         return false;
     }
     std::string jsonErrorStr;
-    Variant data = Variant::fromJson(body, &jsonErrorStr);
+    const Variant& data = Variant::fromJson(body, &jsonErrorStr);
     if (!jsonErrorStr.empty() || data.isNull()) {
         LOG_WARNING("error=", jsonErrorStr);
         return false;
@@ -126,9 +126,9 @@ bool HawkbitQueue::detect()
             return true;
         }
     } else {
-        data = Variant::fromJson(body, &jsonErrorStr);
-        if (jsonErrorStr.empty() && !data.isNull()) {
-            std::string cancelAction = data["cancelAction"]["stopId"].toString();
+        const Variant& cancelData = Variant::fromJson(body, &jsonErrorStr);
+        if (jsonErrorStr.empty() && !cancelData.isNull()) {
+            std::string cancelAction = cancelData["cancelAction"]["stopId"].toString();
             if (cancelAction.empty()) {
                 LOG_WARNING("transform cancel error");
                 return true;
@@ -240,13 +240,13 @@ bool HawkbitQueue::transformUpgrade(Upgrade& upgrade, const std::string& jsonStr
                 continue;
             }
             if (subMetaData["value"].isBool()) {
-                metaData.add(subMetaData["key"].toString(), subMetaData["value"].toBool());
+                metaData.insert(subMetaData["key"].toString(), subMetaData["value"].toBool());
             } else if (subMetaData["value"].isInt()) {
-                metaData.add(subMetaData["key"].toString(), subMetaData["value"].toInt());
+                metaData.insert(subMetaData["key"].toString(), subMetaData["value"].toInt());
             } else if (subMetaData["value"].isDouble()) {
-                metaData.add(subMetaData["key"].toString(), subMetaData["value"].toDouble());
+                metaData.insert(subMetaData["key"].toString(), subMetaData["value"].toDouble());
             } else if (subMetaData["value"].isString()) {
-                metaData.add(subMetaData["key"].toString(), subMetaData["value"].toString());
+                metaData.insert(subMetaData["key"].toString(), subMetaData["value"].toString());
             }
         }
         package.meta() = metaData;

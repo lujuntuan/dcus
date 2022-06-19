@@ -19,6 +19,8 @@
 #include <string>
 #include <vector>
 
+//#define VAR_USE_OPT_WRITER
+
 DCUS_NAMESPACE_BEGIN
 
 class VariantValue;
@@ -36,15 +38,14 @@ public:
         TYPE_LIST,
         TYPE_MAP
     };
-    enum ParserType {
-        PARSER_UNKNOWN = 0,
-        PARSER_OUT_FORMAT,
-        PARSER_OUT_SMALL,
-        PARSER_IN_STANDARD,
-        PARSER_IN_COMMENTS
+    enum ParseType {
+        PARSE_UNKNOWN = 0,
+        PARSE_OUT_FORMAT,
+        PARSE_OUT_SMALL,
+        PARSE_IN_STANDARD,
+        PARSE_IN_COMMENTS
     };
     Variant() noexcept;
-    Variant(std::nullptr_t value) noexcept;
     Variant(bool value) noexcept;
     Variant(int value) noexcept;
     Variant(double value) noexcept;
@@ -89,16 +90,20 @@ public:
     const Variant& mapValue(const std::string& key, const Variant& defaultValue = Variant()) noexcept;
     const Variant& operator[](size_t i) const noexcept;
     const Variant& operator[](const std::string& key) const noexcept;
+#ifdef VAR_USE_OPT_WRITER
+    Variant& operator[](size_t i);
+    Variant& operator[](const std::string& key);
+#endif
     bool operator==(const Variant& rhs) const noexcept;
     bool operator<(const Variant& rhs) const noexcept;
     bool operator!=(const Variant& rhs) const noexcept;
     bool operator<=(const Variant& rhs) const noexcept;
     bool operator>(const Variant& rhs) const noexcept;
     bool operator>=(const Variant& rhs) const noexcept;
-    std::string toJson(ParserType parserType = PARSER_OUT_SMALL) const noexcept;
-    bool saveJson(const std::string& filePath, ParserType parserType = PARSER_OUT_SMALL) const noexcept;
-    static Variant fromJson(const std::string& json, std::string* errorString = nullptr, ParserType parserType = PARSER_IN_STANDARD) noexcept;
-    static Variant readJson(const std::string& filePath, std::string* errorString = nullptr, ParserType parserType = PARSER_IN_STANDARD) noexcept;
+    std::string toJson(ParseType parseType = PARSE_OUT_SMALL) const noexcept;
+    bool saveJson(const std::string& filePath, ParseType parseType = PARSE_OUT_SMALL) const noexcept;
+    static Variant fromJson(const std::string& json, std::string* errorString = nullptr, ParseType parseType = PARSE_IN_STANDARD) noexcept;
+    static Variant readJson(const std::string& filePath, std::string* errorString = nullptr, ParseType parseType = PARSE_IN_STANDARD) noexcept;
     DCUS_EXPORT friend std::ostream& operator<<(std::ostream& ostream, const Variant& data) noexcept;
 
 private:
@@ -118,12 +123,10 @@ public:
         : std::vector<Variant>(std::forward<LIST>(list))
     {
     }
-    void add(const Variant& data) noexcept;
     bool contains(const Variant& data) const noexcept;
     const Variant& value(int index, const Variant& defaultValue = Variant()) const noexcept;
-    Variant toVariant() const noexcept;
-    std::string toJson(Variant::ParserType parserType = Variant::PARSER_OUT_SMALL) const noexcept;
-    bool saveJson(const std::string& filePath, Variant::ParserType parserType = Variant::PARSER_OUT_SMALL) const noexcept;
+    std::string toJson(Variant::ParseType parseType = Variant::PARSE_OUT_SMALL) const noexcept;
+    bool saveJson(const std::string& filePath, Variant::ParseType parseType = Variant::PARSE_OUT_SMALL) const noexcept;
     DCUS_EXPORT friend std::ostream& operator<<(std::ostream& ostream, const VariantList& data) noexcept;
 };
 
@@ -139,21 +142,24 @@ public:
         : std::map<std::string, Variant>(std::forward<MAP>(map))
     {
     }
-    void add(const std::string& key, const Variant& data) noexcept;
-    void add(int key, const Variant& data) noexcept;
-    void sub(const std::string& key) noexcept;
+    template <class T>
+    void insert(const std::string& key, T&& data) noexcept
+    {
+        remove(key);
+        emplace(key, std::forward<T>(data));
+    }
+    bool remove(const std::string& key) noexcept;
     bool contains(const std::string& key) const noexcept;
     const Variant& value(const std::string& key, const Variant& defaultValue = Variant()) const noexcept;
-    Variant toVariant() const noexcept;
-    std::string toJson(Variant::ParserType parserType = Variant::PARSER_OUT_SMALL) const noexcept;
-    bool saveJson(const std::string& filePath, Variant::ParserType parserType = Variant::PARSER_OUT_SMALL) const noexcept;
+    std::string toJson(Variant::ParseType parseType = Variant::PARSE_OUT_SMALL) const noexcept;
+    bool saveJson(const std::string& filePath, Variant::ParseType parseType = Variant::PARSE_OUT_SMALL) const noexcept;
     DCUS_EXPORT friend std::ostream& operator<<(std::ostream& ostream, const VariantMap& data) noexcept;
 };
 
 class DCUS_EXPORT VariantValue {
 protected:
     virtual ~VariantValue() noexcept { }
-    virtual void dump(std::string& json, int depth) const noexcept = 0;
+    virtual void parseOut(std::string& json, int depth) const noexcept = 0;
     virtual Variant::Type type() const noexcept = 0;
     virtual bool isEqual(const VariantValue* value) const noexcept = 0;
     virtual bool isLess(const VariantValue* value) const noexcept = 0;
@@ -165,6 +171,10 @@ protected:
     virtual const VariantMap& toMap() const noexcept;
     virtual const Variant& operator[](size_t i) const noexcept;
     virtual const Variant& operator[](const std::string& key) const noexcept;
+#ifdef VAR_USE_OPT_WRITER
+    virtual Variant& operator[](size_t i);
+    virtual Variant& operator[](const std::string& key);
+#endif
 
 private:
     friend class Variant;

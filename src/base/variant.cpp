@@ -16,54 +16,59 @@
 #include <fstream>
 #include <iostream>
 #include <limits>
+#include <memory.h>
 #include <sstream>
 
-#define VAR_PARSER_MAX_DEPTH 500
-#define VAR_PARSER_FORMAT_SPACE "    "
+#define VAR_PARSE_MAX_DEPTH 500
+#define VAR_PARSE_OUT_FORMAT_SPACE "    "
 #define VAR_DOUBLE_PRECISION (double)0.0000001
 
 DCUS_NAMESPACE_BEGIN
 
-struct NullStruct {
-    bool operator==(NullStruct) const { return true; }
-    bool operator<(NullStruct) const { return false; }
+struct VariantNullPtr {
+    bool operator==(VariantNullPtr) const
+    {
+        return true;
+    }
+    bool operator<(VariantNullPtr) const
+    {
+        return false;
+    }
 };
 
 class VariantParser {
 public:
-    explicit VariantParser(const std::string& str, std::string* err, Variant::ParserType type) noexcept
-        : _string(str)
-        , _errorString(err)
-        , _parserType(type)
+    explicit VariantParser(const std::string& str, std::string* err, Variant::ParseType type) noexcept
+        : inString(str)
+        , errorString(err)
+        , parseType(type)
     {
     }
 
-protected:
-    size_t _index = 0;
-    bool _isFailed = false;
-    const std::string& _string;
-    std::string* _errorString = nullptr;
-    const Variant::ParserType _parserType = Variant::PARSER_UNKNOWN;
-
 private:
     friend class Variant;
+    size_t index = 0;
+    bool isFailed = false;
+    const std::string& inString;
+    std::string* errorString = nullptr;
+    const Variant::ParseType parseType = Variant::PARSE_UNKNOWN;
 
 public:
-    static void formatEnter(std::string& out, int depth) noexcept
+    static inline void parseOutBeautify(std::string& out, int depth) noexcept
     {
         if (depth < 0) {
             return;
         }
         out += "\n";
         for (size_t i = 0; i < depth; i++) {
-            out += VAR_PARSER_FORMAT_SPACE;
+            out += VAR_PARSE_OUT_FORMAT_SPACE;
         }
     }
-    static void dump(NullStruct, std::string& out, int depth) noexcept
+    static void parseOut(VariantNullPtr, std::string& out, int depth) noexcept
     {
         out += "null";
     }
-    static void dump(double value, std::string& out, int depth) noexcept
+    static void parseOut(double value, std::string& out, int depth) noexcept
     {
         if (std::isfinite(value)) {
             char buf[32];
@@ -73,17 +78,17 @@ public:
             out += "null";
         }
     }
-    static void dump(int value, std::string& out, int depth) noexcept
+    static void parseOut(int value, std::string& out, int depth) noexcept
     {
         char buf[32];
         snprintf(buf, sizeof buf, "%d", value);
         out += buf;
     }
-    static void dump(bool value, std::string& out, int depth) noexcept
+    static void parseOut(bool value, std::string& out, int depth) noexcept
     {
         out += value ? "true" : "false";
     }
-    static void dump(const std::string& value, std::string& out, int depth) noexcept
+    static void parseOut(const std::string& value, std::string& out, int depth) noexcept
     {
         out += '"';
         for (size_t i = 0; i < value.length(); i++) {
@@ -120,10 +125,10 @@ public:
         }
         out += '"';
     }
-    static void dump(const VariantList& values, std::string& out, int depth) noexcept
+    static void parseOut(const VariantList& values, std::string& out, int depth) noexcept
     {
         if (depth >= 0) {
-            if (depth > VAR_PARSER_MAX_DEPTH) {
+            if (depth > VAR_PARSE_MAX_DEPTH) {
                 out.clear();
                 return;
             }
@@ -136,18 +141,18 @@ public:
                 if (!first) {
                     out += ", ";
                 }
-                formatEnter(out, depth);
-                value.m_ptr->dump(out, depth);
+                parseOutBeautify(out, depth);
+                value.m_ptr->parseOut(out, depth);
                 first = false;
             }
-            formatEnter(out, depth - 1);
+            parseOutBeautify(out, depth - 1);
         }
         out += "]";
     }
-    static void dump(const VariantMap& values, std::string& out, int depth) noexcept
+    static void parseOut(const VariantMap& values, std::string& out, int depth) noexcept
     {
         if (depth >= 0) {
-            if (depth > VAR_PARSER_MAX_DEPTH) {
+            if (depth > VAR_PARSE_MAX_DEPTH) {
                 out.clear();
                 return;
             }
@@ -160,19 +165,17 @@ public:
                 if (!first) {
                     out += ", ";
                 }
-                formatEnter(out, depth);
-                dump(kv.first, out, depth);
+                parseOutBeautify(out, depth);
+                parseOut(kv.first, out, depth);
                 out += ": ";
-                kv.second.m_ptr->dump(out, depth);
+                kv.second.m_ptr->parseOut(out, depth);
                 first = false;
             }
-            formatEnter(out, depth - 1);
+            parseOutBeautify(out, depth - 1);
         }
         out += "}";
     }
-
-public:
-    static inline std::string esc(char c) noexcept
+    static inline std::string parseInEsc(char c) noexcept
     {
         char buf[12];
         if (static_cast<uint8_t>(c) >= 0x20 && static_cast<uint8_t>(c) <= 0x7f) {
@@ -182,89 +185,89 @@ public:
         }
         return std::string(buf);
     }
-    static inline bool inRange(long x, long lower, long upper) noexcept
+    static inline bool parseInRange(long x, long lower, long upper) noexcept
     {
         return (x >= lower && x <= upper);
     }
-    Variant fail(std::string&& msg) noexcept
+    inline Variant parseInFail(std::string&& msg) noexcept
     {
-        return fail(move(msg), Variant());
+        return parseInFail(move(msg), Variant());
     }
     template <typename T>
-    T fail(std::string&& msg, const T err_ret) noexcept
+    inline T parseInFail(std::string&& msg, const T err_ret) noexcept
     {
-        if (!_isFailed) {
-            if (_errorString) {
-                *_errorString = std::move(msg);
+        if (!isFailed) {
+            if (errorString) {
+                *errorString = std::move(msg);
             }
         }
-        _isFailed = true;
+        isFailed = true;
         return err_ret;
     }
-    void consumeWhitespace() noexcept
+    void parseInConsumeWhitespace() noexcept
     {
-        while (_string[_index] == ' ' || _string[_index] == '\r' || _string[_index] == '\n' || _string[_index] == '\t')
-            _index++;
+        while (inString[index] == ' ' || inString[index] == '\r' || inString[index] == '\n' || inString[index] == '\t')
+            index++;
     }
-    bool consumeComment() noexcept
+    bool parseInConsumeComment() noexcept
     {
         bool commentFound = false;
-        if (_string[_index] == '/') {
-            _index++;
-            if (_index == _string.size()) {
-                return fail("unexpected end of input after start of comment", false);
+        if (inString[index] == '/') {
+            index++;
+            if (index == inString.size()) {
+                return parseInFail("unexpected end of input after start of comment", false);
             }
-            if (_string[_index] == '/') {
-                _index++;
-                while (_index < _string.size() && _string[_index] != '\n') {
-                    _index++;
+            if (inString[index] == '/') {
+                index++;
+                while (index < inString.size() && inString[index] != '\n') {
+                    index++;
                 }
                 commentFound = true;
-            } else if (_string[_index] == '*') {
-                _index++;
-                if (_index > _string.size() - 2) {
-                    return fail("unexpected end of input inside multi-line comment", false);
+            } else if (inString[index] == '*') {
+                index++;
+                if (index > inString.size() - 2) {
+                    return parseInFail("unexpected end of input inside multi-line comment", false);
                 }
-                while (!(_string[_index] == '*' && _string[_index + 1] == '/')) {
-                    _index++;
-                    if (_index > _string.size() - 2) {
-                        return fail("unexpected end of input inside multi-line comment", false);
+                while (!(inString[index] == '*' && inString[index + 1] == '/')) {
+                    index++;
+                    if (index > inString.size() - 2) {
+                        return parseInFail("unexpected end of input inside multi-line comment", false);
                     }
                 }
-                _index += 2;
+                index += 2;
                 commentFound = true;
             } else {
-                return fail("malformed comment", false);
+                return parseInFail("malformed comment", false);
             }
         }
         return commentFound;
     }
-    void consumeGarbage() noexcept
+    void parseInConsumeGarbage() noexcept
     {
-        consumeWhitespace();
-        if (_parserType == Variant::PARSER_IN_COMMENTS) {
+        parseInConsumeWhitespace();
+        if (parseType == Variant::PARSE_IN_COMMENTS) {
             bool comment_found = false;
             do {
-                comment_found = consumeComment();
-                if (_isFailed) {
+                comment_found = parseInConsumeComment();
+                if (isFailed) {
                     return;
                 }
-                consumeWhitespace();
+                parseInConsumeWhitespace();
             } while (comment_found);
         }
     }
-    char getNextToken() noexcept
+    char parseInGetNextToken() noexcept
     {
-        consumeGarbage();
-        if (_isFailed) {
+        parseInConsumeGarbage();
+        if (isFailed) {
             return static_cast<char>(0);
         }
-        if (_index == _string.size()) {
-            return fail("unexpected end of input", static_cast<char>(0));
+        if (index == inString.size()) {
+            return parseInFail("unexpected end of input", static_cast<char>(0));
         }
-        return _string[_index++];
+        return inString[index++];
     }
-    void encodeUtf8(long pt, std::string& out) noexcept
+    void parseInEncodeUtf8(long pt, std::string& out) noexcept
     {
         if (pt < 0) {
             return;
@@ -285,54 +288,54 @@ public:
             out += static_cast<char>((pt & 0x3F) | 0x80);
         }
     }
-    std::string parseString() noexcept
+    std::string parseInString() noexcept
     {
         std::string out;
         long lastEscapedCodepoint = -1;
         while (true) {
-            if (_index == _string.size()) {
-                return fail("unexpected end of input in string", "");
+            if (index == inString.size()) {
+                return parseInFail("unexpected end of input in string", "");
             }
-            char ch = _string[_index++];
+            char ch = inString[index++];
             if (ch == '"') {
-                encodeUtf8(lastEscapedCodepoint, out);
+                parseInEncodeUtf8(lastEscapedCodepoint, out);
                 return out;
             }
-            if (inRange(ch, 0, 0x1f)) {
-                return fail("unescaped " + esc(ch) + " in string", "");
+            if (parseInRange(ch, 0, 0x1f)) {
+                return parseInFail("unescaped " + parseInEsc(ch) + " in string", "");
             }
             if (ch != '\\') {
-                encodeUtf8(lastEscapedCodepoint, out);
+                parseInEncodeUtf8(lastEscapedCodepoint, out);
                 lastEscapedCodepoint = -1;
                 out += ch;
                 continue;
             }
-            if (_index == _string.size()) {
-                return fail("unexpected end of input in string", "");
+            if (index == inString.size()) {
+                return parseInFail("unexpected end of input in string", "");
             }
-            ch = _string[_index++];
+            ch = inString[index++];
             if (ch == 'u') {
-                std::string esc = _string.substr(_index, 4);
+                std::string esc = inString.substr(index, 4);
                 if (esc.length() < 4) {
-                    return fail("bad \\u escape: " + esc, "");
+                    return parseInFail("bad \\u escape: " + esc, "");
                 }
                 for (size_t j = 0; j < 4; j++) {
-                    if (!inRange(esc[j], 'a', 'f') && !inRange(esc[j], 'A', 'F') && !inRange(esc[j], '0', '9')) {
-                        return fail("bad \\u escape: " + esc, "");
+                    if (!parseInRange(esc[j], 'a', 'f') && !parseInRange(esc[j], 'A', 'F') && !parseInRange(esc[j], '0', '9')) {
+                        return parseInFail("bad \\u escape: " + esc, "");
                     }
                 }
                 long codepoint = strtol(esc.data(), nullptr, 16);
-                if (inRange(lastEscapedCodepoint, 0xD800, 0xDBFF) && inRange(codepoint, 0xDC00, 0xDFFF)) {
-                    encodeUtf8((((lastEscapedCodepoint - 0xD800) << 10) | (codepoint - 0xDC00)) + 0x10000, out);
+                if (parseInRange(lastEscapedCodepoint, 0xD800, 0xDBFF) && parseInRange(codepoint, 0xDC00, 0xDFFF)) {
+                    parseInEncodeUtf8((((lastEscapedCodepoint - 0xD800) << 10) | (codepoint - 0xDC00)) + 0x10000, out);
                     lastEscapedCodepoint = -1;
                 } else {
-                    encodeUtf8(lastEscapedCodepoint, out);
+                    parseInEncodeUtf8(lastEscapedCodepoint, out);
                     lastEscapedCodepoint = codepoint;
                 }
-                _index += 4;
+                index += 4;
                 continue;
             }
-            encodeUtf8(lastEscapedCodepoint, out);
+            parseInEncodeUtf8(lastEscapedCodepoint, out);
             lastEscapedCodepoint = -1;
             if (ch == 'b') {
                 out += '\b';
@@ -347,159 +350,159 @@ public:
             } else if (ch == '"' || ch == '\\' || ch == '/') {
                 out += ch;
             } else {
-                return fail("invalid escape character " + esc(ch), "");
+                return parseInFail("invalid escape character " + parseInEsc(ch), "");
             }
         }
     }
-    Variant parseNumber() noexcept
+    Variant parseInNumber() noexcept
     {
-        size_t startPos = _index;
-        if (_string[_index] == '-') {
-            _index++;
+        size_t startPos = index;
+        if (inString[index] == '-') {
+            index++;
         }
-        if (_string[_index] == '0') {
-            _index++;
-            if (inRange(_string[_index], '0', '9')) {
-                return fail("leading 0s not permitted in numbers");
+        if (inString[index] == '0') {
+            index++;
+            if (parseInRange(inString[index], '0', '9')) {
+                return parseInFail("leading 0s not permitted in numbers");
             }
-        } else if (inRange(_string[_index], '1', '9')) {
-            _index++;
-            while (inRange(_string[_index], '0', '9')) {
-                _index++;
+        } else if (parseInRange(inString[index], '1', '9')) {
+            index++;
+            while (parseInRange(inString[index], '0', '9')) {
+                index++;
             }
         } else {
-            return fail("invalid " + esc(_string[_index]) + " in number");
+            return parseInFail("invalid " + parseInEsc(inString[index]) + " in number");
         }
-        if (_string[_index] != '.' && _string[_index] != 'e' && _string[_index] != 'E' && (_index - startPos) <= static_cast<size_t>(std::numeric_limits<int>::digits10)) {
+        if (inString[index] != '.' && inString[index] != 'e' && inString[index] != 'E' && (index - startPos) <= static_cast<size_t>(std::numeric_limits<int>::digits10)) {
             try {
-                return (int)std::atoi(_string.c_str() + startPos);
+                return (int)std::atoi(inString.c_str() + startPos);
             } catch (...) {
-                return fail("invalid " + esc(_string[_index]) + " in int");
+                return parseInFail("invalid " + parseInEsc(inString[index]) + " in int");
             }
         }
-        if (_string[_index] == '.') {
-            _index++;
-            if (!inRange(_string[_index], '0', '9')) {
-                return fail("at least one digit required in fractional part");
+        if (inString[index] == '.') {
+            index++;
+            if (!parseInRange(inString[index], '0', '9')) {
+                return parseInFail("at least one digit required in fractional part");
             }
-            while (inRange(_string[_index], '0', '9')) {
-                _index++;
+            while (parseInRange(inString[index], '0', '9')) {
+                index++;
             }
         }
-        if (_string[_index] == 'e' || _string[_index] == 'E') {
-            _index++;
-            if (_string[_index] == '+' || _string[_index] == '-') {
-                _index++;
+        if (inString[index] == 'e' || inString[index] == 'E') {
+            index++;
+            if (inString[index] == '+' || inString[index] == '-') {
+                index++;
             }
-            if (!inRange(_string[_index], '0', '9')) {
-                return fail("at least one digit required in exponent");
+            if (!parseInRange(inString[index], '0', '9')) {
+                return parseInFail("at least one digit required in exponent");
             }
-            while (inRange(_string[_index], '0', '9')) {
-                _index++;
+            while (parseInRange(inString[index], '0', '9')) {
+                index++;
             }
         }
         try {
-            return (double)std::strtod(_string.c_str() + startPos, nullptr);
+            return (double)std::strtod(inString.c_str() + startPos, nullptr);
         } catch (...) {
-            return fail("invalid " + esc(_string[_index]) + " in double");
+            return parseInFail("invalid " + parseInEsc(inString[index]) + " in double");
         }
     }
-    Variant expect(const std::string& expected, Variant res) noexcept
+    Variant parseInExpect(const std::string& expected, Variant res) noexcept
     {
-        if (_index == 0) {
-            return fail("parse error: expected " + expected + ", index can not be zero");
+        if (index == 0) {
+            return parseInFail("parse error: expected " + expected + ", index can not be zero");
         }
-        _index--;
-        if (_string.compare(_index, expected.length(), expected) == 0) {
-            _index += expected.length();
+        index--;
+        if (inString.compare(index, expected.length(), expected) == 0) {
+            index += expected.length();
             return res;
         } else {
-            return fail("parse error: expected " + expected + ", got " + _string.substr(_index, expected.length()));
+            return parseInFail("parse error: expected " + expected + ", got " + inString.substr(index, expected.length()));
         }
     }
-    Variant formJson(int depth) noexcept
+    Variant parseIn(int depth) noexcept
     {
-        if (depth > VAR_PARSER_MAX_DEPTH) {
-            return fail("exceeded maximum nesting depth");
+        if (depth > VAR_PARSE_MAX_DEPTH) {
+            return parseInFail("exceeded maximum nesting depth");
         }
-        char ch = getNextToken();
-        if (_isFailed) {
+        char ch = parseInGetNextToken();
+        if (isFailed) {
             return Variant();
         }
         if (ch == '-' || (ch >= '0' && ch <= '9')) {
-            _index--;
-            return parseNumber();
+            index--;
+            return parseInNumber();
         }
         if (ch == 't') {
-            return expect("true", true);
+            return parseInExpect("true", true);
         }
         if (ch == 'f') {
-            return expect("false", false);
+            return parseInExpect("false", false);
         }
         if (ch == 'n') {
-            return expect("null", Variant());
+            return parseInExpect("null", Variant());
         }
         if (ch == '"') {
-            return parseString();
+            return parseInString();
         }
         if (ch == '{') {
             std::map<std::string, Variant> data;
-            ch = getNextToken();
+            ch = parseInGetNextToken();
             if (ch == '}') {
                 return data;
             }
             while (1) {
                 if (ch != '"') {
-                    return fail("expected '\"' in object, got " + esc(ch));
+                    return parseInFail("expected '\"' in object, got " + parseInEsc(ch));
                 }
-                std::string key = parseString();
-                if (_isFailed) {
+                std::string key = parseInString();
+                if (isFailed) {
                     return Variant();
                 }
-                ch = getNextToken();
+                ch = parseInGetNextToken();
                 if (ch != ':') {
-                    return fail("expected ':' in object, got " + esc(ch));
+                    return parseInFail("expected ':' in object, got " + parseInEsc(ch));
                 }
-                data[std::move(key)] = formJson(depth + 1);
-                if (_isFailed) {
+                data[std::move(key)] = parseIn(depth + 1);
+                if (isFailed) {
                     return Variant();
                 }
-                ch = getNextToken();
+                ch = parseInGetNextToken();
                 if (ch == '}') {
                     break;
                 }
                 if (ch != ',') {
-                    return fail("expected ',' in object, got " + esc(ch));
+                    return parseInFail("expected ',' in object, got " + parseInEsc(ch));
                 }
-                ch = getNextToken();
+                ch = parseInGetNextToken();
             }
             return data;
         }
         if (ch == '[') {
             std::vector<Variant> data;
-            ch = getNextToken();
+            ch = parseInGetNextToken();
             if (ch == ']') {
                 return data;
             }
             while (1) {
-                _index--;
-                data.push_back(formJson(depth + 1));
-                if (_isFailed) {
+                index--;
+                data.push_back(parseIn(depth + 1));
+                if (isFailed) {
                     return Variant();
                 }
-                ch = getNextToken();
+                ch = parseInGetNextToken();
                 if (ch == ']') {
                     break;
                 }
                 if (ch != ',') {
-                    return fail("expected ',' in list, got " + esc(ch));
+                    return parseInFail("expected ',' in list, got " + parseInEsc(ch));
                 }
-                ch = getNextToken();
+                ch = parseInGetNextToken();
                 (void)ch;
             }
             return data;
         }
-        return fail("expected value, got " + esc(ch));
+        return parseInFail("expected value, got " + parseInEsc(ch));
     }
 };
 
@@ -528,14 +531,14 @@ protected:
     {
         return m_value < static_cast<const VariantValueProxy<_type, T>*>(value)->m_value;
     }
-    inline virtual void dump(std::string& json, int depth) const noexcept override
+    inline virtual void parseOut(std::string& json, int depth) const noexcept override
     {
-        return VariantParser::dump(m_value, json, depth);
+        return VariantParser::parseOut(m_value, json, depth);
     }
     const T m_value;
 };
 
-class VariantNull final : public VariantValueProxy<Variant::TYPE_NULL, NullStruct> {
+class VariantNull final : public VariantValueProxy<Variant::TYPE_NULL, VariantNullPtr> {
 public:
     VariantNull() noexcept
         : VariantValueProxy({})
@@ -556,31 +559,43 @@ public:
     }
 };
 
-// Static globals - static-init-safe
-
-struct VariantStatics {
-    const std::shared_ptr<VariantValue> nullValue = std::make_shared<VariantNull>();
-    const std::shared_ptr<VariantValue> trueValue = std::make_shared<VariantBool>(true);
-    const std::shared_ptr<VariantValue> falseValue = std::make_shared<VariantBool>(false);
-    const std::string emptyString;
-    const VariantList emptyList;
-    const VariantMap emptyMap;
-    VariantStatics() { }
-};
-
-static const VariantStatics& variantStatics()
+namespace VariantGlobal {
+static const std::shared_ptr<VariantValue> nullValue()
 {
-    static const VariantStatics statics {};
-    return statics;
+    static const std::shared_ptr<VariantValue> value = std::make_shared<VariantNull>();
+    return value;
 }
-
-static const Variant& variantStaticNull()
+static const std::shared_ptr<VariantValue> trueValue()
 {
-    static const Variant data;
-    return data;
+    static const std::shared_ptr<VariantValue> value = std::make_shared<VariantBool>(true);
+    return value;
 }
-
-//
+static const std::shared_ptr<VariantValue> falseValue()
+{
+    static const std::shared_ptr<VariantValue> value = std::make_shared<VariantBool>(false);
+    return value;
+}
+static const std::string& emptyString()
+{
+    static const std::string value;
+    return value;
+}
+static const VariantList& emptyList()
+{
+    static const VariantList value;
+    return value;
+}
+static const VariantMap& emptyMap()
+{
+    static const VariantMap value;
+    return value;
+}
+static const Variant& virtualData()
+{
+    static const Variant value;
+    return value;
+}
+}
 
 class VariantInt final : public VariantValueProxy<Variant::TYPE_INT, int> {
     inline virtual int toInt() const noexcept override
@@ -660,11 +675,21 @@ class VariantArray final : public VariantValueProxy<Variant::TYPE_LIST, VariantL
     inline virtual const Variant& operator[](size_t i) const noexcept override
     {
         if (i < 0 || i >= m_value.size()) {
-            return variantStaticNull();
+            return VariantGlobal::virtualData();
         } else {
             return m_value[i];
         }
     }
+#ifdef VAR_USE_OPT_WRITER
+    inline virtual Variant& operator[](size_t i) override
+    {
+        if (i < 0 || i >= m_value.size()) {
+            throw std::runtime_error("Variant operator[] list index out of bounds");
+        } else {
+            return const_cast<Variant&>(m_value[i]);
+        }
+    }
+#endif
 
 public:
     explicit VariantArray(const VariantList& value) noexcept
@@ -685,8 +710,23 @@ class VariantObject final : public VariantValueProxy<Variant::TYPE_MAP, VariantM
     inline virtual const Variant& operator[](const std::string& key) const noexcept override
     {
         auto it = m_value.find(key);
-        return (it == m_value.end()) ? variantStaticNull() : it->second;
+        if (it == m_value.end()) {
+            return VariantGlobal::virtualData();
+        } else {
+            return it->second;
+        }
     }
+#ifdef VAR_USE_OPT_WRITER
+    inline virtual Variant& operator[](const std::string& key) override
+    {
+        auto it = m_value.find(key);
+        if (it == m_value.end()) {
+            throw std::runtime_error("Variant operator[] map key not exits");
+        } else {
+            return const_cast<Variant&>(it->second);
+        }
+    }
+#endif
 
 public:
     explicit VariantObject(const VariantMap& value) noexcept
@@ -700,17 +740,12 @@ public:
 };
 
 Variant::Variant() noexcept
-    : m_ptr(variantStatics().nullValue)
-{
-}
-
-Variant::Variant(std::nullptr_t value) noexcept
-    : m_ptr(variantStatics().nullValue)
+    : m_ptr(VariantGlobal::nullValue())
 {
 }
 
 Variant::Variant(bool value) noexcept
-    : m_ptr(value ? variantStatics().trueValue : variantStatics().falseValue)
+    : m_ptr(value ? VariantGlobal::trueValue() : VariantGlobal::falseValue())
 {
 }
 
@@ -918,13 +953,24 @@ const Variant& Variant::mapValue(const std::string& key, const Variant& defaultV
 
 const Variant& Variant::operator[](size_t i) const noexcept
 {
-    return (*m_ptr)[i];
+    return m_ptr->operator[](i);
 }
 
 const Variant& Variant::operator[](const std::string& key) const noexcept
 {
+    return m_ptr->operator[](key);
+}
+
+#ifdef VAR_USE_OPT_WRITER
+Variant& Variant::operator[](size_t i)
+{
+    return (*m_ptr)[i];
+}
+Variant& Variant::operator[](const std::string& key)
+{
     return (*m_ptr)[key];
 }
+#endif
 
 bool Variant::operator==(const Variant& rhs) const noexcept
 {
@@ -968,17 +1014,17 @@ bool Variant::operator>=(const Variant& rhs) const noexcept
     return !(*this < rhs);
 }
 
-std::string Variant::toJson(ParserType parserType) const noexcept
+std::string Variant::toJson(ParseType parseType) const noexcept
 {
     std::string json;
-    m_ptr->dump(json, parserType == PARSER_OUT_FORMAT ? 0 : -1);
+    m_ptr->parseOut(json, parseType == PARSE_OUT_FORMAT ? 0 : -1);
     return json;
 }
 
 template <class T>
-static bool saveJsonTemplate(const T& data, const std::string& filePath, Variant::ParserType parserType)
+static inline bool saveJsonTemplate(const T& data, const std::string& filePath, Variant::ParseType parseType)
 {
-    std::string jsonStr = data.toJson(parserType);
+    std::string jsonStr = data.toJson(parseType);
     if (jsonStr.empty()) {
         return false;
     }
@@ -992,26 +1038,26 @@ static bool saveJsonTemplate(const T& data, const std::string& filePath, Variant
     return true;
 }
 
-bool Variant::saveJson(const std::string& filePath, ParserType parserType) const noexcept
+bool Variant::saveJson(const std::string& filePath, ParseType parseType) const noexcept
 {
-    return saveJsonTemplate<Variant>(*this, filePath, parserType);
+    return saveJsonTemplate<Variant>(*this, filePath, parseType);
 }
 
-Variant Variant::fromJson(const std::string& json, std::string* errorString, ParserType parserType) noexcept
+Variant Variant::fromJson(const std::string& json, std::string* errorString, ParseType parseType) noexcept
 {
-    VariantParser parser(json, errorString, parserType);
-    Variant result = parser.formJson(0);
-    parser.consumeGarbage();
-    if (parser._isFailed) {
+    VariantParser parse(json, errorString, parseType);
+    Variant result = parse.parseIn(0);
+    parse.parseInConsumeGarbage();
+    if (parse.isFailed) {
         return Variant();
     }
-    if (parser._index != json.size()) {
-        return parser.fail("unexpected trailing " + VariantParser::esc(json[parser._index]));
+    if (parse.index != json.size()) {
+        return parse.parseInFail("unexpected trailing " + VariantParser::parseInEsc(json[parse.index]));
     }
     return result;
 }
 
-Variant Variant::readJson(const std::string& filePath, std::string* errorString, ParserType parserType) noexcept
+Variant Variant::readJson(const std::string& filePath, std::string* errorString, ParseType parseType) noexcept
 {
     std::ifstream rfile;
     rfile.open(filePath, std::ios::in);
@@ -1021,12 +1067,12 @@ Variant Variant::readJson(const std::string& filePath, std::string* errorString,
     std::stringstream buffer;
     buffer << rfile.rdbuf();
     rfile.close();
-    return fromJson(buffer.str(), errorString, parserType);
+    return fromJson(buffer.str(), errorString, parseType);
 }
 
 std::ostream& operator<<(std::ostream& ostream, const Variant& data) noexcept
 {
-    ostream << data.toJson(Variant::PARSER_OUT_FORMAT);
+    ostream << data.toJson(Variant::PARSE_OUT_FORMAT);
     return ostream;
 }
 
@@ -1047,28 +1093,40 @@ double VariantValue::toDouble() const noexcept
 
 const std::string& VariantValue::toString() const noexcept
 {
-    return variantStatics().emptyString;
+    return VariantGlobal::emptyString();
 }
 
 const VariantList& VariantValue::toList() const noexcept
 {
-    return variantStatics().emptyList;
+    return VariantGlobal::emptyList();
 }
 
 const VariantMap& VariantValue::toMap() const noexcept
 {
-    return variantStatics().emptyMap;
+    return VariantGlobal::emptyMap();
 }
 
 const Variant& VariantValue::operator[](size_t i) const noexcept
 {
-    return variantStaticNull();
+    return VariantGlobal::virtualData();
 }
 
 const Variant& VariantValue::operator[](const std::string& key) const noexcept
 {
-    return variantStaticNull();
+    return VariantGlobal::virtualData();
 }
+
+#ifdef VAR_USE_OPT_WRITER
+Variant& VariantValue::operator[](size_t i)
+{
+    throw std::runtime_error("Variant operator[] called on a non-list type");
+}
+
+Variant& VariantValue::operator[](const std::string& key)
+{
+    throw std::runtime_error("Variant operator[] called on a non-map type");
+}
+#endif
 
 VariantList::VariantList(const Variant& values) noexcept
 {
@@ -1078,11 +1136,6 @@ VariantList::VariantList(const Variant& values) noexcept
 VariantList::VariantList(Variant&& values) noexcept
 {
     *this = std::move(values.toList());
-}
-
-void VariantList::add(const Variant& data) noexcept
-{
-    push_back(data);
 }
 
 bool VariantList::contains(const Variant& data) const noexcept
@@ -1098,26 +1151,21 @@ const Variant& VariantList::value(int index, const Variant& defaultValue) const 
     return (*this)[index];
 }
 
-Variant VariantList::toVariant() const noexcept
-{
-    return Variant(*this);
-}
-
-std::string VariantList::toJson(Variant::ParserType parserType) const noexcept
+std::string VariantList::toJson(Variant::ParseType parseType) const noexcept
 {
     std::string json;
-    VariantParser::dump(*this, json, parserType == Variant::PARSER_OUT_FORMAT ? 0 : -1);
+    VariantParser::parseOut(*this, json, parseType == Variant::PARSE_OUT_FORMAT ? 0 : -1);
     return json;
 }
 
-bool VariantList::saveJson(const std::string& filePath, Variant::ParserType parserType) const noexcept
+bool VariantList::saveJson(const std::string& filePath, Variant::ParseType parseType) const noexcept
 {
-    return saveJsonTemplate<Variant>(*this, filePath, parserType);
+    return saveJsonTemplate<Variant>(*this, filePath, parseType);
 }
 
 std::ostream& operator<<(std::ostream& ostream, const VariantList& data) noexcept
 {
-    ostream << data.toJson(Variant::PARSER_OUT_FORMAT);
+    ostream << data.toJson(Variant::PARSE_OUT_FORMAT);
     return ostream;
 }
 
@@ -1131,23 +1179,14 @@ VariantMap::VariantMap(Variant&& values) noexcept
     *this = std::move(values.toMap());
 }
 
-void VariantMap::add(const std::string& key, const Variant& data) noexcept
+bool VariantMap::remove(const std::string& key) noexcept
 {
     auto it = find(key);
     if (it != end()) {
-        erase(key);
+        erase(it);
+        return true;
     }
-    emplace(key, data);
-}
-
-void VariantMap::add(int key, const Variant& data) noexcept
-{
-    add(std::to_string(key), data);
-}
-
-void VariantMap::sub(const std::string& key) noexcept
-{
-    erase(key);
+    return false;
 }
 
 bool VariantMap::contains(const std::string& key) const noexcept
@@ -1161,26 +1200,21 @@ const Variant& VariantMap::value(const std::string& key, const Variant& defaultV
     return (it == end()) ? defaultValue : it->second;
 }
 
-Variant VariantMap::toVariant() const noexcept
-{
-    return Variant(*this);
-}
-
-std::string VariantMap::toJson(Variant::ParserType parserType) const noexcept
+std::string VariantMap::toJson(Variant::ParseType parseType) const noexcept
 {
     std::string json;
-    VariantParser::dump(*this, json, parserType == Variant::PARSER_OUT_FORMAT ? 0 : -1);
+    VariantParser::parseOut(*this, json, parseType == Variant::PARSE_OUT_FORMAT ? 0 : -1);
     return json;
 }
 
-bool VariantMap::saveJson(const std::string& filePath, Variant::ParserType parserType) const noexcept
+bool VariantMap::saveJson(const std::string& filePath, Variant::ParseType parseType) const noexcept
 {
-    return saveJsonTemplate<Variant>(*this, filePath, parserType);
+    return saveJsonTemplate<Variant>(*this, filePath, parseType);
 }
 
 std::ostream& operator<<(std::ostream& ostream, const VariantMap& data) noexcept
 {
-    ostream << data.toJson(Variant::PARSER_OUT_FORMAT);
+    ostream << data.toJson(Variant::PARSE_OUT_FORMAT);
     return ostream;
 }
 
