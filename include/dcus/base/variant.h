@@ -14,12 +14,14 @@
 #define DCUS_VARIANT_H
 
 #include "dcus/base/define.h"
+#include <initializer_list>
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
 
-#define VAR_USE_OPT_WRITER 0
+//#define VARIANT_OPERATOR_DISABLE_WRITABLE
+//#define VARIANT_OPERATOR_ENABLE_THROW
 
 DCUS_NAMESPACE_BEGIN
 
@@ -45,7 +47,9 @@ public:
         PARSE_IN_STANDARD,
         PARSE_IN_COMMENTS
     };
+    using Shape = std::initializer_list<std::pair<std::string, Type>>;
     Variant() noexcept;
+    Variant(std::nullptr_t) noexcept;
     Variant(bool value) noexcept;
     Variant(int value) noexcept;
     Variant(double value) noexcept;
@@ -56,6 +60,11 @@ public:
     Variant(VariantList&& values) noexcept;
     Variant(const VariantMap& values) noexcept;
     Variant(VariantMap&& values) noexcept;
+    template <class T, class = decltype(&T::toVariant)>
+    Variant(const T& t) noexcept
+        : Variant(t.toVariant())
+    {
+    }
     template <class T, typename std::enable_if<std::is_constructible<Variant, decltype(*std::declval<T>().begin())>::value, int>::type = 0>
     Variant(const T& list) noexcept
         : Variant(VariantList(list.begin(), list.end()))
@@ -66,6 +75,7 @@ public:
         : Variant(VariantMap(map.begin(), map.end()))
     {
     }
+    Variant(void*) noexcept = delete;
     Type type() const noexcept;
     bool isValid() const noexcept;
     bool isNull() const noexcept;
@@ -76,6 +86,7 @@ public:
     bool isString() const noexcept;
     bool isList() const noexcept;
     bool isMap() const noexcept;
+    bool hasShape(const Shape& shape, std::string* errorString = nullptr) const noexcept;
     bool toBool(bool defaultValue = false) const noexcept;
     int toInt(int defaultValue = 0) const noexcept;
     double toDouble(double defaultValue = 0) const noexcept;
@@ -88,14 +99,22 @@ public:
     const VariantMap& toMap() const noexcept;
     const Variant& operator[](size_t i) const noexcept;
     const Variant& operator[](const std::string& key) const noexcept;
-#if VAR_USE_OPT_WRITER
+#ifndef VARIANT_OPERATOR_DISABLE_WRITABLE
     inline Variant& operator[](size_t i)
     {
-        return _getSubValue(i);
+#ifdef VARIANT_OPERATOR_ENABLE_THROW
+        return _getSubValue(i, true);
+#else
+        return _getSubValue(i, false);
+#endif
     }
     inline Variant& operator[](const std::string& key)
     {
-        return _getSubValue(key);
+#ifdef VARIANT_OPERATOR_ENABLE_THROW
+        return _getSubValue(key, true);
+#else
+        return _getSubValue(key, false);
+#endif
     }
 #endif
     bool operator==(const Variant& rhs) const noexcept;
@@ -108,11 +127,13 @@ public:
     bool saveJson(const std::string& filePath, ParseType parseType = PARSE_OUT_BEAUTIFY) const noexcept;
     static Variant fromJson(const std::string& json, std::string* errorString = nullptr, ParseType parseType = PARSE_IN_STANDARD) noexcept;
     static Variant readJson(const std::string& filePath, std::string* errorString = nullptr, ParseType parseType = PARSE_IN_STANDARD) noexcept;
+    static std::vector<Variant> fromJsonMulti(const std::string& json, std::string* errorString = nullptr, int* stopPos = nullptr, ParseType parseType = PARSE_IN_STANDARD) noexcept;
+    static std::vector<Variant> readJsonMulti(const std::string& filePath, std::string* errorString = nullptr, int* stopPos = nullptr, ParseType parseType = PARSE_IN_STANDARD) noexcept;
     DCUS_EXPORT friend std::ostream& operator<<(std::ostream& ostream, const Variant& data) noexcept;
 
 private:
-    Variant& _getSubValue(size_t i);
-    Variant& _getSubValue(const std::string& key);
+    Variant& _getSubValue(size_t i, bool canThrow);
+    Variant& _getSubValue(const std::string& key, bool canThrow);
 
 private:
     friend class VariantParser;
@@ -166,7 +187,9 @@ public:
 
 class DCUS_EXPORT VariantValue {
 protected:
-    virtual ~VariantValue() noexcept { }
+    virtual ~VariantValue() noexcept
+    {
+    }
     virtual void parseOut(std::string& json, int depth) const noexcept = 0;
     virtual Variant::Type type() const noexcept = 0;
     virtual bool isEqual(const VariantValue* value) const noexcept = 0;

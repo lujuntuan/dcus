@@ -17,11 +17,19 @@
 #include <limits>
 #include <sstream>
 
-#define VAR_PARSE_MAX_DEPTH 500
-#define VAR_PARSE_OUT_FORMAT_SPACE "    "
-#define VAR_DOUBLE_PRECISION (double)0.0000001
+#define VARIANT_PARSE_MAX_DEPTH 500
+#define VARIANT_PARSE_OUT_BEAUTIFY_SPACE "    "
+#define VARIANT_DOUBLE_PRECISION (double)0.0000001
 
 DCUS_NAMESPACE_BEGIN
+
+namespace VariantGlobal {
+static const Variant& virtualData()
+{
+    static const Variant value;
+    return value;
+}
+}
 
 struct VariantNullPtr {
     bool operator==(VariantNullPtr) const
@@ -52,14 +60,40 @@ private:
     const Variant::ParseType parseType = Variant::PARSE_UNKNOWN;
 
 public:
-    static inline void parseOutBeautify(std::string& out, int depth) noexcept
+    static bool saveFile(const std::string& filePath, const std::string& str) noexcept
+    {
+        if (str.empty()) {
+            return false;
+        }
+        std::ofstream wfile;
+        wfile.open(filePath, std::ios::out | std::ios::trunc);
+        if (!wfile.is_open()) {
+            return false;
+        }
+        wfile << str;
+        wfile.close();
+        return true;
+    }
+    static std::string readFile(const std::string& filePath) noexcept
+    {
+        std::ifstream rfile;
+        rfile.open(filePath, std::ios::in);
+        if (!rfile.is_open()) {
+            return std::string();
+        }
+        std::stringstream buffer;
+        buffer << rfile.rdbuf();
+        rfile.close();
+        return buffer.str();
+    }
+    static void parseOutBeautify(std::string& out, int depth) noexcept
     {
         if (depth < 0) {
             return;
         }
         out += "\n";
         for (size_t i = 0; i < depth; i++) {
-            out += VAR_PARSE_OUT_FORMAT_SPACE;
+            out += VARIANT_PARSE_OUT_BEAUTIFY_SPACE;
         }
     }
     static void parseOut(VariantNullPtr, std::string& out, int depth) noexcept
@@ -126,7 +160,7 @@ public:
     static void parseOut(const VariantList& values, std::string& out, int depth) noexcept
     {
         if (depth >= 0) {
-            if (depth > VAR_PARSE_MAX_DEPTH) {
+            if (depth > VARIANT_PARSE_MAX_DEPTH) {
                 out.clear();
                 return;
             }
@@ -150,7 +184,7 @@ public:
     static void parseOut(const VariantMap& values, std::string& out, int depth) noexcept
     {
         if (depth >= 0) {
-            if (depth > VAR_PARSE_MAX_DEPTH) {
+            if (depth > VARIANT_PARSE_MAX_DEPTH) {
                 out.clear();
                 return;
             }
@@ -173,7 +207,7 @@ public:
         }
         out += "}";
     }
-    static inline std::string parseInEsc(char c) noexcept
+    static std::string parseInEsc(char c) noexcept
     {
         char buf[12];
         if (static_cast<uint8_t>(c) >= 0x20 && static_cast<uint8_t>(c) <= 0x7f) {
@@ -183,16 +217,16 @@ public:
         }
         return std::string(buf);
     }
-    static inline bool parseInRange(long x, long lower, long upper) noexcept
+    static bool parseInRange(long x, long lower, long upper) noexcept
     {
         return (x >= lower && x <= upper);
     }
-    inline Variant parseInFail(std::string&& msg) noexcept
+    Variant parseInFail(std::string&& msg) noexcept
     {
-        return parseInFail(move(msg), Variant());
+        return parseInFail(move(msg), VariantGlobal::virtualData());
     }
     template <typename T>
-    inline T parseInFail(std::string&& msg, const T err_ret) noexcept
+    T parseInFail(std::string&& msg, const T err_ret) noexcept
     {
         if (!isFailed) {
             if (errorString) {
@@ -420,12 +454,12 @@ public:
     }
     Variant parseIn(int depth) noexcept
     {
-        if (depth > VAR_PARSE_MAX_DEPTH) {
+        if (depth > VARIANT_PARSE_MAX_DEPTH) {
             return parseInFail("exceeded maximum nesting depth");
         }
         char ch = parseInGetNextToken();
         if (isFailed) {
-            return Variant();
+            return VariantGlobal::virtualData();
         }
         if (ch == '-' || (ch >= '0' && ch <= '9')) {
             index--;
@@ -438,7 +472,7 @@ public:
             return parseInExpect("false", false);
         }
         if (ch == 'n') {
-            return parseInExpect("null", Variant());
+            return parseInExpect("null", VariantGlobal::virtualData());
         }
         if (ch == '"') {
             return parseInString();
@@ -455,7 +489,7 @@ public:
                 }
                 std::string key = parseInString();
                 if (isFailed) {
-                    return Variant();
+                    return VariantGlobal::virtualData();
                 }
                 ch = parseInGetNextToken();
                 if (ch != ':') {
@@ -463,7 +497,7 @@ public:
                 }
                 data[std::move(key)] = parseIn(depth + 1);
                 if (isFailed) {
-                    return Variant();
+                    return VariantGlobal::virtualData();
                 }
                 ch = parseInGetNextToken();
                 if (ch == '}') {
@@ -486,7 +520,7 @@ public:
                 index--;
                 data.push_back(parseIn(depth + 1));
                 if (isFailed) {
-                    return Variant();
+                    return VariantGlobal::virtualData();
                 }
                 ch = parseInGetNextToken();
                 if (ch == ']') {
@@ -588,11 +622,6 @@ static const VariantMap& emptyMap()
     static const VariantMap value;
     return value;
 }
-static const Variant& virtualData()
-{
-    static const Variant value;
-    return value;
-}
 }
 
 class VariantInt final : public VariantValueProxy<Variant::TYPE_INT, int> {
@@ -631,7 +660,7 @@ class VariantDouble final : public VariantValueProxy<Variant::TYPE_DOUBLE, doubl
     }
     inline virtual bool isEqual(const VariantValue* value) const noexcept override
     {
-        if (std::abs(m_value - value->toDouble()) < VAR_DOUBLE_PRECISION) {
+        if (std::abs(m_value - value->toDouble()) < VARIANT_DOUBLE_PRECISION) {
             return true;
         }
         return false;
@@ -700,6 +729,11 @@ public:
 };
 
 Variant::Variant() noexcept
+    : m_ptr(VariantGlobal::nullValue())
+{
+}
+
+Variant::Variant(std::nullptr_t) noexcept
     : m_ptr(VariantGlobal::nullValue())
 {
 }
@@ -802,6 +836,27 @@ bool Variant::isList() const noexcept
 bool Variant::isMap() const noexcept
 {
     return m_ptr->type() == TYPE_MAP;
+}
+
+bool Variant::hasShape(const Shape& shape, std::string* errorString) const noexcept
+{
+    if (!isMap()) {
+        if (errorString) {
+            *errorString = "expected JSON object, got " + toJson();
+        }
+        return false;
+    }
+    const auto& map = toMap();
+    for (const auto& item : shape) {
+        const auto it = map.find(item.first);
+        if (it == map.cend() || it->second.type() != item.second) {
+            if (errorString) {
+                *errorString = "bad type for " + item.first + " in " + toJson();
+            }
+            return false;
+        }
+    }
+    return true;
 }
 
 bool Variant::toBool(bool defaultValue) const noexcept
@@ -967,53 +1022,62 @@ std::string Variant::toJson(ParseType parseType) const noexcept
     return json;
 }
 
-template <class T>
-static inline bool saveJsonTemplate(const T& data, const std::string& filePath, Variant::ParseType parseType) noexcept
-{
-    std::string jsonStr = data.toJson(parseType);
-    if (jsonStr.empty()) {
-        return false;
-    }
-    std::ofstream wfile;
-    wfile.open(filePath, std::ios::out | std::ios::trunc);
-    if (!wfile.is_open()) {
-        return false;
-    }
-    wfile << jsonStr;
-    wfile.close();
-    return true;
-}
-
 bool Variant::saveJson(const std::string& filePath, ParseType parseType) const noexcept
 {
-    return saveJsonTemplate<Variant>(*this, filePath, parseType);
+    return VariantParser::saveFile(filePath, toJson(parseType));
 }
 
 Variant Variant::fromJson(const std::string& json, std::string* errorString, ParseType parseType) noexcept
 {
-    VariantParser parse(json, errorString, parseType);
-    Variant result = parse.parseIn(0);
-    parse.parseInConsumeGarbage();
-    if (parse.isFailed) {
-        return Variant();
+    if (json.empty()) {
+        return VariantGlobal::virtualData();
     }
-    if (parse.index != json.size()) {
-        return parse.parseInFail("unexpected trailing " + VariantParser::parseInEsc(json[parse.index]));
+    VariantParser parser(json, errorString, parseType);
+    Variant result = parser.parseIn(0);
+    parser.parseInConsumeGarbage();
+    if (parser.isFailed) {
+        return VariantGlobal::virtualData();
+    }
+    if (parser.index != json.size()) {
+        return parser.parseInFail("unexpected trailing " + VariantParser::parseInEsc(json[parser.index]));
     }
     return result;
 }
 
 Variant Variant::readJson(const std::string& filePath, std::string* errorString, ParseType parseType) noexcept
 {
-    std::ifstream rfile;
-    rfile.open(filePath, std::ios::in);
-    if (!rfile.is_open()) {
-        return Variant();
+    return fromJson(VariantParser::readFile(filePath), errorString, parseType);
+}
+
+std::vector<Variant> Variant::fromJsonMulti(const std::string& json, std::string* errorString, int* stopPos, ParseType parseType) noexcept
+{
+    std::vector<Variant> variants;
+    if (json.empty()) {
+        return variants;
     }
-    std::stringstream buffer;
-    buffer << rfile.rdbuf();
-    rfile.close();
-    return fromJson(buffer.str(), errorString, parseType);
+    VariantParser parser(json, errorString, parseType);
+    if (stopPos) {
+        *stopPos = 0;
+    }
+    while (parser.index != json.size() && !parser.isFailed) {
+        variants.push_back(parser.parseIn(0));
+        if (parser.isFailed) {
+            break;
+        }
+        parser.parseInConsumeGarbage();
+        if (parser.isFailed) {
+            break;
+        }
+        if (stopPos) {
+            *stopPos = parser.index;
+        }
+    }
+    return variants;
+}
+
+std::vector<Variant> Variant::readJsonMulti(const std::string& filePath, std::string* errorString, int* stopPos, ParseType parseType) noexcept
+{
+    return fromJsonMulti(VariantParser::readFile(filePath), errorString, stopPos, parseType);
 }
 
 std::ostream& operator<<(std::ostream& ostream, const Variant& data) noexcept
@@ -1022,28 +1086,46 @@ std::ostream& operator<<(std::ostream& ostream, const Variant& data) noexcept
     return ostream;
 }
 
-Variant& Variant::_getSubValue(size_t i)
+Variant& Variant::_getSubValue(size_t i, bool canThrow)
 {
     if (m_ptr->type() != Variant::TYPE_LIST) {
-        throw std::runtime_error("Variant operator[] called on a non-list type");
+        if (canThrow) {
+            throw std::runtime_error("Variant operator[] called on a non-list type");
+        }
+        *this = VariantList();
     }
     VariantList& list = const_cast<VariantList&>(m_ptr->toList());
-    if (i < 0 || i >= list.size()) {
-        throw std::runtime_error("Variant operator[] list index out of bounds");
+    if (i < 0) {
+        if (canThrow) {
+            throw std::runtime_error("Variant operator[] list invaild index");
+        }
+        list.resize(1);
+        return list[0];
+    } else if (i >= list.size()) {
+        if (canThrow) {
+            throw std::runtime_error("Variant operator[] list index out of bounds");
+        }
+        list.resize(i + 1);
     }
     return list[i];
 }
-Variant& Variant::_getSubValue(const std::string& key)
+Variant& Variant::_getSubValue(const std::string& key, bool canThrow)
 {
     if (m_ptr->type() != Variant::TYPE_MAP) {
-        throw std::runtime_error("Variant operator[] called on a non-map type");
+        if (canThrow) {
+            throw std::runtime_error("Variant operator[] called on a non-map type");
+        }
+        *this = VariantMap();
     }
     VariantMap& map = const_cast<VariantMap&>(m_ptr->toMap());
-    auto it = map.find(key);
-    if (it == map.end()) {
-        throw std::runtime_error("Variant operator[] map key not found");
+    if (canThrow) {
+        auto it = map.find(key);
+        if (it == map.end()) {
+            throw std::runtime_error("Variant operator[] map key not found");
+        }
+        return (it->second);
     }
-    return (it->second);
+    return map[key];
 }
 
 bool VariantValue::toBool() const noexcept
@@ -1093,7 +1175,7 @@ bool VariantList::contains(const Variant& data) const noexcept
 
 const Variant& VariantList::value(int index, const Variant& defaultValue) const noexcept
 {
-    if (index < 0 || index >= this->size()) {
+    if (index < 0 || index >= size()) {
         return defaultValue;
     }
     return (*this)[index];
@@ -1108,7 +1190,7 @@ std::string VariantList::toJson(Variant::ParseType parseType) const noexcept
 
 bool VariantList::saveJson(const std::string& filePath, Variant::ParseType parseType) const noexcept
 {
-    return saveJsonTemplate<Variant>(*this, filePath, parseType);
+    return VariantParser::saveFile(filePath, toJson(parseType));
 }
 
 std::ostream& operator<<(std::ostream& ostream, const VariantList& data) noexcept
@@ -1157,7 +1239,7 @@ std::string VariantMap::toJson(Variant::ParseType parseType) const noexcept
 
 bool VariantMap::saveJson(const std::string& filePath, Variant::ParseType parseType) const noexcept
 {
-    return saveJsonTemplate<Variant>(*this, filePath, parseType);
+    return VariantParser::saveFile(filePath, toJson(parseType));
 }
 
 std::ostream& operator<<(std::ostream& ostream, const VariantMap& data) noexcept
