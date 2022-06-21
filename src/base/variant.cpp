@@ -35,6 +35,16 @@ static const Variant& virtualData()
 }
 }
 
+struct VariantRegister {
+    std::unordered_map<int, std::pair<VariantValue::ConstructFunction, VariantValue::DestructFunction>> idToFunction;
+    std::unordered_map<size_t, int> hashToId;
+    std::shared_timed_mutex shareMutex;
+    int id = Variant::TYPE_CUSTOM_BEGIN;
+    VariantRegister()
+    {
+    }
+};
+
 struct VariantNullPtr {
     bool operator==(VariantNullPtr) const
     {
@@ -642,15 +652,6 @@ static const VariantMap& emptyMap()
     static const VariantMap value;
     return value;
 }
-struct VariantRegister {
-    std::unordered_map<int, std::pair<VariantValue::ConstructFunction, VariantValue::DestructFunction>> idToFunction;
-    std::unordered_map<size_t, int> hashToId;
-    std::mutex mutex;
-    int id = Variant::TYPE_CUSTOM_BEGIN;
-    VariantRegister()
-    {
-    }
-};
 static VariantRegister& getRegister()
 {
     static VariantRegister reg;
@@ -658,20 +659,20 @@ static VariantRegister& getRegister()
 }
 static VariantValue::ConstructFunction getConstructFunction(int key)
 {
-    auto& mutex = getRegister().mutex;
+    auto& mutex = getRegister().shareMutex;
     auto& idToFunction = getRegister().idToFunction;
-    mutex.lock();
+    mutex.lock_shared();
     auto function = idToFunction[key].first;
-    mutex.unlock();
+    mutex.unlock_shared();
     return function;
 }
 static VariantValue::DestructFunction getDestructFunction(int key)
 {
-    auto& mutex = getRegister().mutex;
+    auto& mutex = getRegister().shareMutex;
     auto& idToFunction = getRegister().idToFunction;
-    mutex.lock();
+    mutex.lock_shared();
     auto function = idToFunction[key].second;
-    mutex.unlock();
+    mutex.unlock_shared();
     return function;
 }
 }
@@ -837,7 +838,7 @@ const VariantMap& VariantValue::toMap() const noexcept
 
 int VariantValue::registerType(size_t hashCode, ConstructFunction constructFunction, DestructFunction destructFunction) noexcept
 {
-    std::unique_lock<std::mutex> lock(VariantGlobal::getRegister().mutex);
+    std::unique_lock<std::shared_timed_mutex> lock(VariantGlobal::getRegister().shareMutex, std::defer_lock);
     (void)lock;
     auto& hashToId = VariantGlobal::getRegister().hashToId;
     auto it = hashToId.find(hashCode);
@@ -1185,7 +1186,7 @@ Variant Variant::readJson(const std::string& filePath, std::string* errorString,
     return fromJson(VariantParser::readFile(filePath), errorString, parseType);
 }
 
-std::vector<Variant> Variant::fromJsonMulti(const std::string& json, std::string* errorString, int* stopPos, ParseType parseType) noexcept
+std::vector<Variant> Variant::fromJsonMulti(const std::string& json, std::string* errorString, size_t* stopPos, ParseType parseType) noexcept
 {
     std::vector<Variant> variants;
     if (json.empty()) {
@@ -1211,7 +1212,7 @@ std::vector<Variant> Variant::fromJsonMulti(const std::string& json, std::string
     return variants;
 }
 
-std::vector<Variant> Variant::readJsonMulti(const std::string& filePath, std::string* errorString, int* stopPos, ParseType parseType) noexcept
+std::vector<Variant> Variant::readJsonMulti(const std::string& filePath, std::string* errorString, size_t* stopPos, ParseType parseType) noexcept
 {
     return fromJsonMulti(VariantParser::readFile(filePath), errorString, stopPos, parseType);
 }

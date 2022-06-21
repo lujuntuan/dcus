@@ -140,7 +140,7 @@ public:
         *this = Variant(value);
     }
     template <typename T, typename std::enable_if<std::is_constructible<Variant, T>::value, int>::type = 0>
-    const T& value() const
+    T value() const
     {
         if (!isCustom()) {
             return *static_cast<T*>(m_ptr->toPtr());
@@ -155,7 +155,7 @@ public:
         *this = Variant(type, (void*)&value);
     }
     template <typename T, typename std::enable_if<!std::is_constructible<Variant, T>::value, int>::type = 0>
-    const T& value() const
+    T value() const
     {
         if (isCustom()) {
             return *static_cast<T*>(m_ptr->toPtr());
@@ -193,8 +193,8 @@ public:
     bool saveJson(const std::string& filePath, ParseType parseType = PARSE_OUT_BEAUTIFY) const noexcept;
     static Variant fromJson(const std::string& json, std::string* errorString = nullptr, ParseType parseType = PARSE_IN_STANDARD) noexcept;
     static Variant readJson(const std::string& filePath, std::string* errorString = nullptr, ParseType parseType = PARSE_IN_STANDARD) noexcept;
-    static std::vector<Variant> fromJsonMulti(const std::string& json, std::string* errorString = nullptr, int* stopPos = nullptr, ParseType parseType = PARSE_IN_STANDARD) noexcept;
-    static std::vector<Variant> readJsonMulti(const std::string& filePath, std::string* errorString = nullptr, int* stopPos = nullptr, ParseType parseType = PARSE_IN_STANDARD) noexcept;
+    static std::vector<Variant> fromJsonMulti(const std::string& json, std::string* errorString = nullptr, size_t* stopPos = nullptr, ParseType parseType = PARSE_IN_STANDARD) noexcept;
+    static std::vector<Variant> readJsonMulti(const std::string& filePath, std::string* errorString = nullptr, size_t* stopPos = nullptr, ParseType parseType = PARSE_IN_STANDARD) noexcept;
     DCUS_EXPORT friend std::ostream& operator<<(std::ostream& ostream, const Variant& data) noexcept;
 
 private:
