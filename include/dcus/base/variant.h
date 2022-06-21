@@ -14,6 +14,7 @@
 #define DCUS_VARIANT_H
 
 #include "dcus/base/define.h"
+#include <functional>
 #include <initializer_list>
 #include <map>
 #include <memory>
@@ -27,7 +28,40 @@ DCUS_NAMESPACE_BEGIN
 
 class VariantList;
 class VariantMap;
-class VariantValue;
+
+namespace VariantDeclare {
+template <typename T>
+int getType();
+}
+
+class DCUS_EXPORT VariantValue {
+protected:
+    VariantValue() noexcept;
+    virtual ~VariantValue() noexcept;
+    virtual void parseOut(std::string& json, int depth) const noexcept = 0;
+    virtual int type() const noexcept = 0;
+    virtual bool isEqual(const VariantValue* value) const noexcept = 0;
+    virtual bool isLess(const VariantValue* value) const noexcept = 0;
+    virtual void* toPtr() const noexcept = 0;
+    virtual bool toBool() const noexcept;
+    virtual int toInt() const noexcept;
+    virtual double toDouble() const noexcept;
+    virtual const std::string& toString() const noexcept;
+    virtual const VariantList& toList() const noexcept;
+    virtual const VariantMap& toMap() const noexcept;
+
+public:
+    using ConstructFunction = std::function<void*(void*)>;
+    using DestructFunction = std::function<void(void*)>;
+    static int registerType(size_t hashCode, ConstructFunction constructFunction, DestructFunction destructFunction) noexcept;
+
+private:
+    friend class Variant;
+    friend class VariantInt;
+    friend class VariantDouble;
+    friend class VariantParser;
+    friend class VariantRegisterGlobal;
+};
 
 class DCUS_EXPORT Variant final {
 public:
@@ -38,7 +72,8 @@ public:
         TYPE_DOUBLE,
         TYPE_STRING,
         TYPE_LIST,
-        TYPE_MAP
+        TYPE_MAP,
+        TYPE_CUSTOM_BEGIN = 100
     };
     enum ParseType {
         PARSE_UNKNOWN = 0,
@@ -75,8 +110,9 @@ public:
         : Variant(VariantMap(map.begin(), map.end()))
     {
     }
-    Variant(void*) noexcept = delete;
-    Type type() const noexcept;
+    Variant(void* value) noexcept = delete;
+    ~Variant() noexcept;
+    int type() const noexcept;
     bool isValid() const noexcept;
     bool isNull() const noexcept;
     bool isBool() const noexcept;
@@ -86,6 +122,7 @@ public:
     bool isString() const noexcept;
     bool isList() const noexcept;
     bool isMap() const noexcept;
+    bool isCustom() const noexcept;
     bool hasShape(const Shape& shape, std::string* errorString = nullptr) const noexcept;
     bool toBool(bool defaultValue = false) const noexcept;
     int toInt(int defaultValue = 0) const noexcept;
@@ -97,23 +134,52 @@ public:
     std::vector<std::string> toStringList() const noexcept;
     const VariantList& toList() const noexcept;
     const VariantMap& toMap() const noexcept;
+    template <typename T, typename std::enable_if<std::is_constructible<Variant, T>::value, int>::type = 0>
+    void setValue(const T& value)
+    {
+        *this = Variant(value);
+    }
+    template <typename T, typename std::enable_if<std::is_constructible<Variant, T>::value, int>::type = 0>
+    const T& value() const
+    {
+        if (!isCustom()) {
+            return *static_cast<T*>(m_ptr->toPtr());
+        } else {
+            return T();
+        }
+    }
+    template <typename T, typename std::enable_if<!std::is_constructible<Variant, T>::value, int>::type = 0>
+    void setValue(const T& value)
+    {
+        int type = VariantDeclare::getType<T>();
+        *this = Variant(type, (void*)&value);
+    }
+    template <typename T, typename std::enable_if<!std::is_constructible<Variant, T>::value, int>::type = 0>
+    const T& value() const
+    {
+        if (isCustom()) {
+            return *static_cast<T*>(m_ptr->toPtr());
+        } else {
+            return T();
+        }
+    }
     const Variant& operator[](size_t i) const noexcept;
     const Variant& operator[](const std::string& key) const noexcept;
 #ifndef VARIANT_OPERATOR_DISABLE_WRITABLE
     inline Variant& operator[](size_t i)
     {
 #ifdef VARIANT_OPERATOR_ENABLE_THROW
-        return _getSubValue(i, true);
+        return getSubValue(i, true);
 #else
-        return _getSubValue(i, false);
+        return getSubValue(i, false);
 #endif
     }
     inline Variant& operator[](const std::string& key)
     {
 #ifdef VARIANT_OPERATOR_ENABLE_THROW
-        return _getSubValue(key, true);
+        return getSubValue(key, true);
 #else
-        return _getSubValue(key, false);
+        return getSubValue(key, false);
 #endif
     }
 #endif
@@ -132,8 +198,9 @@ public:
     DCUS_EXPORT friend std::ostream& operator<<(std::ostream& ostream, const Variant& data) noexcept;
 
 private:
-    Variant& _getSubValue(size_t i, bool canThrow);
-    Variant& _getSubValue(const std::string& key, bool canThrow);
+    Variant(int type, void* value) noexcept;
+    Variant& getSubValue(size_t i, bool canThrow);
+    Variant& getSubValue(const std::string& key, bool canThrow);
 
 private:
     friend class VariantParser;
@@ -185,28 +252,29 @@ public:
     DCUS_EXPORT friend std::ostream& operator<<(std::ostream& ostream, const VariantMap& data) noexcept;
 };
 
-class DCUS_EXPORT VariantValue {
-protected:
-    virtual ~VariantValue() noexcept
-    {
+#define VARIANT_DECLARE_TYPE(T)                                \
+    namespace VariantDeclare {                                 \
+        struct T##Register {                                   \
+            int type;                                          \
+            T##Register()                                      \
+            {                                                  \
+                type = VariantValue::registerType(             \
+                    typeid(T).hash_code(),                     \
+                    [](void* value) {                          \
+                        return new T(*static_cast<T*>(value)); \
+                    },                                         \
+                    [](void* ptr) {                            \
+                        delete static_cast<T*>(ptr);           \
+                    });                                        \
+            }                                                  \
+        };                                                     \
+        template <>                                            \
+        int getType<T>()                                       \
+        {                                                      \
+            static T##Register reg;                            \
+            return reg.type;                                   \
+        }                                                      \
     }
-    virtual void parseOut(std::string& json, int depth) const noexcept = 0;
-    virtual Variant::Type type() const noexcept = 0;
-    virtual bool isEqual(const VariantValue* value) const noexcept = 0;
-    virtual bool isLess(const VariantValue* value) const noexcept = 0;
-    virtual bool toBool() const noexcept;
-    virtual int toInt() const noexcept;
-    virtual double toDouble() const noexcept;
-    virtual const std::string& toString() const noexcept;
-    virtual const VariantList& toList() const noexcept;
-    virtual const VariantMap& toMap() const noexcept;
-
-private:
-    friend class Variant;
-    friend class VariantInt;
-    friend class VariantDouble;
-    friend class VariantParser;
-};
 
 DCUS_NAMESPACE_END
 

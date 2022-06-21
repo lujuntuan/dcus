@@ -11,15 +11,19 @@
  **********************************************************************************/
 
 #include "dcus/base/variant.h"
+#include "dcus/base/log.h"
 #include <algorithm>
 #include <cmath>
 #include <fstream>
 #include <limits>
+#include <mutex>
+#include <shared_mutex>
 #include <sstream>
+#include <unordered_map>
 
 #define VARIANT_PARSE_MAX_DEPTH 500
 #define VARIANT_PARSE_OUT_BEAUTIFY_SPACE "    "
-#define VARIANT_DOUBLE_PRECISION (double)0.0000001
+#define VARIANT_DOUBLE_PRECISION 0.0000001
 
 DCUS_NAMESPACE_BEGIN
 
@@ -206,6 +210,10 @@ public:
             parseOutBeautify(out, depth - 1);
         }
         out += "}";
+    }
+    static void parseOut(void* value, std::string& out, int depth) noexcept
+    {
+        out += "(custom)";
     }
     static std::string parseInEsc(char c) noexcept
     {
@@ -538,47 +546,59 @@ public:
     }
 };
 
-template <Variant::Type _type, typename T>
+template <typename T>
 class VariantValueProxy : public VariantValue {
 public:
-    explicit VariantValueProxy(const T& value) noexcept
-        : m_value(value)
+    explicit VariantValueProxy(int type, const T& value) noexcept
+        : m_type(type)
+        , m_value(value)
     {
     }
-    explicit VariantValueProxy(T&& value) noexcept
-        : m_value(std::move(value))
+    explicit VariantValueProxy(int type, T&& value) noexcept
+        : m_type(type)
+        , m_value(std::move(value))
     {
     }
 
 protected:
-    inline Variant::Type type() const noexcept override
+    inline int type() const noexcept override
     {
-        return _type;
+        return m_type;
     }
     inline virtual bool isEqual(const VariantValue* value) const noexcept override
     {
-        return m_value == static_cast<const VariantValueProxy<_type, T>*>(value)->m_value;
+        return m_value == static_cast<const VariantValueProxy<T>*>(value)->m_value;
     }
     inline virtual bool isLess(const VariantValue* value) const noexcept override
     {
-        return m_value < static_cast<const VariantValueProxy<_type, T>*>(value)->m_value;
+        return m_value < static_cast<const VariantValueProxy<T>*>(value)->m_value;
+    }
+    inline virtual void* toPtr() const noexcept override
+    {
+        return (void*)&m_value;
     }
     inline virtual void parseOut(std::string& json, int depth) const noexcept override
     {
         return VariantParser::parseOut(m_value, json, depth);
     }
+    const int m_type;
     const T m_value;
 };
 
-class VariantNull final : public VariantValueProxy<Variant::TYPE_NULL, VariantNullPtr> {
+class VariantNull final : public VariantValueProxy<VariantNullPtr> {
+    inline virtual void* toPtr() const noexcept override
+    {
+        return nullptr;
+    }
+
 public:
     VariantNull() noexcept
-        : VariantValueProxy({})
+        : VariantValueProxy(Variant::TYPE_NULL, {})
     {
     }
 };
 
-class VariantBool final : public VariantValueProxy<Variant::TYPE_BOOL, bool> {
+class VariantBool final : public VariantValueProxy<bool> {
     inline virtual bool toBool() const noexcept override
     {
         return m_value;
@@ -586,7 +606,7 @@ class VariantBool final : public VariantValueProxy<Variant::TYPE_BOOL, bool> {
 
 public:
     explicit VariantBool(bool value) noexcept
-        : VariantValueProxy(value)
+        : VariantValueProxy(Variant::TYPE_BOOL, value)
     {
     }
 };
@@ -622,9 +642,41 @@ static const VariantMap& emptyMap()
     static const VariantMap value;
     return value;
 }
+struct VariantRegister {
+    std::unordered_map<int, std::pair<VariantValue::ConstructFunction, VariantValue::DestructFunction>> idToFunction;
+    std::unordered_map<size_t, int> hashToId;
+    std::mutex mutex;
+    int id = Variant::TYPE_CUSTOM_BEGIN;
+    VariantRegister()
+    {
+    }
+};
+static VariantRegister& getRegister()
+{
+    static VariantRegister reg;
+    return reg;
+}
+static VariantValue::ConstructFunction getConstructFunction(int key)
+{
+    auto& mutex = getRegister().mutex;
+    auto& idToFunction = getRegister().idToFunction;
+    mutex.lock();
+    auto function = idToFunction[key].first;
+    mutex.unlock();
+    return function;
+}
+static VariantValue::DestructFunction getDestructFunction(int key)
+{
+    auto& mutex = getRegister().mutex;
+    auto& idToFunction = getRegister().idToFunction;
+    mutex.lock();
+    auto function = idToFunction[key].second;
+    mutex.unlock();
+    return function;
+}
 }
 
-class VariantInt final : public VariantValueProxy<Variant::TYPE_INT, int> {
+class VariantInt final : public VariantValueProxy<int> {
     inline virtual int toInt() const noexcept override
     {
         return m_value;
@@ -644,12 +696,12 @@ class VariantInt final : public VariantValueProxy<Variant::TYPE_INT, int> {
 
 public:
     explicit VariantInt(int value) noexcept
-        : VariantValueProxy(value)
+        : VariantValueProxy(Variant::TYPE_INT, value)
     {
     }
 };
 
-class VariantDouble final : public VariantValueProxy<Variant::TYPE_DOUBLE, double> {
+class VariantDouble final : public VariantValueProxy<double> {
     inline virtual int toInt() const noexcept override
     {
         return static_cast<int>(m_value);
@@ -672,12 +724,12 @@ class VariantDouble final : public VariantValueProxy<Variant::TYPE_DOUBLE, doubl
 
 public:
     explicit VariantDouble(double value) noexcept
-        : VariantValueProxy(value)
+        : VariantValueProxy(Variant::TYPE_DOUBLE, value)
     {
     }
 };
 
-class VariantString final : public VariantValueProxy<Variant::TYPE_STRING, std::string> {
+class VariantString final : public VariantValueProxy<std::string> {
     inline virtual const std::string& toString() const noexcept override
     {
         return m_value;
@@ -685,16 +737,16 @@ class VariantString final : public VariantValueProxy<Variant::TYPE_STRING, std::
 
 public:
     explicit VariantString(const std::string& value) noexcept
-        : VariantValueProxy(value)
+        : VariantValueProxy(Variant::TYPE_STRING, value)
     {
     }
     explicit VariantString(std::string&& value) noexcept
-        : VariantValueProxy(std::move(value))
+        : VariantValueProxy(Variant::TYPE_STRING, std::move(value))
     {
     }
 };
 
-class VariantArray final : public VariantValueProxy<Variant::TYPE_LIST, VariantList> {
+class VariantArray final : public VariantValueProxy<VariantList> {
     inline virtual const VariantList& toList() const noexcept override
     {
         return m_value;
@@ -702,16 +754,16 @@ class VariantArray final : public VariantValueProxy<Variant::TYPE_LIST, VariantL
 
 public:
     explicit VariantArray(const VariantList& value) noexcept
-        : VariantValueProxy(value)
+        : VariantValueProxy(Variant::TYPE_LIST, value)
     {
     }
     explicit VariantArray(VariantList&& value) noexcept
-        : VariantValueProxy(std::move(value))
+        : VariantValueProxy(Variant::TYPE_LIST, std::move(value))
     {
     }
 };
 
-class VariantObject final : public VariantValueProxy<Variant::TYPE_MAP, VariantMap> {
+class VariantObject final : public VariantValueProxy<VariantMap> {
     inline virtual const VariantMap& toMap() const noexcept override
     {
         return m_value;
@@ -719,14 +771,87 @@ class VariantObject final : public VariantValueProxy<Variant::TYPE_MAP, VariantM
 
 public:
     explicit VariantObject(const VariantMap& value) noexcept
-        : VariantValueProxy(value)
+        : VariantValueProxy(Variant::TYPE_MAP, value)
     {
     }
     explicit VariantObject(VariantMap&& value) noexcept
-        : VariantValueProxy(std::move(value))
+        : VariantValueProxy(Variant::TYPE_MAP, std::move(value))
     {
     }
 };
+
+class VariantCustom final : public VariantValueProxy<void*> {
+    inline virtual void* toPtr() const noexcept override
+    {
+        return m_value;
+    }
+
+public:
+    explicit VariantCustom(int type, void* value) noexcept
+        : VariantValueProxy(type, VariantGlobal::getConstructFunction(type)(value))
+    {
+    }
+    ~VariantCustom() noexcept
+    {
+        VariantGlobal::getDestructFunction(m_type)(m_value);
+    }
+};
+
+VariantValue::VariantValue() noexcept
+{
+}
+
+VariantValue::~VariantValue() noexcept
+{
+}
+
+bool VariantValue::toBool() const noexcept
+{
+    return false;
+}
+
+int VariantValue::toInt() const noexcept
+{
+    return 0;
+}
+
+double VariantValue::toDouble() const noexcept
+{
+    return 0;
+}
+
+const std::string& VariantValue::toString() const noexcept
+{
+    return VariantGlobal::emptyString();
+}
+
+const VariantList& VariantValue::toList() const noexcept
+{
+    return VariantGlobal::emptyList();
+}
+
+const VariantMap& VariantValue::toMap() const noexcept
+{
+    return VariantGlobal::emptyMap();
+}
+
+int VariantValue::registerType(size_t hashCode, ConstructFunction constructFunction, DestructFunction destructFunction) noexcept
+{
+    std::unique_lock<std::mutex> lock(VariantGlobal::getRegister().mutex);
+    (void)lock;
+    auto& hashToId = VariantGlobal::getRegister().hashToId;
+    auto it = hashToId.find(hashCode);
+    if (it == hashToId.end()) {
+        auto& id = VariantGlobal::getRegister().id;
+        id++;
+        hashToId.emplace(hashCode, id);
+        auto& idToFunction = VariantGlobal::getRegister().idToFunction;
+        idToFunction.emplace(id, std::make_pair(constructFunction, destructFunction));
+        return id;
+    } else {
+        return it->second;
+    }
+}
 
 Variant::Variant() noexcept
     : m_ptr(VariantGlobal::nullValue())
@@ -788,7 +913,13 @@ Variant::Variant(VariantMap&& values) noexcept
 {
 }
 
-Variant::Type Variant::type() const noexcept
+Variant::~Variant() noexcept
+{
+    if (type() > TYPE_CUSTOM_BEGIN) {
+    }
+}
+
+int Variant::type() const noexcept
 {
     return m_ptr->type();
 }
@@ -836,6 +967,11 @@ bool Variant::isList() const noexcept
 bool Variant::isMap() const noexcept
 {
     return m_ptr->type() == TYPE_MAP;
+}
+
+bool Variant::isCustom() const noexcept
+{
+    return m_ptr->type() > TYPE_CUSTOM_BEGIN;
 }
 
 bool Variant::hasShape(const Shape& shape, std::string* errorString) const noexcept
@@ -1080,13 +1216,18 @@ std::vector<Variant> Variant::readJsonMulti(const std::string& filePath, std::st
     return fromJsonMulti(VariantParser::readFile(filePath), errorString, stopPos, parseType);
 }
 
+Variant::Variant(int type, void* value) noexcept
+    : m_ptr(std::make_shared<VariantCustom>(type, value))
+{
+}
+
 std::ostream& operator<<(std::ostream& ostream, const Variant& data) noexcept
 {
     ostream << data.toJson(Variant::PARSE_OUT_BEAUTIFY);
     return ostream;
 }
 
-Variant& Variant::_getSubValue(size_t i, bool canThrow)
+Variant& Variant::getSubValue(size_t i, bool canThrow)
 {
     if (m_ptr->type() != Variant::TYPE_LIST) {
         if (canThrow) {
@@ -1109,7 +1250,7 @@ Variant& Variant::_getSubValue(size_t i, bool canThrow)
     }
     return list[i];
 }
-Variant& Variant::_getSubValue(const std::string& key, bool canThrow)
+Variant& Variant::getSubValue(const std::string& key, bool canThrow)
 {
     if (m_ptr->type() != Variant::TYPE_MAP) {
         if (canThrow) {
@@ -1126,36 +1267,6 @@ Variant& Variant::_getSubValue(const std::string& key, bool canThrow)
         return (it->second);
     }
     return map[key];
-}
-
-bool VariantValue::toBool() const noexcept
-{
-    return false;
-}
-
-int VariantValue::toInt() const noexcept
-{
-    return 0;
-}
-
-double VariantValue::toDouble() const noexcept
-{
-    return 0;
-}
-
-const std::string& VariantValue::toString() const noexcept
-{
-    return VariantGlobal::emptyString();
-}
-
-const VariantList& VariantValue::toList() const noexcept
-{
-    return VariantGlobal::emptyList();
-}
-
-const VariantMap& VariantValue::toMap() const noexcept
-{
-    return VariantGlobal::emptyMap();
 }
 
 VariantList::VariantList(const Variant& values) noexcept
