@@ -134,6 +134,11 @@ public:
     std::vector<std::string> toStringList() const noexcept;
     const VariantList& toList() const noexcept;
     const VariantMap& toMap() const noexcept;
+    template <class T, class = decltype(&T::fromVariant)>
+    T toCustom() noexcept
+    {
+        return T::fromVariant(*this);
+    }
     template <typename T, typename std::enable_if<std::is_constructible<Variant, T>::value, int>::type = 0>
     void setValue(const T& value)
     {
@@ -269,7 +274,7 @@ public:
             }                                                  \
         };                                                     \
         template <>                                            \
-        int getType<T>()                                       \
+        inline int getType<T>()                                \
         {                                                      \
             static T##Register reg;                            \
             return reg.type;                                   \

@@ -16,10 +16,6 @@
 
 using namespace DCus;
 
-namespace DCus {
-VARIANT_DECLARE_TYPE(Domain);
-}
-
 int main(int argc, char* argv[])
 {
     DCUS_CLIENT_CREATE(argc, argv);
