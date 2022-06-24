@@ -24,7 +24,7 @@
 DCUS_NAMESPACE_BEGIN
 
 struct ThreadHelper {
-    std::shared_ptr<std::thread> thread;
+    std::unique_ptr<std::thread> thread;
     std::atomic_bool isRunning { false };
     std::atomic_bool isReadyFinished { true };
     Thread::Function startFunction = nullptr;
@@ -116,7 +116,7 @@ bool Thread::start()
     m_hpr->isReadyFinished = false;
     m_hpr->isRunning = true;
     try {
-        m_hpr->thread = std::make_shared<std::thread>([this]() {
+        m_hpr->thread = std::make_unique<std::thread>([this]() {
             ThreadHelper::_ThreadMap.emplace(std::this_thread::get_id(), this);
             if (m_hpr->startFunction) {
                 m_hpr->startFunction();
@@ -125,11 +125,9 @@ bool Thread::start()
             if (m_hpr->endFunction) {
                 m_hpr->endFunction();
             }
-            // wakeup
             m_hpr->isRunning = false;
             std::lock_guard<std::mutex> lock(m_hpr->mutex);
             m_hpr->condition.notify_one();
-            //
             ThreadHelper::_ThreadMap.erase(std::this_thread::get_id());
         });
         return true;
@@ -157,14 +155,12 @@ bool Thread::stop(uint32_t milli_s)
         }
         return true;
     }
-    // sleep
     std::unique_lock<std::mutex> lock(m_hpr->mutex);
     if (milli_s > 0) {
         m_hpr->condition.wait_for(m_hpr->mutex, std::chrono::milliseconds(std::move(milli_s)));
     } else {
         m_hpr->condition.wait(m_hpr->mutex);
     }
-    //
     if (m_hpr->isRunning) {
         LOG_WARNING("thread is forced to end");
         try {

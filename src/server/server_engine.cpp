@@ -205,8 +205,8 @@ void ServerEngine::stopWebEngine()
 void ServerEngine::processDomainMessage(Domain&& domain, bool discovery)
 {
     if (!m_hpr->domainsConfig.empty()) {
-        if (m_hpr->domainsConfig.contains(domain.name())) {
-            if (domain.guid() != m_hpr->domainsConfig.value(domain.name()).toString()) {
+        if (m_hpr->domainsConfig.contains(domain.name)) {
+            if (domain.guid != m_hpr->domainsConfig.value(domain.name).toString()) {
                 LOG_WARNING("guid verification failed");
                 return;
             }
@@ -293,13 +293,13 @@ void ServerEngine::eventChanged(Event* event)
             break;
         }
         m_hpr->hasFeed = false;
-        m_hpr->webFeed.type() = WebFeed::TP_DEPLOY;
-        m_hpr->hasNewId = m_hpr->lastlId != upgradeEvent->upgrade().id();
-        m_hpr->cancelResume = !m_hpr->hasNewId && !m_hpr->lastCancelId.empty() && m_hpr->lastCancelId == upgradeEvent->upgrade().id();
+        m_hpr->webFeed.type = WebFeed::TP_DEPLOY;
+        m_hpr->hasNewId = m_hpr->lastlId != upgradeEvent->upgrade().id;
+        m_hpr->cancelResume = !m_hpr->hasNewId && !m_hpr->lastCancelId.empty() && m_hpr->lastCancelId == upgradeEvent->upgrade().id;
         lock();
         m_hpr->upgrade = upgradeEvent->upgrade();
         unlock();
-        m_hpr->lastlId = m_hpr->upgrade.id();
+        m_hpr->lastlId = m_hpr->upgrade.id;
         if (m_hpr->hasNewId) {
             m_hpr->hasDeployBreaked = false;
         }
@@ -309,7 +309,7 @@ void ServerEngine::eventChanged(Event* event)
     }
     case ServerEvent::REQ_CANCEL: {
         m_hpr->hasFeed = false;
-        m_hpr->webFeed.type() = WebFeed::TP_CANCEL;
+        m_hpr->webFeed.type = WebFeed::TP_CANCEL;
         lock();
         m_hpr->cancelId = serverEvent->data().value("id").toString();
         unlock();
@@ -341,7 +341,7 @@ void ServerEngine::eventChanged(Event* event)
         if (m_hpr->webQueue.state() != WebQueue::WEB_DISTRIBUTE) {
             break;
         }
-        if (m_hpr->upgrade.download() != Upgrade::MTHD_SKIP) {
+        if (m_hpr->upgrade.download != Upgrade::MTHD_SKIP) {
             wait(10);
             sendControlMessage(CTL_DOWNLOAD);
         }
@@ -364,8 +364,8 @@ void ServerEngine::eventChanged(Event* event)
             break;
         }
         for (auto& d : m_hpr->details) {
-            d.transfers().clear();
-            d.transfers().shrink_to_fit();
+            d.transfers.clear();
+            d.transfers.shrink_to_fit();
         }
         setState(MR_VERIFY);
         m_hpr->webQueue.postEvent(new WebEvent(WebEvent::REQ_VERIFY));
@@ -376,8 +376,8 @@ void ServerEngine::eventChanged(Event* event)
             break;
         }
         for (auto& d : m_hpr->details) {
-            d.transfers().clear();
-            d.transfers().shrink_to_fit();
+            d.transfers.clear();
+            d.transfers.shrink_to_fit();
         }
         setState(MR_DISTRIBUTE);
         m_hpr->webQueue.postEvent(new WebEvent(WebEvent::REQ_DISTRIBUTE));
@@ -388,14 +388,14 @@ void ServerEngine::eventChanged(Event* event)
             break;
         }
         for (auto& d : m_hpr->details) {
-            d.transfers().clear();
-            d.transfers().shrink_to_fit();
+            d.transfers.clear();
+            d.transfers.shrink_to_fit();
         }
         setState(MR_WAIT);
         break;
     }
     case ServerEvent::RES_FEEDBACK_DONE: {
-        if (m_hpr->webFeed.type() == WebFeed::TP_UNKNOWN) {
+        if (m_hpr->webFeed.type == WebFeed::TP_UNKNOWN) {
             LOG_WARNING("get RES_FEEDBACK_DONE error");
             break;
         }
@@ -411,21 +411,21 @@ void ServerEngine::eventChanged(Event* event)
         uint32_t all_current = 0;
         uint32_t all_total = 0;
         for (auto& d : m_hpr->details) {
-            d.transfers().clear();
-            d.transfers().shrink_to_fit();
+            d.transfers.clear();
+            d.transfers.shrink_to_fit();
             uint32_t current = 0;
             uint32_t total = 0;
-            for (const auto& files : d.package().files()) {
-                total += (uint32_t)(files.size() / 1024.0f);
+            for (const auto& files : d.package.files) {
+                total += (uint32_t)(files.size / 1024.0f);
             }
             for (const auto& transfer : transferEvent->transfers()) {
-                if (transfer.domain() == d.domain().name()) {
-                    current += transfer.current();
-                    d.transfers().push_back(std::move(transfer));
+                if (transfer.domain == d.domain.name) {
+                    current += transfer.current;
+                    d.transfers.push_back(std::move(transfer));
                 }
             }
             if (total > 0) {
-                d.progress() = current * 100.0f / total;
+                d.progress = current * 100.0f / total;
             }
             all_current += current;
             all_total += total;
@@ -449,33 +449,33 @@ void ServerEngine::eventChanged(Event* event)
             LOG_WARNING("get ServerControlReplyEvent error");
             break;
         }
-        if (serverDomainEvent->domain().name().empty()) {
+        if (serverDomainEvent->domain().name.empty()) {
             LOG_WARNING("domain name is empty");
             break;
         }
-        if (serverDomainEvent->domain().watcher()) {
+        if (serverDomainEvent->domain().watcher) {
             m_hpr->detailSubscribed = true;
         }
         lock();
-        for (const auto& pair : serverDomainEvent->domain().attribute()) {
-            m_hpr->attributes.insert(serverDomainEvent->domain().name() + "_" + pair.first, pair.second);
+        for (const auto& pair : serverDomainEvent->domain().attribute) {
+            m_hpr->attributes.insert(serverDomainEvent->domain().name + "_" + pair.first, pair.second);
         }
-        m_hpr->attributes.insert(serverDomainEvent->domain().name() + "_version", serverDomainEvent->domain().version());
+        m_hpr->attributes.insert(serverDomainEvent->domain().name + "_version", serverDomainEvent->domain().version);
         unlock();
-        Detail* d = m_hpr->details.find(serverDomainEvent->domain().name());
+        Detail* d = m_hpr->details.find(serverDomainEvent->domain().name);
         if (d) {
-            d->heartbeat().restart();
+            d->heartbeat.restart();
             if (serverDomainEvent->discovery()) {
                 sendControlMessage(m_hpr->control, true);
             }
-            if (!d->domain().isEqual(serverDomainEvent->domain())) {
-                d->domain().update(serverDomainEvent->domain());
+            if (!d->domain.isEqual(serverDomainEvent->domain())) {
+                d->domain.update(serverDomainEvent->domain());
                 if (m_hpr->state == MR_DEPLOY && m_hpr->details.size() > 0) {
                     float all_progress = 0;
                     for (auto& td : m_hpr->details) {
-                        if (td.domain().state() == WR_IDLE || td.domain().state() == WR_DEPLOY || (td.domain().state() == WR_CANCEL && td.domain().last() == WR_DEPLOY)) {
-                            td.progress() = td.domain().progress();
-                            all_progress += td.domain().progress();
+                        if (td.domain.state == WR_IDLE || td.domain.state == WR_DEPLOY || (td.domain.state == WR_CANCEL && td.domain.last == WR_DEPLOY)) {
+                            td.progress = td.domain.progress;
+                            all_progress += td.domain.progress;
                         }
                     }
                     m_hpr->step = all_progress * 1.0f / m_hpr->details.size();
@@ -484,13 +484,13 @@ void ServerEngine::eventChanged(Event* event)
                 sendDetailMessage();
             }
         } else {
-            if (serverDomainEvent->domain().watcher() && serverDomainEvent->discovery()) {
+            if (serverDomainEvent->domain().watcher && serverDomainEvent->discovery()) {
                 sendControlMessage(m_hpr->control, true);
                 sendDetailMessage(true);
             }
         }
-        if (serverDomainEvent->domain().watcher() && serverDomainEvent->domain().answer() != ANS_UNKNOWN) {
-            configAnswer(serverDomainEvent->domain().answer());
+        if (serverDomainEvent->domain().watcher && serverDomainEvent->domain().answer != ANS_UNKNOWN) {
+            configAnswer(serverDomainEvent->domain().answer);
         }
         break;
     }
@@ -513,14 +513,14 @@ std::vector<std::string> ServerEngine::getWebFeedDetails() const
         m_hpr->message));
     for (const auto& d : m_hpr->details) {
         details.push_back(Utils::stringSprintf("[%s] state: %s, last: %s, watcher: %s, error: %s, version: %s, progress: %s, message: %s",
-            d.domain().name(),
-            Domain::getWrStateStr(d.domain().state()),
-            Domain::getWrStateStr(d.domain().last()),
-            d.domain().watcher() ? std::string("true") : std::string("false"),
-            std::to_string(d.domain().error()),
-            d.domain().version(),
-            Utils::doubleToString(d.domain().progress(), 2),
-            d.domain().message()));
+            d.domain.name,
+            Domain::getWrStateStr(d.domain.state),
+            Domain::getWrStateStr(d.domain.last),
+            d.domain.watcher ? std::string("true") : std::string("false"),
+            std::to_string(d.domain.error),
+            d.domain.version,
+            Utils::doubleToString(d.domain.progress, 2),
+            d.domain.message));
     }
     return details;
 }
@@ -529,7 +529,7 @@ std::pair<int, int> ServerEngine::getWebFeedProgress() const
 {
     int step = 0;
     for (const auto& d : m_hpr->details) {
-        if (d.domain().state() == WR_IDLE && d.detectVersionEqual()) {
+        if (d.domain.state == WR_IDLE && d.detectVersionEqual()) {
             step++;
         }
     }
@@ -778,8 +778,8 @@ void ServerEngine::setState(ServerState state)
         configState();
         sendDetailMessage();
         if (Domain::mrStateIsBusy(m_hpr->state)) {
-            if (m_hpr->webFeed.type() == WebFeed::TP_DEPLOY) {
-                WebFeed webFeed(m_hpr->upgrade.id(), WebFeed::TP_DEPLOY, WebFeed::EXE_PROCEEDING, WebFeed::RS_SUCCESS, getWebFeedDetails(), getWebFeedProgress());
+            if (m_hpr->webFeed.type == WebFeed::TP_DEPLOY) {
+                WebFeed webFeed(m_hpr->upgrade.id, WebFeed::TP_DEPLOY, WebFeed::EXE_PROCEEDING, WebFeed::RS_SUCCESS, getWebFeedDetails(), getWebFeedProgress());
                 m_hpr->webQueue.postEvent(new WebFeedEvent(webFeed));
             } else {
                 WebFeed webFeed(m_hpr->cancelId, WebFeed::TP_CANCEL, WebFeed::EXE_PROCEEDING, WebFeed::RS_SUCCESS, getWebFeedDetails(), getWebFeedProgress());
@@ -835,13 +835,13 @@ void ServerEngine::pending()
     m_hpr->depends.shrink_to_fit();
     m_hpr->details.clear();
     m_hpr->details.shrink_to_fit();
-    for (const auto& package : m_hpr->upgrade.packages()) {
-        Domain domain(package.domain());
-        domain.state() = WR_OFFLINE;
-        domain.last() = WR_OFFLINE;
-        m_hpr->depends.push_back(domain.name());
+    for (const auto& package : m_hpr->upgrade.packages) {
+        Domain domain(package.domain);
+        domain.state = WR_OFFLINE;
+        domain.last = WR_OFFLINE;
+        m_hpr->depends.push_back(domain.name);
         Detail d(std::move(domain));
-        d.package() = package;
+        d.package = package;
         m_hpr->details.push_back(std::move(d));
     }
     m_hpr->details.sort();
@@ -877,30 +877,30 @@ void ServerEngine::feedback(bool finished, int error)
         LOG_WARNING("has feedback");
         return;
     }
-    if (m_hpr->webFeed.type() == WebFeed::TP_UNKNOWN) {
+    if (m_hpr->webFeed.type == WebFeed::TP_UNKNOWN) {
         LOG_WARNING("feedback type is unknown");
         return;
-    } else if (m_hpr->webFeed.type() == WebFeed::TP_DEPLOY) {
-        m_hpr->webFeed.id() = m_hpr->upgrade.id();
-    } else if (m_hpr->webFeed.type() == WebFeed::TP_CANCEL) {
-        m_hpr->webFeed.id() = m_hpr->cancelId;
+    } else if (m_hpr->webFeed.type == WebFeed::TP_DEPLOY) {
+        m_hpr->webFeed.id = m_hpr->upgrade.id;
+    } else if (m_hpr->webFeed.type == WebFeed::TP_CANCEL) {
+        m_hpr->webFeed.id = m_hpr->cancelId;
     }
-    m_hpr->webFeed.execution() = WebFeed::EXE_CLOSED;
+    m_hpr->webFeed.execution = WebFeed::EXE_CLOSED;
     m_hpr->hasFeed = true;
     m_hpr->errorCode = error;
     ServerState state;
     if (finished) {
         state = MR_DONE_ASK;
-        m_hpr->webFeed.result() = WebFeed::RS_SUCCESS;
-        if (m_hpr->webFeed.type() == WebFeed::TP_DEPLOY) {
+        m_hpr->webFeed.result = WebFeed::RS_SUCCESS;
+        if (m_hpr->webFeed.type == WebFeed::TP_DEPLOY) {
             LOG_DEBUG("deploy finished");
         } else {
             LOG_DEBUG("cancel finished");
         }
     } else {
         state = MR_ERROR_ASK;
-        m_hpr->webFeed.result() = WebFeed::RS_FAILURE;
-        if (m_hpr->webFeed.type() == WebFeed::TP_DEPLOY) {
+        m_hpr->webFeed.result = WebFeed::RS_FAILURE;
+        if (m_hpr->webFeed.type == WebFeed::TP_DEPLOY) {
             LOG_WARNING("deploy error", "(code:", m_hpr->errorCode, ")");
         } else {
             LOG_WARNING("cancel error", "(code:", m_hpr->errorCode, ")");
@@ -908,8 +908,8 @@ void ServerEngine::feedback(bool finished, int error)
     }
     sendControlMessage(CTL_CLEAR);
     WebFeed tmpFeed = m_hpr->webFeed;
-    tmpFeed.details() = getWebFeedDetails();
-    tmpFeed.progress() = getWebFeedProgress();
+    tmpFeed.details = getWebFeedDetails();
+    tmpFeed.progress = getWebFeedProgress();
     m_hpr->webQueue.postEvent(new WebEvent(WebEvent::REQ_STOP));
     m_hpr->webQueue.postEvent(new WebFeedEvent(tmpFeed));
     if (m_hpr->detailSubscribed) {
@@ -951,9 +951,9 @@ void ServerEngine::sendDetailMessage(bool cache)
 
 static int getMaxDeployTime(const Detail& d)
 {
-    int32_t maxDeployTime = d.package().meta().value("max_deploy_time").toInt();
+    int32_t maxDeployTime = d.package.meta.value("max_deploy_time").toInt();
     if (maxDeployTime <= 0) {
-        maxDeployTime = d.domain().meta().value("max_deploy_time").toInt();
+        maxDeployTime = d.domain.meta.value("max_deploy_time").toInt();
         if (maxDeployTime <= 0) {
             maxDeployTime = DCUS_MAX_DEPLOY_TIME_CLIENT;
         }
@@ -963,9 +963,9 @@ static int getMaxDeployTime(const Detail& d)
 
 static int getMaxRestartTime(const Detail& d)
 {
-    int32_t maxRestartTime = d.package().meta().value("max_restart_time").toInt();
+    int32_t maxRestartTime = d.package.meta.value("max_restart_time").toInt();
     if (maxRestartTime <= 0) {
-        maxRestartTime = d.domain().meta().value("max_restart_time").toInt();
+        maxRestartTime = d.domain.meta.value("max_restart_time").toInt();
         if (maxRestartTime <= 0) {
             maxRestartTime = DCUS_MAX_DEPLOY_RESTART_TIME_CLIENT;
         }
@@ -975,7 +975,7 @@ static int getMaxRestartTime(const Detail& d)
 
 void ServerEngine::processDomains()
 {
-    if (m_hpr->webFeed.type() == WebFeed::TP_UNKNOWN) {
+    if (m_hpr->webFeed.type == WebFeed::TP_UNKNOWN) {
         return;
     }
     if (m_hpr->state == MR_IDLE || m_hpr->state == MR_UNKNOWN || m_hpr->state == MR_OFFLINE) {
@@ -1041,7 +1041,7 @@ void ServerEngine::processDomains()
     int errorCount = 0;
     bool detailChanged = false;
     for (auto& d : m_hpr->details) {
-        if (d.package().domain().empty()) {
+        if (d.package.domain.empty()) {
             LOG_WARNING("domain package is empty");
             feedback(false, 1917);
             return;
@@ -1049,23 +1049,23 @@ void ServerEngine::processDomains()
         if (d.detectVersionEqual()) {
             equalCount++;
         }
-        if (d.domain().error() != 0 || d.domain().state() == WR_ERROR) {
+        if (d.domain.error != 0 || d.domain.state == WR_ERROR) {
             errorCount++;
         }
-        if (d.domain().state() != WR_OFFLINE && d.heartbeat().active()) {
-            if (d.heartbeat().get() > DCUS_HEARTBEAT_TIME_OUT) {
-                d.domain().last() = d.domain().state();
-                d.domain().state() = WR_OFFLINE;
+        if (d.domain.state != WR_OFFLINE && d.heartbeat.active()) {
+            if (d.heartbeat.get() > DCUS_HEARTBEAT_TIME_OUT) {
+                d.domain.last = d.domain.state;
+                d.domain.state = WR_OFFLINE;
                 detailChanged = true;
             }
         }
         //
         if (m_hpr->state == MR_PENDING || m_hpr->state == MR_READY || m_hpr->state == MR_DOWNLOAD_ASK) {
-            if (d.domain().state() != WR_UNKNOWN && d.domain().state() != WR_OFFLINE && !d.domain().version().empty()) {
+            if (d.domain.state != WR_UNKNOWN && d.domain.state != WR_OFFLINE && !d.domain.version.empty()) {
                 if (d.detectVersionVaild()) {
                     vaildCount++;
                 } else {
-                    LOG_WARNING("detect version not vaild, when state is pending or ready", "(", d.domain().name(), "");
+                    LOG_WARNING("detect version not vaild, when state is pending or ready", "(", d.domain.name, "");
                     feedback(false, 1918);
                     return;
                 }
@@ -1077,54 +1077,54 @@ void ServerEngine::processDomains()
                     feedback(false, 1919);
                     return;
                 } else {
-                    if (d.domain().state() == WR_IDLE) {
-                        if (d.domain().last() == WR_CANCEL) {
+                    if (d.domain.state == WR_IDLE) {
+                        if (d.domain.last == WR_CANCEL) {
                             cancelCount++;
                         }
                     }
                 }
             }
             if (m_hpr->state == MR_DEPLOY || m_hpr->lastState == MR_DEPLOY) {
-                if (d.deploy().active()) {
-                    if ((int32_t)d.deploy().get() > getMaxDeployTime(d)) {
-                        LOG_WARNING("deploy time out", "(", d.domain().name(), "");
+                if (d.deploy.active()) {
+                    if ((int32_t)d.deploy.get() > getMaxDeployTime(d)) {
+                        LOG_WARNING("deploy time out", "(", d.domain.name, "");
                         feedback(false, 1920);
                         return;
                     }
-                    if (d.domain().state() == WR_OFFLINE) {
-                        if (d.heartbeat().active()) {
-                            if ((int32_t)d.heartbeat().get() > getMaxRestartTime(d)) {
-                                LOG_WARNING("restart time out", "(", d.domain().name(), "");
+                    if (d.domain.state == WR_OFFLINE) {
+                        if (d.heartbeat.active()) {
+                            if ((int32_t)d.heartbeat.get() > getMaxRestartTime(d)) {
+                                LOG_WARNING("restart time out", "(", d.domain.name, "");
                                 feedback(false, 1921);
                                 return;
                             }
                         }
                     }
-                    if (d.domain().state() == WR_IDLE && d.detectVersionEqual()) {
-                        d.deploy().stop();
+                    if (d.domain.state == WR_IDLE && d.detectVersionEqual()) {
+                        d.deploy.stop();
                         detailChanged = true;
                         m_hpr->depends.clear();
                         m_hpr->depends.shrink_to_fit();
                         for (const auto& dd : m_hpr->details) {
-                            if (dd.deploy().active() || dd.domain().state() == WR_WAIT) {
-                                m_hpr->depends.push_back(dd.domain().name());
+                            if (dd.deploy.active() || dd.domain.state == WR_WAIT) {
+                                m_hpr->depends.push_back(dd.domain.name);
                             }
                         }
                         if (m_hpr->control == CTL_DEPLOY) {
                             sendControlMessage(CTL_DEPLOY);
-                            WebFeed webFeed(m_hpr->upgrade.id(), WebFeed::TP_DEPLOY, WebFeed::EXE_SCHEDULED, WebFeed::RS_SUCCESS, getWebFeedDetails(), getWebFeedProgress());
+                            WebFeed webFeed(m_hpr->upgrade.id, WebFeed::TP_DEPLOY, WebFeed::EXE_SCHEDULED, WebFeed::RS_SUCCESS, getWebFeedDetails(), getWebFeedProgress());
                             m_hpr->webQueue.postEvent(new WebFeedEvent(webFeed));
                         }
                     }
                 } else if (!d.hasDepends(m_hpr->depends)) {
-                    if (d.domain().state() == WR_DEPLOY) {
-                        d.deploy().start();
+                    if (d.domain.state == WR_DEPLOY) {
+                        d.deploy.start();
                         detailChanged = true;
                     }
                 }
             }
         } else if (m_hpr->state == MR_WAIT || m_hpr->state == MR_DEPLOY_ASK) {
-            if (d.domain().state() == WR_WAIT) {
+            if (d.domain.state == WR_WAIT) {
                 waitCount++;
             }
         }
@@ -1146,9 +1146,9 @@ void ServerEngine::processDomains()
                 }
             }
         } else if (m_hpr->state == MR_READY || m_hpr->state == MR_DOWNLOAD_ASK) {
-            if (m_hpr->upgrade.download() == Upgrade::MTHD_FORCED) {
+            if (m_hpr->upgrade.download == Upgrade::MTHD_FORCED) {
                 download();
-            } else if (m_hpr->upgrade.download() == Upgrade::MTHD_ATTEMPT && m_hpr->state == MR_READY) {
+            } else if (m_hpr->upgrade.download == Upgrade::MTHD_ATTEMPT && m_hpr->state == MR_READY) {
                 setState(MR_DOWNLOAD_ASK);
             }
         }
@@ -1172,9 +1172,9 @@ void ServerEngine::processDomains()
     }
     if (waitCount != 0 && waitCount == (int)m_hpr->details.size()) {
         if (m_hpr->state == MR_WAIT || m_hpr->state == MR_DEPLOY_ASK) {
-            if (m_hpr->upgrade.deploy() == Upgrade::MTHD_FORCED) {
+            if (m_hpr->upgrade.deploy == Upgrade::MTHD_FORCED) {
                 deploy();
-            } else if (m_hpr->upgrade.deploy() == Upgrade::MTHD_ATTEMPT && m_hpr->state == MR_WAIT) {
+            } else if (m_hpr->upgrade.deploy == Upgrade::MTHD_ATTEMPT && m_hpr->state == MR_WAIT) {
                 setState(MR_DEPLOY_ASK);
             }
         }

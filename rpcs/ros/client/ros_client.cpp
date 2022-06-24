@@ -22,20 +22,20 @@ using namespace dcus_interfaces_ros;
 static Package transformPackage(const msg::Package& msg_package)
 {
     Package package;
-    package.domain() = msg_package.domain;
-    package.part() = msg_package.part;
-    package.version() = msg_package.version;
-    package.meta() = Variant::readJson(msg_package.meta);
+    package.domain = msg_package.domain;
+    package.part = msg_package.part;
+    package.version = msg_package.version;
+    package.meta = Variant::readJson(msg_package.meta);
     for (const auto& msg_file : msg_package.files) {
         File file;
-        file.domain() = msg_file.domain;
-        file.name() = msg_file.name;
-        file.url() = msg_file.url;
-        file.size() = msg_file.size;
-        file.md5() = msg_file.md5;
-        file.sha1() = msg_file.sha1;
-        file.sha256() = msg_file.sha256;
-        package.files().push_back(std::move(file));
+        file.domain = msg_file.domain;
+        file.name = msg_file.name;
+        file.url = msg_file.url;
+        file.size = msg_file.size;
+        file.md5 = msg_file.md5;
+        file.sha1 = msg_file.sha1;
+        file.sha256 = msg_file.sha256;
+        package.files.push_back(std::move(file));
     }
     return package;
 }
@@ -76,13 +76,13 @@ protected:
         //
         Control control = (Control)msg_ctl->control;
         Upgrade upgrade;
-        upgrade.id() = msg_ctl->upgrade.id;
-        upgrade.download() = (Upgrade::Method)msg_ctl->upgrade.download;
-        upgrade.deploy() = (Upgrade::Method)msg_ctl->upgrade.deploy;
-        upgrade.maintenance() = msg_ctl->upgrade.maintenance;
+        upgrade.id = msg_ctl->upgrade.id;
+        upgrade.download = (Upgrade::Method)msg_ctl->upgrade.download;
+        upgrade.deploy = (Upgrade::Method)msg_ctl->upgrade.deploy;
+        upgrade.maintenance = msg_ctl->upgrade.maintenance;
         for (const auto& msg_package : msg_ctl->upgrade.packages) {
             const Package& package = transformPackage(msg_package);
-            upgrade.packages().push_back(std::move(package));
+            upgrade.packages.push_back(std::move(package));
         }
         Depends depends = msg_ctl->depends;
         //
@@ -95,45 +95,45 @@ protected:
         }
         //
         DetailMessage detailMessage;
-        detailMessage.state() = (ServerState)msg_dtl->state;
-        detailMessage.last() = (ServerState)msg_dtl->last;
-        detailMessage.active() = msg_dtl->active;
-        detailMessage.error() = msg_dtl->error;
-        detailMessage.step() = msg_dtl->step;
-        detailMessage.progress() = msg_dtl->progress;
-        detailMessage.message() = msg_dtl->message;
+        detailMessage.state = (ServerState)msg_dtl->state;
+        detailMessage.last = (ServerState)msg_dtl->last;
+        detailMessage.active = msg_dtl->active;
+        detailMessage.error = msg_dtl->error;
+        detailMessage.step = msg_dtl->step;
+        detailMessage.progress = msg_dtl->progress;
+        detailMessage.message = msg_dtl->message;
         for (const auto& msg_detail : msg_dtl->details) {
             Domain domain(msg_detail.domain.name, msg_detail.domain.guid);
-            domain.state() = (ClientState)msg_detail.domain.state;
-            domain.last() = (ClientState)msg_detail.domain.last;
-            domain.watcher() = msg_detail.domain.watcher;
-            domain.error() = msg_detail.domain.error;
-            domain.version() = msg_detail.domain.version;
-            domain.attribute() = Variant::readJson(msg_detail.domain.attribute);
-            domain.meta() = Variant::readJson(msg_detail.domain.meta);
-            domain.progress() = msg_detail.domain.progress;
-            domain.message() = msg_detail.domain.message;
-            domain.answer() = (Answer)msg_detail.domain.answer;
+            domain.state = (ClientState)msg_detail.domain.state;
+            domain.last = (ClientState)msg_detail.domain.last;
+            domain.watcher = msg_detail.domain.watcher;
+            domain.error = msg_detail.domain.error;
+            domain.version = msg_detail.domain.version;
+            domain.attribute = Variant::readJson(msg_detail.domain.attribute);
+            domain.meta = Variant::readJson(msg_detail.domain.meta);
+            domain.progress = msg_detail.domain.progress;
+            domain.message = msg_detail.domain.message;
+            domain.answer = (Answer)msg_detail.domain.answer;
             Detail detail(std::move(domain));
             const Package& package = transformPackage(msg_detail.package);
-            detail.package() = package;
+            detail.package = package;
             for (const auto& msg_transfer : msg_detail.transfers) {
                 Transfer transfer;
-                transfer.domain() = msg_transfer.domain;
-                transfer.name() = msg_transfer.name;
-                transfer.progress() = msg_transfer.progress;
-                transfer.speed() = msg_transfer.speed;
-                transfer.total() = msg_transfer.total;
-                transfer.current() = msg_transfer.current;
-                transfer.pass() = msg_transfer.pass;
-                transfer.left() = msg_transfer.left;
-                detail.transfers().push_back(std::move(transfer));
+                transfer.domain = msg_transfer.domain;
+                transfer.name = msg_transfer.name;
+                transfer.progress = msg_transfer.progress;
+                transfer.speed = msg_transfer.speed;
+                transfer.total = msg_transfer.total;
+                transfer.current = msg_transfer.current;
+                transfer.pass = msg_transfer.pass;
+                transfer.left = msg_transfer.left;
+                detail.transfers.push_back(std::move(transfer));
             }
-            detail.progress() = msg_detail.progress;
+            detail.progress = msg_detail.progress;
             if (msg_detail.deploy > 0) {
-                detail.deploy().start(Elapsed::current() - msg_detail.deploy);
+                detail.deploy.start(Elapsed::current() - msg_detail.deploy);
             }
-            detailMessage.details().push_back(std::move(detail));
+            detailMessage.details.push_back(std::move(detail));
         }
         processDetailMessage(std::move(detailMessage));
     }
@@ -173,18 +173,18 @@ private:
             return false;
         }
         msg::DomainMessage msg_domain;
-        msg_domain.domain.name = domain.name();
-        msg_domain.domain.guid = domain.guid();
-        msg_domain.domain.state = domain.state();
-        msg_domain.domain.last = domain.last();
-        msg_domain.domain.watcher = domain.watcher();
-        msg_domain.domain.error = domain.error();
-        msg_domain.domain.version = domain.version();
-        msg_domain.domain.attribute = domain.attribute().toJson();
-        msg_domain.domain.meta = domain.meta().toJson();
-        msg_domain.domain.progress = domain.progress();
-        msg_domain.domain.message = domain.message();
-        msg_domain.domain.answer = domain.answer();
+        msg_domain.domain.name = domain.name;
+        msg_domain.domain.guid = domain.guid;
+        msg_domain.domain.state = domain.state;
+        msg_domain.domain.last = domain.last;
+        msg_domain.domain.watcher = domain.watcher;
+        msg_domain.domain.error = domain.error;
+        msg_domain.domain.version = domain.version;
+        msg_domain.domain.attribute = domain.attribute.toJson();
+        msg_domain.domain.meta = domain.meta.toJson();
+        msg_domain.domain.progress = domain.progress;
+        msg_domain.domain.message = domain.message;
+        msg_domain.domain.answer = domain.answer;
         msg_domain.discovery = discovery;
         m_rosDomain->publish(msg_domain);
         return true;

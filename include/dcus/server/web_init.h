@@ -21,11 +21,18 @@ DCUS_NAMESPACE_BEGIN
 struct DCUS_EXPORT WebInit final {
     using Token = std::pair<std::string, std::string>;
     WebInit() = default;
-    explicit WebInit(const std::string& url, const std::string& tenant, const std::string& id, const Token& token = Token()) noexcept;
-    CREATE_PUBLIC_PROPERTY(std::string, url, "")
-    CREATE_PUBLIC_PROPERTY(std::string, tenant, "")
-    CREATE_PUBLIC_PROPERTY(std::string, id, "")
-    CREATE_PUBLIC_PROPERTY(Token, token, Token())
+    explicit WebInit(const std::string& _url, const std::string& _tenant, const std::string& _id, const Token& _token = Token()) noexcept
+        : url(_url)
+        , tenant(_tenant)
+        , id(_id)
+        , token(_token)
+    {
+    }
+    std::string url;
+    std::string tenant;
+    std::string id;
+    Token token;
+
 public:
     DCUS_EXPORT friend std::ostream& operator<<(std::ostream& ostream, const WebInit& webInit) noexcept;
 };

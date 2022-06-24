@@ -26,14 +26,15 @@ using Files = std::vector<File>;
 using Packages = std::vector<Package>;
 
 struct DCUS_EXPORT File final {
-    CREATE_PUBLIC_PROPERTY(std::string, domain, "")
-    CREATE_PUBLIC_PROPERTY(std::string, name, "")
-    CREATE_PUBLIC_PROPERTY(std::string, url, "")
-    CREATE_PUBLIC_PROPERTY(std::string, md5, "")
-    CREATE_PUBLIC_PROPERTY(std::string, sha1, "")
-    CREATE_PUBLIC_PROPERTY(std::string, sha256, "")
-    CREATE_PUBLIC_PROPERTY(uint64_t, size, 0)
-    CREATE_PUBLIC_PROPERTY(std::string, web_url, "") // Additional
+    std::string domain;
+    std::string name;
+    std::string url;
+    std::string md5;
+    std::string sha1;
+    std::string sha256;
+    uint64_t size = 0;
+    std::string web_url;
+
 public:
     static std::string getSizeStr(uint32_t size) noexcept;
     bool operator==(const File& file) const noexcept;
@@ -43,11 +44,12 @@ public:
 };
 
 struct DCUS_EXPORT Package final {
-    CREATE_PUBLIC_PROPERTY(std::string, domain, "")
-    CREATE_PUBLIC_PROPERTY(std::string, part, "")
-    CREATE_PUBLIC_PROPERTY(std::string, version, "")
-    CREATE_PUBLIC_PROPERTY(VariantMap, meta, {})
-    CREATE_PUBLIC_PROPERTY(Files, files, {})
+    std::string domain;
+    std::string part;
+    std::string version;
+    VariantMap meta;
+    Files files;
+
 public:
     bool operator==(const Package& package) const noexcept;
     bool operator!=(const Package& package) const noexcept;
@@ -61,17 +63,22 @@ struct DCUS_EXPORT Upgrade final {
         MTHD_ATTEMPT,
         MTHD_FORCED
     };
-    CREATE_PUBLIC_PROPERTY(std::string, id, "")
-    CREATE_PUBLIC_PROPERTY(Method, download, MTHD_SKIP)
-    CREATE_PUBLIC_PROPERTY(Method, deploy, MTHD_SKIP)
-    CREATE_PUBLIC_PROPERTY(bool, maintenance, false)
-    CREATE_PUBLIC_PROPERTY(Packages, packages, {})
+    std::string id;
+    Method download = MTHD_SKIP;
+    Method deploy = MTHD_SKIP;
+    bool maintenance = false;
+    Packages packages;
+
 public:
     static std::string getMethodStr(int method) noexcept;
     bool operator==(const Upgrade& upgrade) const noexcept;
     bool operator!=(const Upgrade& upgrade) const noexcept;
     DCUS_EXPORT friend std::ostream& operator<<(std::ostream& ostream, const Upgrade& upgrade) noexcept;
 };
+
+VARIANT_DECLARE_TYPE(File);
+VARIANT_DECLARE_TYPE(Package);
+VARIANT_DECLARE_TYPE(Upgrade);
 
 DCUS_NAMESPACE_END
 

@@ -190,8 +190,8 @@ void MainWindow::processDetail(const DCus::DetailMessage& detailMessage, bool st
     for (int i = 0; i < ui->treeWidget_list->topLevelItemCount(); i++) {
         auto p = ui->treeWidget_list->topLevelItem(i);
         bool find = false;
-        for (const auto& d : detailMessage.details()) {
-            if (p->text(0) == QString::fromStdString(d.domain().name())) {
+        for (const auto& d : detailMessage.details) {
+            if (p->text(0) == QString::fromStdString(d.domain.name)) {
                 find = true;
                 break;
             }
@@ -209,33 +209,33 @@ void MainWindow::processDetail(const DCus::DetailMessage& detailMessage, bool st
         }
     }
     //-------------update and create
-    for (const auto& d : detailMessage.details()) {
+    for (const auto& d : detailMessage.details) {
         QTreeWidgetItem* item = nullptr;
         for (int i = 0; i < ui->treeWidget_list->topLevelItemCount(); i++) {
             auto p = ui->treeWidget_list->topLevelItem(i);
-            if (p->text(0) == QString::fromStdString(d.domain().name())) {
+            if (p->text(0) == QString::fromStdString(d.domain.name)) {
                 item = p;
             }
         }
         if (!item) {
             item = new QTreeWidgetItem(ui->treeWidget_list);
         }
-        item->setText(0, QString::fromStdString(d.domain().name()));
-        item->setText(1, QString::fromStdString(Domain::getWrStateStr(d.domain().state())));
-        item->setText(2, QString::fromStdString(d.domain().version()));
+        item->setText(0, QString::fromStdString(d.domain.name));
+        item->setText(1, QString::fromStdString(Domain::getWrStateStr(d.domain.state)));
+        item->setText(2, QString::fromStdString(d.domain.version));
         item->setText(3, "");
         QProgressBar* progressBar = qobject_cast<QProgressBar*>(ui->treeWidget_list->itemWidget(item, DOMAIN_PROGRESS_INDEX));
         if (!progressBar) {
             progressBar = new ViewerProgressBar(ui->treeWidget_list);
         }
-        progressBar->setValue((d.progress() + 0.005f) * 100);
-        if (detailMessage.state() == MR_DOWNLOAD || Domain::wrStateIsBusy(d.domain().state()) || d.progress() > 0) {
+        progressBar->setValue((d.progress + 0.005f) * 100);
+        if (detailMessage.state == MR_DOWNLOAD || Domain::wrStateIsBusy(d.domain.state) || d.progress > 0) {
             progressBar->setEnabled(true);
         } else {
             progressBar->setEnabled(false);
         }
         ui->treeWidget_list->setItemWidget(item, DOMAIN_PROGRESS_INDEX, progressBar);
-        item->setText(DOMAIN_PROGRESS_INDEX + 1, QString::fromStdString(d.domain().message()));
+        item->setText(DOMAIN_PROGRESS_INDEX + 1, QString::fromStdString(d.domain.message));
         ui->treeWidget_list->addTopLevelItem(item);
         m_itemToDetail.insert(item, d);
     }
@@ -245,15 +245,15 @@ void MainWindow::processDetail(const DCus::DetailMessage& detailMessage, bool st
     }
     updateProperty(ui->treeWidget_list->currentItem());
     //---------------------
-    ui->lineEdit_state->setText(QString::fromStdString(Domain::getMrStateStr(detailMessage.state())));
-    ui->lineEdit_last->setText(QString::fromStdString(Domain::getMrStateStr(detailMessage.last())));
-    ui->lineEdit_active->setText(detailMessage.active() ? QStringLiteral("true") : QStringLiteral("false"));
-    ui->lineEdit_error->setText(QString::number(detailMessage.error()));
-    if (Domain::mrStateIsBusy(detailMessage.state()) || Domain::mrStateIsAsk(detailMessage.state())) {
-        ui->lineEdit_action->setText(QString::fromStdString(dcus_client_engine->upgrade().id()));
-        ui->lineEdit_download->setText(QString::fromStdString(Upgrade::getMethodStr(dcus_client_engine->upgrade().download())));
-        ui->lineEdit_deploy->setText(QString::fromStdString(Upgrade::getMethodStr(dcus_client_engine->upgrade().deploy())));
-        ui->lineEdit_maintenance->setText(dcus_client_engine->upgrade().maintenance() ? QStringLiteral("true") : QStringLiteral("false"));
+    ui->lineEdit_state->setText(QString::fromStdString(Domain::getMrStateStr(detailMessage.state)));
+    ui->lineEdit_last->setText(QString::fromStdString(Domain::getMrStateStr(detailMessage.last)));
+    ui->lineEdit_active->setText(detailMessage.active ? QStringLiteral("true") : QStringLiteral("false"));
+    ui->lineEdit_error->setText(QString::number(detailMessage.error));
+    if (Domain::mrStateIsBusy(detailMessage.state) || Domain::mrStateIsAsk(detailMessage.state)) {
+        ui->lineEdit_action->setText(QString::fromStdString(dcus_client_engine->upgrade().id));
+        ui->lineEdit_download->setText(QString::fromStdString(Upgrade::getMethodStr(dcus_client_engine->upgrade().download)));
+        ui->lineEdit_deploy->setText(QString::fromStdString(Upgrade::getMethodStr(dcus_client_engine->upgrade().deploy)));
+        ui->lineEdit_maintenance->setText(dcus_client_engine->upgrade().maintenance ? QStringLiteral("true") : QStringLiteral("false"));
         ui->label_step->setEnabled(true);
         ui->label_total->setEnabled(true);
         ui->progressBar_step->setEnabled(true);
@@ -268,15 +268,15 @@ void MainWindow::processDetail(const DCus::DetailMessage& detailMessage, bool st
         ui->progressBar_step->setEnabled(false);
         ui->progressBar_total->setEnabled(false);
     }
-    ui->progressBar_step->setValue((detailMessage.step() + 0.005f) * 100);
-    ui->progressBar_total->setValue((detailMessage.progress() + 0.005f) * 100);
+    ui->progressBar_step->setValue((detailMessage.step + 0.005f) * 100);
+    ui->progressBar_total->setValue((detailMessage.progress + 0.005f) * 100);
     //---------------------
     if (stateChanged) {
         ui->plainTextEdit->setFocus();
-        ui->plainTextEdit->appendPlainText(QString::fromStdString(detailMessage.message()));
-        if (Domain::mrStateIsAsk(detailMessage.state())) {
+        ui->plainTextEdit->appendPlainText(QString::fromStdString(detailMessage.message));
+        if (Domain::mrStateIsAsk(detailMessage.state)) {
             qApp->beep();
-            switch (detailMessage.state()) {
+            switch (detailMessage.state) {
             case MR_DOWNLOAD_ASK: {
                 m_messageLabel->setText("Please confirm download.");
                 m_acceptBtn->setText("Yes");
@@ -302,7 +302,7 @@ void MainWindow::processDetail(const DCus::DetailMessage& detailMessage, bool st
                 break;
             }
             case MR_DONE_ASK:
-                if (detailMessage.last() == MR_CANCEL) {
+                if (detailMessage.last == MR_CANCEL) {
                     m_messageLabel->setText("Cancel successed !");
                 } else {
                     m_messageLabel->setText("Upgrade successed !");
@@ -311,7 +311,7 @@ void MainWindow::processDetail(const DCus::DetailMessage& detailMessage, bool st
                 m_rejectBtn->hide();
                 break;
             case MR_ERROR_ASK:
-                if (detailMessage.last() == MR_CANCEL || detailMessage.last() == MR_CANCEL_ASK) {
+                if (detailMessage.last == MR_CANCEL || detailMessage.last == MR_CANCEL_ASK) {
                     m_messageLabel->setText("Cancel failed !");
                 } else {
                     m_messageLabel->setText("Upgrade failed !");
@@ -342,28 +342,28 @@ void MainWindow::updateProperty(QTreeWidgetItem* listItem)
         return;
     }
     const Detail& d = m_itemToDetail.value(listItem);
-    // updateSubProperty(nullptr, QStringLiteral("name"), QString::fromStdString(d.domain().name()));
-    updateSubProperty(nullptr, QStringLiteral("guid"), QString::fromStdString(d.domain().guid()));
-    // updateSubProperty(nullptr, QStringLiteral("state"), QString::fromStdString(Domain::getWrStateStr(d.domain().state())));
-    updateSubProperty(nullptr, QStringLiteral("last"), QString::fromStdString(Domain::getWrStateStr(d.domain().last())));
-    updateSubProperty(nullptr, QStringLiteral("watcher"), d.domain().watcher() ? QStringLiteral("true") : QStringLiteral("false"));
-    updateSubProperty(nullptr, QStringLiteral("error"), QString::number(d.domain().error()));
-    // updateSubProperty(nullptr, QStringLiteral("version"), QString::fromStdString(d.domain().version()));
-    updateSubProperty(nullptr, QStringLiteral("attribute"), QString::fromStdString(d.domain().attribute().toJson()));
-    updateSubProperty(nullptr, QStringLiteral("meta"), QString::fromStdString(d.domain().meta().toJson()));
-    // updateSubProperty(nullptr, QStringLiteral("progress"), d.progress(), true);
-    // updateSubProperty(nullptr, QStringLiteral("message"), QString::fromStdString(d.domain().message()));
-    updateSubProperty(nullptr, QStringLiteral("deploy"), QTime(0, 0, d.deploy().get() / 1000.0).toString("hh:mm:ss"));
+    // updateSubProperty(nullptr, QStringLiteral("name"), QString::fromStdString(d.domain.name));
+    updateSubProperty(nullptr, QStringLiteral("guid"), QString::fromStdString(d.domain.guid));
+    // updateSubProperty(nullptr, QStringLiteral("state"), QString::fromStdString(Domain::getWrStateStr(d.domain.state)));
+    updateSubProperty(nullptr, QStringLiteral("last"), QString::fromStdString(Domain::getWrStateStr(d.domain.last)));
+    updateSubProperty(nullptr, QStringLiteral("watcher"), d.domain.watcher ? QStringLiteral("true") : QStringLiteral("false"));
+    updateSubProperty(nullptr, QStringLiteral("error"), QString::number(d.domain.error));
+    // updateSubProperty(nullptr, QStringLiteral("version"), QString::fromStdString(d.domain.version));
+    updateSubProperty(nullptr, QStringLiteral("attribute"), QString::fromStdString(d.domain.attribute.toJson()));
+    updateSubProperty(nullptr, QStringLiteral("meta"), QString::fromStdString(d.domain.meta.toJson()));
+    // updateSubProperty(nullptr, QStringLiteral("progress"), d.progress, true);
+    // updateSubProperty(nullptr, QStringLiteral("message"), QString::fromStdString(d.domain.message));
+    updateSubProperty(nullptr, QStringLiteral("deploy"), QTime(0, 0, d.deploy.get() / 1000.0).toString("hh:mm:ss"));
     QTreeWidgetItem* packagesItem = updateSubProperty(nullptr, QStringLiteral("package"), QString());
-    // updateSubProperty(packagesItem, QStringLiteral("domain"), QString::fromStdString(d.package().domain()));
-    updateSubProperty(packagesItem, QStringLiteral("part"), QString::fromStdString(d.package().part()));
-    updateSubProperty(packagesItem, QStringLiteral("version"), QString::fromStdString(d.package().version()));
-    updateSubProperty(packagesItem, QStringLiteral("meta"), QString::fromStdString(d.package().meta().toJson()));
+    // updateSubProperty(packagesItem, QStringLiteral("domain"), QString::fromStdString(d.package.domain));
+    updateSubProperty(packagesItem, QStringLiteral("part"), QString::fromStdString(d.package.part));
+    updateSubProperty(packagesItem, QStringLiteral("version"), QString::fromStdString(d.package.version));
+    updateSubProperty(packagesItem, QStringLiteral("meta"), QString::fromStdString(d.package.meta.toJson()));
     QTreeWidgetItem* filesItem = updateSubProperty(packagesItem, QStringLiteral("files"), QString());
     for (int i = 0; i < filesItem->childCount(); i++) {
         bool find = false;
-        for (const File& file : d.package().files()) {
-            if (QString::fromStdString(file.name()) == filesItem->child(i)->text(0)) {
+        for (const File& file : d.package.files) {
+            if (QString::fromStdString(file.name) == filesItem->child(i)->text(0)) {
                 find = true;
                 break;
             }
@@ -374,28 +374,28 @@ void MainWindow::updateProperty(QTreeWidgetItem* listItem)
             i--;
         }
     }
-    for (const File& file : d.package().files()) {
-        QTreeWidgetItem* filesItemRoot = updateSubProperty(filesItem, QString::fromStdString(file.name()), QString());
-        // updateSubProperty(filesItemRoot, QStringLiteral("domain"), QString::fromStdString(file.domain()));
-        updateSubProperty(filesItemRoot, QStringLiteral("name"), QString::fromStdString(file.name()));
-        updateSubProperty(filesItemRoot, QStringLiteral("url"), QString::fromStdString(file.url()));
-        if (!file.md5().empty()) {
-            updateSubProperty(filesItemRoot, QStringLiteral("md5"), QString::fromStdString(file.md5()));
+    for (const File& file : d.package.files) {
+        QTreeWidgetItem* filesItemRoot = updateSubProperty(filesItem, QString::fromStdString(file.name), QString());
+        // updateSubProperty(filesItemRoot, QStringLiteral("domain"), QString::fromStdString(file.domain));
+        updateSubProperty(filesItemRoot, QStringLiteral("name"), QString::fromStdString(file.name));
+        updateSubProperty(filesItemRoot, QStringLiteral("url"), QString::fromStdString(file.url));
+        if (!file.md5.empty()) {
+            updateSubProperty(filesItemRoot, QStringLiteral("md5"), QString::fromStdString(file.md5));
         }
-        if (!file.sha1().empty()) {
-            updateSubProperty(filesItemRoot, QStringLiteral("sha1"), QString::fromStdString(file.sha1()));
+        if (!file.sha1.empty()) {
+            updateSubProperty(filesItemRoot, QStringLiteral("sha1"), QString::fromStdString(file.sha1));
         }
-        if (!file.sha256().empty()) {
-            updateSubProperty(filesItemRoot, QStringLiteral("sha256"), QString::fromStdString(file.sha256()));
+        if (!file.sha256.empty()) {
+            updateSubProperty(filesItemRoot, QStringLiteral("sha256"), QString::fromStdString(file.sha256));
         }
-        updateSubProperty(filesItemRoot, QStringLiteral("size"), QString::number(file.size()) + QStringLiteral(" (") + QString::fromStdString(File::getSizeStr(file.size() / 1024)) + QStringLiteral(")"));
+        updateSubProperty(filesItemRoot, QStringLiteral("size"), QString::number(file.size) + QStringLiteral(" (") + QString::fromStdString(File::getSizeStr(file.size / 1024)) + QStringLiteral(")"));
         // updateSubProperty(filesItemRoot, QStringLiteral("web_url"), QString::fromStdString(file.web_url()));
     }
     QTreeWidgetItem* transfersItem = updateSubProperty(nullptr, QStringLiteral("transfers"), QString());
     for (int i = 0; i < transfersItem->childCount(); i++) {
         bool find = false;
-        for (const Transfer& transfer : d.transfers()) {
-            if (QString::fromStdString(transfer.name()) == transfersItem->child(i)->text(0)) {
+        for (const Transfer& transfer : d.transfers) {
+            if (QString::fromStdString(transfer.name) == transfersItem->child(i)->text(0)) {
                 find = true;
                 break;
             }
@@ -410,16 +410,16 @@ void MainWindow::updateProperty(QTreeWidgetItem* listItem)
             i--;
         }
     }
-    for (const Transfer& transfer : d.transfers()) {
-        QTreeWidgetItem* transfersItemRoot = updateSubProperty(transfersItem, QString::fromStdString(transfer.name()), transfer.progress() + 0.005f, true);
-        // updateSubProperty(transfersItemRoot, QStringLiteral("domain"), QString::fromStdString(transfer.domain()));
-        updateSubProperty(transfersItemRoot, QStringLiteral("name"), QString::fromStdString(transfer.name()));
-        // updateSubProperty(transfersItemRoot, QStringLiteral("progress"), transfer.progress(), true);
-        updateSubProperty(transfersItemRoot, QStringLiteral("current"), QString::fromStdString(File::getSizeStr(transfer.current())));
-        updateSubProperty(transfersItemRoot, QStringLiteral("total"), QString::fromStdString(File::getSizeStr(transfer.total())));
-        updateSubProperty(transfersItemRoot, QStringLiteral("speed"), QString::fromStdString(File::getSizeStr(transfer.speed())) + "/S");
-        updateSubProperty(transfersItemRoot, QStringLiteral("pass"), QTime(0, 0, 0).addSecs(transfer.pass()).toString("hh:mm:ss"));
-        updateSubProperty(transfersItemRoot, QStringLiteral("left"), QTime(0, 0, 0).addSecs(transfer.left()).toString("hh:mm:ss"));
+    for (const Transfer& transfer : d.transfers) {
+        QTreeWidgetItem* transfersItemRoot = updateSubProperty(transfersItem, QString::fromStdString(transfer.name), transfer.progress + 0.005f, true);
+        // updateSubProperty(transfersItemRoot, QStringLiteral("domain"), QString::fromStdString(transfer.domain));
+        updateSubProperty(transfersItemRoot, QStringLiteral("name"), QString::fromStdString(transfer.name));
+        // updateSubProperty(transfersItemRoot, QStringLiteral("progress"), transfer.progress, true);
+        updateSubProperty(transfersItemRoot, QStringLiteral("current"), QString::fromStdString(File::getSizeStr(transfer.current)));
+        updateSubProperty(transfersItemRoot, QStringLiteral("total"), QString::fromStdString(File::getSizeStr(transfer.total)));
+        updateSubProperty(transfersItemRoot, QStringLiteral("speed"), QString::fromStdString(File::getSizeStr(transfer.speed)) + "/S");
+        updateSubProperty(transfersItemRoot, QStringLiteral("pass"), QTime(0, 0, 0).addSecs(transfer.pass).toString("hh:mm:ss"));
+        updateSubProperty(transfersItemRoot, QStringLiteral("left"), QTime(0, 0, 0).addSecs(transfer.left).toString("hh:mm:ss"));
     }
 }
 

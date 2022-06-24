@@ -78,10 +78,10 @@ Status patch(const std::string& dir, const std::vector<std::string>& paths, File
                 return;
             }
             File file;
-            file.name() = Utils::getPathFileName(path);
-            file.sha256() = sha256;
-            file.sha1() = sha1;
-            file.md5() = md5;
+            file.name = Utils::getPathFileName(path);
+            file.sha256 = sha256;
+            file.sha1 = sha1;
+            file.md5 = md5;
             targetNewFiles.push_back(file);
         });
     }

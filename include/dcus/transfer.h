@@ -14,20 +14,22 @@
 #define DCUS_TRANSFER_H
 
 #include "dcus/base/define.h"
+#include "dcus/base/variant.h"
 #include <string>
 #include <vector>
 
 DCUS_NAMESPACE_BEGIN
 
 struct DCUS_EXPORT Transfer final {
-    CREATE_PUBLIC_PROPERTY(std::string, domain, "")
-    CREATE_PUBLIC_PROPERTY(std::string, name, "")
-    CREATE_PUBLIC_PROPERTY(float, progress, .0f)
-    CREATE_PUBLIC_PROPERTY(uint32_t, total, 0)
-    CREATE_PUBLIC_PROPERTY(uint32_t, current, 0)
-    CREATE_PUBLIC_PROPERTY(uint32_t, speed, 0)
-    CREATE_PUBLIC_PROPERTY(uint32_t, pass, 0)
-    CREATE_PUBLIC_PROPERTY(uint32_t, left, 0)
+    std::string domain;
+    std::string name;
+    float progress = 0;
+    uint32_t total = 0;
+    uint32_t current = 0;
+    uint32_t speed = 0;
+    uint32_t pass = 0;
+    uint32_t left = 0;
+
 public:
     bool operator==(const Transfer& transfer) const noexcept;
     bool operator!=(const Transfer& transfer) const noexcept;
@@ -43,6 +45,9 @@ public:
     void sort() noexcept;
     DCUS_EXPORT friend std::ostream& operator<<(std::ostream& ostream, const Transfers& transfers) noexcept;
 };
+
+VARIANT_DECLARE_TYPE(Transfer);
+VARIANT_DECLARE_TYPE(Transfers);
 
 DCUS_NAMESPACE_END
 

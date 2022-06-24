@@ -75,23 +75,24 @@ enum Discovery {
 using Depends = std::vector<std::string>;
 
 struct DCUS_EXPORT Domain final {
-    explicit Domain(const std::string& name = "", const std::string& guid = "") noexcept
-        : m_name(name)
-        , m_guid(guid)
+    explicit Domain(const std::string& _name = "", const std::string& _guid = "") noexcept
+        : name(_name)
+        , guid(_guid)
     {
     }
-    CREATE_PUBLIC_PROPERTY(std::string, name, "")
-    CREATE_PUBLIC_PROPERTY(std::string, guid, "")
-    CREATE_PUBLIC_PROPERTY(ClientState, state, WR_UNKNOWN)
-    CREATE_PUBLIC_PROPERTY(ClientState, last, WR_UNKNOWN)
-    CREATE_PUBLIC_PROPERTY(bool, watcher, false)
-    CREATE_PUBLIC_PROPERTY(int, error, 0)
-    CREATE_PUBLIC_PROPERTY(std::string, version, "")
-    CREATE_PUBLIC_PROPERTY(VariantMap, attribute, {})
-    CREATE_PUBLIC_PROPERTY(VariantMap, meta, {})
-    CREATE_PUBLIC_PROPERTY(float, progress, .0f)
-    CREATE_PUBLIC_PROPERTY(std::string, message, "")
-    CREATE_PUBLIC_PROPERTY(Answer, answer, ANS_UNKNOWN)
+    std::string name;
+    std::string guid;
+    ClientState state = WR_UNKNOWN;
+    ClientState last = WR_UNKNOWN;
+    bool watcher = false;
+    int error = 0;
+    std::string version;
+    VariantMap attribute;
+    VariantMap meta;
+    float progress = .0f;
+    std::string message;
+    Answer answer = ANS_UNKNOWN;
+
 public:
     static std::string getMrStateStr(ServerState state) noexcept;
     static std::string getWrStateStr(ClientState state) noexcept;
@@ -108,20 +109,21 @@ public:
 };
 
 struct DCUS_EXPORT Detail final {
-    explicit Detail(const Domain& domain = Domain()) noexcept
-        : m_domain(domain)
+    explicit Detail(const Domain& _domain = Domain()) noexcept
+        : domain(_domain)
     {
     }
-    explicit Detail(Domain&& domain) noexcept
-        : m_domain(std::move(domain))
+    explicit Detail(Domain&& _domain) noexcept
+        : domain(std::move(_domain))
     {
     }
-    CREATE_PUBLIC_PROPERTY(Domain, domain, Domain())
-    CREATE_PUBLIC_PROPERTY(Package, package, Package())
-    CREATE_PUBLIC_PROPERTY(Transfers, transfers, Transfers())
-    CREATE_PUBLIC_PROPERTY(float, progress, .0f)
-    CREATE_PUBLIC_PROPERTY(Elapsed, deploy, Elapsed())
-    CREATE_PUBLIC_PROPERTY(Elapsed, heartbeat, Elapsed()) // Additional
+    Domain domain;
+    Package package;
+    Transfers transfers;
+    float progress = .0f;
+    Elapsed deploy;
+    Elapsed heartbeat;
+
 public:
     bool detectVersionEqual() const noexcept;
     bool detectVersionVaild() const noexcept;
@@ -140,6 +142,9 @@ public:
     Detail* find(const std::string& name) noexcept;
     DCUS_EXPORT friend std::ostream& operator<<(std::ostream& ostream, const Details& details) noexcept;
 };
+
+VARIANT_DECLARE_TYPE(Domain);
+VARIANT_DECLARE_TYPE(Details);
 
 DCUS_NAMESPACE_END
 

@@ -27,13 +27,13 @@ enum State {
 };
 struct Status {
     Status() = default;
-    explicit Status(State state, int error)
-        : m_state(state)
-        , m_error(error)
+    explicit Status(State _state, int _error)
+        : state(_state)
+        , error(_error)
     {
     }
-    CREATE_PUBLIC_PROPERTY(State, state, SUCCEED)
-    CREATE_PUBLIC_PROPERTY(int, error, 0)
+    State state = SUCCEED;
+    int error = 0;
 };
 }
 DCUS_NAMESPACE_END

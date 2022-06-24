@@ -26,7 +26,7 @@ int main(int argc, char* argv[])
     dcus_client_engine->execInthread(ClientEngine::CHECK_SINGLETON);
     window.show();
     DetailMessage detailMessage;
-    detailMessage.state() = MR_OFFLINE;
+    detailMessage.state = MR_OFFLINE;
     window.processDetail(detailMessage, true);
     int reval = a.exec();
     dcus_client_engine->exit(reval);

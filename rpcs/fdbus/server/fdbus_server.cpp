@@ -20,19 +20,19 @@ using namespace DCus;
 static DCusInterfaces::Package transformPackage(const Package& package)
 {
     DCusInterfaces::Package pb_package;
-    pb_package.set_domain(package.domain());
-    pb_package.set_part(package.part());
-    pb_package.set_version(package.version());
-    pb_package.set_meta(package.meta().toJson());
-    for (const File& file : package.files()) {
+    pb_package.set_domain(package.domain);
+    pb_package.set_part(package.part);
+    pb_package.set_version(package.version);
+    pb_package.set_meta(package.meta.toJson());
+    for (const File& file : package.files) {
         auto* pb_fileList = pb_package.add_files();
-        pb_fileList->set_domain(file.domain());
-        pb_fileList->set_name(file.name());
-        pb_fileList->set_url(file.url());
-        pb_fileList->set_size(file.size());
-        pb_fileList->set_md5(file.md5());
-        pb_fileList->set_sha1(file.sha1());
-        pb_fileList->set_sha256(file.sha256());
+        pb_fileList->set_domain(file.domain);
+        pb_fileList->set_name(file.name);
+        pb_fileList->set_url(file.url);
+        pb_fileList->set_size(file.size);
+        pb_fileList->set_md5(file.md5);
+        pb_fileList->set_sha1(file.sha1);
+        pb_fileList->set_sha256(file.sha256);
     }
     return pb_package;
 }
@@ -69,11 +69,11 @@ protected:
         DCusInterfaces::ControlMessage controlMessage;
         controlMessage.set_id(messageId);
         controlMessage.set_control((DCusInterfaces::ControlMessage_Control)control());
-        controlMessage.mutable_upgrade()->set_id(upgrade().id());
-        controlMessage.mutable_upgrade()->set_download((DCusInterfaces::ControlMessage_Upgrade_Method)upgrade().download());
-        controlMessage.mutable_upgrade()->set_deploy((DCusInterfaces::ControlMessage_Upgrade_Method)upgrade().deploy());
-        controlMessage.mutable_upgrade()->set_maintenance(upgrade().maintenance());
-        for (const Package& package : upgrade().packages()) {
+        controlMessage.mutable_upgrade()->set_id(upgrade().id);
+        controlMessage.mutable_upgrade()->set_download((DCusInterfaces::ControlMessage_Upgrade_Method)upgrade().download);
+        controlMessage.mutable_upgrade()->set_deploy((DCusInterfaces::ControlMessage_Upgrade_Method)upgrade().deploy);
+        controlMessage.mutable_upgrade()->set_maintenance(upgrade().maintenance);
+        for (const Package& package : upgrade().packages) {
             auto* pb_package = controlMessage.mutable_upgrade()->add_packages();
             *pb_package = transformPackage(package);
         }
@@ -96,32 +96,32 @@ protected:
         detailMessage.set_message(message());
         for (const auto& d : details()) {
             auto* pb_detail = detailMessage.add_details();
-            pb_detail->mutable_domain()->set_name(d.domain().name());
-            pb_detail->mutable_domain()->set_guid(d.domain().guid());
-            pb_detail->mutable_domain()->set_state((DCusInterfaces::Domain_ClientState)d.domain().state());
-            pb_detail->mutable_domain()->set_last((DCusInterfaces::Domain_ClientState)d.domain().last());
-            pb_detail->mutable_domain()->set_watcher(d.domain().watcher());
-            pb_detail->mutable_domain()->set_error(d.domain().error());
-            pb_detail->mutable_domain()->set_version(d.domain().version());
-            pb_detail->mutable_domain()->set_attribute(d.domain().attribute().toJson());
-            pb_detail->mutable_domain()->set_meta(d.domain().meta().toJson());
-            pb_detail->mutable_domain()->set_progress(d.domain().progress());
-            pb_detail->mutable_domain()->set_message(d.domain().message());
-            pb_detail->mutable_domain()->set_answer((DCusInterfaces::Domain_Answer)d.domain().answer());
-            *(pb_detail->mutable_package()) = transformPackage(d.package());
-            for (const Transfer& transfer : d.transfers()) {
+            pb_detail->mutable_domain()->set_name(d.domain.name);
+            pb_detail->mutable_domain()->set_guid(d.domain.guid);
+            pb_detail->mutable_domain()->set_state((DCusInterfaces::Domain_ClientState)d.domain.state);
+            pb_detail->mutable_domain()->set_last((DCusInterfaces::Domain_ClientState)d.domain.last);
+            pb_detail->mutable_domain()->set_watcher(d.domain.watcher);
+            pb_detail->mutable_domain()->set_error(d.domain.error);
+            pb_detail->mutable_domain()->set_version(d.domain.version);
+            pb_detail->mutable_domain()->set_attribute(d.domain.attribute.toJson());
+            pb_detail->mutable_domain()->set_meta(d.domain.meta.toJson());
+            pb_detail->mutable_domain()->set_progress(d.domain.progress);
+            pb_detail->mutable_domain()->set_message(d.domain.message);
+            pb_detail->mutable_domain()->set_answer((DCusInterfaces::Domain_Answer)d.domain.answer);
+            *(pb_detail->mutable_package()) = transformPackage(d.package);
+            for (const Transfer& transfer : d.transfers) {
                 auto* pb_transfer = pb_detail->add_transfers();
-                pb_transfer->set_domain(transfer.domain());
-                pb_transfer->set_name(transfer.name());
-                pb_transfer->set_progress(transfer.progress());
-                pb_transfer->set_speed(transfer.speed());
-                pb_transfer->set_total(transfer.total());
-                pb_transfer->set_current(transfer.current());
-                pb_transfer->set_pass(transfer.pass());
-                pb_transfer->set_left(transfer.left());
+                pb_transfer->set_domain(transfer.domain);
+                pb_transfer->set_name(transfer.name);
+                pb_transfer->set_progress(transfer.progress);
+                pb_transfer->set_speed(transfer.speed);
+                pb_transfer->set_total(transfer.total);
+                pb_transfer->set_current(transfer.current);
+                pb_transfer->set_pass(transfer.pass);
+                pb_transfer->set_left(transfer.left);
             }
-            pb_detail->set_progress(d.progress());
-            pb_detail->set_deploy(d.deploy().get());
+            pb_detail->set_progress(d.progress);
+            pb_detail->set_deploy(d.deploy.get());
         }
         return detailMessage;
     }
@@ -183,16 +183,16 @@ private:
                 }
             }
             Domain domain(domainMessage.domain().name(), domainMessage.domain().guid());
-            domain.state() = (ClientState)domainMessage.domain().state();
-            domain.last() = (ClientState)domainMessage.domain().last();
-            domain.watcher() = domainMessage.domain().watcher();
-            domain.error() = domainMessage.domain().error();
-            domain.version() = domainMessage.domain().version();
-            domain.attribute() = Variant::readJson(domainMessage.domain().attribute());
-            domain.meta() = Variant::readJson(domainMessage.domain().meta());
-            domain.progress() = domainMessage.domain().progress();
-            domain.message() = domainMessage.domain().message();
-            domain.answer() = (Answer)domainMessage.domain().answer();
+            domain.state = (ClientState)domainMessage.domain().state();
+            domain.last = (ClientState)domainMessage.domain().last();
+            domain.watcher = domainMessage.domain().watcher();
+            domain.error = domainMessage.domain().error();
+            domain.version = domainMessage.domain().version();
+            domain.attribute = Variant::readJson(domainMessage.domain().attribute());
+            domain.meta = Variant::readJson(domainMessage.domain().meta());
+            domain.progress = domainMessage.domain().progress();
+            domain.message = domainMessage.domain().message();
+            domain.answer = (Answer)domainMessage.domain().answer();
             bool discovery = domainMessage.discovery();
             processDomainMessage(std::move(domain), discovery);
         }

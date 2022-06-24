@@ -21,20 +21,20 @@ using namespace v1_0::commonapi;
 static Package transformPackage(const DCusInterfaces::Package& ci_package)
 {
     Package package;
-    package.domain() = ci_package.getDomain();
-    package.part() = ci_package.getPart();
-    package.version() = ci_package.getVersion_();
-    package.meta() = Variant::readJson(ci_package.getMeta());
+    package.domain = ci_package.getDomain();
+    package.part = ci_package.getPart();
+    package.version = ci_package.getVersion_();
+    package.meta = Variant::readJson(ci_package.getMeta());
     for (const auto& ci_file : ci_package.getFiles()) {
         File file;
-        file.domain() = ci_file.getDomain();
-        file.name() = ci_file.getName();
-        file.url() = ci_file.getUrl();
-        file.size() = ci_file.getSize();
-        file.md5() = ci_file.getMd5();
-        file.sha1() = ci_file.getSha1();
-        file.sha256() = ci_file.getSha256();
-        package.files().push_back(std::move(file));
+        file.domain = ci_file.getDomain();
+        file.name = ci_file.getName();
+        file.url = ci_file.getUrl();
+        file.size = ci_file.getSize();
+        file.md5 = ci_file.getMd5();
+        file.sha1 = ci_file.getSha1();
+        file.sha256 = ci_file.getSha256();
+        package.files.push_back(std::move(file));
     }
     return package;
 }
@@ -78,13 +78,13 @@ protected:
         //
         Control control = (Control)ci_ctl.getControl().value_;
         Upgrade upgrade;
-        upgrade.id() = ci_ctl.getUpgrade().getId();
-        upgrade.download() = (Upgrade::Method)ci_ctl.getUpgrade().getDownload().value_;
-        upgrade.deploy() = (Upgrade::Method)ci_ctl.getUpgrade().getDeploy().value_;
-        upgrade.maintenance() = ci_ctl.getUpgrade().getMaintenance();
+        upgrade.id = ci_ctl.getUpgrade().getId();
+        upgrade.download = (Upgrade::Method)ci_ctl.getUpgrade().getDownload().value_;
+        upgrade.deploy = (Upgrade::Method)ci_ctl.getUpgrade().getDeploy().value_;
+        upgrade.maintenance = ci_ctl.getUpgrade().getMaintenance();
         for (const auto& ci_package : ci_ctl.getUpgrade().getPackages()) {
             const Package& package = transformPackage(ci_package);
-            upgrade.packages().push_back(std::move(package));
+            upgrade.packages.push_back(std::move(package));
         }
         Depends depends;
         for (const auto& ci_depend : ci_ctl.getDepends()) {
@@ -100,45 +100,45 @@ protected:
         }
         //
         DetailMessage detailMessage;
-        detailMessage.state() = (ServerState)ci_dtl.getState_().value_;
-        detailMessage.last() = (ServerState)ci_dtl.getLast().value_;
-        detailMessage.active() = ci_dtl.getActive();
-        detailMessage.error() = ci_dtl.getError_();
-        detailMessage.step() = ci_dtl.getStep();
-        detailMessage.progress() = ci_dtl.getProgress();
-        detailMessage.message() = ci_dtl.getMessage();
+        detailMessage.state = (ServerState)ci_dtl.getState_().value_;
+        detailMessage.last = (ServerState)ci_dtl.getLast().value_;
+        detailMessage.active = ci_dtl.getActive();
+        detailMessage.error = ci_dtl.getError_();
+        detailMessage.step = ci_dtl.getStep();
+        detailMessage.progress = ci_dtl.getProgress();
+        detailMessage.message = ci_dtl.getMessage();
         for (const auto& ci_detail : ci_dtl.getDetails()) {
             Domain domain(ci_detail.getDomain().getName(), ci_detail.getDomain().getGuid());
-            domain.state() = (ClientState)ci_detail.getDomain().getState_().value_;
-            domain.last() = (ClientState)ci_detail.getDomain().getLast().value_;
-            domain.watcher() = ci_detail.getDomain().getWatcher();
-            domain.error() = ci_detail.getDomain().getError_();
-            domain.version() = ci_detail.getDomain().getVersion_();
-            domain.attribute() = Variant::readJson(ci_detail.getDomain().getAttribute_());
-            domain.meta() = Variant::readJson(ci_detail.getDomain().getMeta());
-            domain.progress() = ci_detail.getDomain().getProgress();
-            domain.message() = ci_detail.getDomain().getMessage();
-            domain.answer() = (Answer)ci_detail.getDomain().getAnswer().value_;
+            domain.state = (ClientState)ci_detail.getDomain().getState_().value_;
+            domain.last = (ClientState)ci_detail.getDomain().getLast().value_;
+            domain.watcher = ci_detail.getDomain().getWatcher();
+            domain.error = ci_detail.getDomain().getError_();
+            domain.version = ci_detail.getDomain().getVersion_();
+            domain.attribute = Variant::readJson(ci_detail.getDomain().getAttribute_());
+            domain.meta = Variant::readJson(ci_detail.getDomain().getMeta());
+            domain.progress = ci_detail.getDomain().getProgress();
+            domain.message = ci_detail.getDomain().getMessage();
+            domain.answer = (Answer)ci_detail.getDomain().getAnswer().value_;
             Detail detail(std::move(domain));
             const Package& package = transformPackage(ci_detail.getPackage_());
-            detail.package() = package;
+            detail.package = package;
             for (const auto& ci_transfer : ci_detail.getTransfers()) {
                 Transfer transfer;
-                transfer.domain() = ci_transfer.getDomain();
-                transfer.name() = ci_transfer.getName();
-                transfer.progress() = ci_transfer.getProgress();
-                transfer.speed() = ci_transfer.getSpeed();
-                transfer.total() = ci_transfer.getTotal();
-                transfer.current() = ci_transfer.getCurrent();
-                transfer.pass() = ci_transfer.getPass();
-                transfer.left() = ci_transfer.getLeft();
-                detail.transfers().push_back(std::move(transfer));
+                transfer.domain = ci_transfer.getDomain();
+                transfer.name = ci_transfer.getName();
+                transfer.progress = ci_transfer.getProgress();
+                transfer.speed = ci_transfer.getSpeed();
+                transfer.total = ci_transfer.getTotal();
+                transfer.current = ci_transfer.getCurrent();
+                transfer.pass = ci_transfer.getPass();
+                transfer.left = ci_transfer.getLeft();
+                detail.transfers.push_back(std::move(transfer));
             }
-            detail.progress() = ci_detail.getProgress();
+            detail.progress = ci_detail.getProgress();
             if (ci_detail.getDeploy() > 0) {
-                detail.deploy().start(Elapsed::current() - ci_detail.getDeploy());
+                detail.deploy.start(Elapsed::current() - ci_detail.getDeploy());
             }
-            detailMessage.details().push_back(std::move(detail));
+            detailMessage.details.push_back(std::move(detail));
         }
         processDetailMessage(std::move(detailMessage));
     }
@@ -169,18 +169,18 @@ private:
         }
         DCusInterfaces::DomainMessage domainMessage;
         DCusInterfaces::Domain ci_domain;
-        ci_domain.setName(domain.name());
-        ci_domain.setGuid(domain.guid());
-        ci_domain.setState_((DCusInterfaces::ClientState::Literal)domain.state());
-        ci_domain.setLast((DCusInterfaces::ClientState::Literal)domain.last());
-        ci_domain.setWatcher(domain.watcher());
-        ci_domain.setError_(domain.error());
-        ci_domain.setVersion_(domain.version());
-        ci_domain.setAttribute_(domain.attribute().toJson());
-        ci_domain.setMeta(domain.meta().toJson());
-        ci_domain.setProgress(domain.progress());
-        ci_domain.setMessage(domain.message());
-        ci_domain.setAnswer((DCusInterfaces::Answer::Literal)domain.answer());
+        ci_domain.setName(domain.name);
+        ci_domain.setGuid(domain.guid);
+        ci_domain.setState_((DCusInterfaces::ClientState::Literal)domain.state);
+        ci_domain.setLast((DCusInterfaces::ClientState::Literal)domain.last);
+        ci_domain.setWatcher(domain.watcher);
+        ci_domain.setError_(domain.error);
+        ci_domain.setVersion_(domain.version);
+        ci_domain.setAttribute_(domain.attribute.toJson());
+        ci_domain.setMeta(domain.meta.toJson());
+        ci_domain.setProgress(domain.progress);
+        ci_domain.setMessage(domain.message);
+        ci_domain.setAnswer((DCusInterfaces::Answer::Literal)domain.answer);
         domainMessage.setDomain(std::move(ci_domain));
         domainMessage.setDiscovery(discovery);
         CommonAPI::CallStatus callStatus(CommonAPI::CallStatus::SUCCESS);

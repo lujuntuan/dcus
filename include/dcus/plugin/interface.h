@@ -31,7 +31,7 @@ class InterfaceProxy {
 public:
     InterfaceProxy<T>() = default;
     ~InterfaceProxy<T>() = default;
-    inline std::shared_ptr<T> interface(bool showWarn = true) const
+    inline std::unique_ptr<T> interface(bool showWarn = true) const
     {
         if (showWarn && !m_interface) {
             LOG_WARNING("instance is null");
@@ -44,11 +44,11 @@ public:
         if (m_interface) {
             LOG_WARNING("instance has set");
         }
-        m_interface = std::make_shared<TargetClass>();
+        m_interface = std::make_unique<TargetClass>();
     }
 
 private:
-    std::shared_ptr<T> m_interface = nullptr;
+    std::unique_ptr<T> m_interface = nullptr;
 };
 
 DCUS_NAMESPACE_END

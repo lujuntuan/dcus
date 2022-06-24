@@ -22,7 +22,7 @@
 DCUS_NAMESPACE_BEGIN
 
 struct PluginHelper {
-    std::map<std::string, std::shared_ptr<dylib>> pluginMap;
+    std::map<std::string, std::unique_ptr<dylib>> pluginMap;
 };
 
 Plugin::Plugin()
@@ -56,7 +56,7 @@ std::deque<std::string> Plugin::defaultSearchPath()
 
 void Plugin::clear()
 {
-    std::map<std::string, std::shared_ptr<dylib>> tmp;
+    std::map<std::string, std::unique_ptr<dylib>> tmp;
     m_hpr->pluginMap.clear();
     m_hpr->pluginMap.swap(tmp);
 }
@@ -107,7 +107,7 @@ Plugin::Handle Plugin::load(const std::string& pluginId,
     }
     LOG_DEBUG("loading plugin: ", pluginPath);
     try {
-        std::shared_ptr<dylib> loader = std::make_shared<dylib>(std::move(pluginPath));
+        std::unique_ptr<dylib> loader = std::make_unique<dylib>(std::move(pluginPath));
         auto createFunction = loader->get_function<Handle(const char*, uint16_t, uint16_t)>(functionName);
         if (!createFunction) {
             LOG_WARNING("can not find symbol function", "(", libName, ")");
@@ -119,7 +119,7 @@ Plugin::Handle Plugin::load(const std::string& pluginId,
             return handle;
         }
         LOG_DEBUG("plugin loaded successfully");
-        m_hpr->pluginMap.emplace(pluginId, loader);
+        m_hpr->pluginMap.emplace(pluginId, loader.release());
         return handle;
     } catch (const dylib::exception& e) {
         LOG_WARNING(e.what());

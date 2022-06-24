@@ -272,7 +272,7 @@ void WebQueue::checkUpgrade()
 void WebQueue::removeCache(bool all)
 {
     lock();
-    std::string id = dcus_server_engine->upgrade().id();
+    std::string id = dcus_server_engine->upgrade().id;
     std::string cancelId = dcus_server_engine->cancelId();
     unlock();
     std::string downloadDir = m_hpr->downloadDir;
@@ -308,13 +308,13 @@ void WebQueue::stopThread(bool force)
 void WebQueue::transformFiles(std::string& id, Files& files, bool webInstead)
 {
     lock();
-    id = dcus_server_engine->upgrade().id();
+    id = dcus_server_engine->upgrade().id;
     files.clear();
     files.shrink_to_fit();
-    for (const Package& package : dcus_server_engine->upgrade().packages()) {
-        for (File file : package.files()) {
+    for (const Package& package : dcus_server_engine->upgrade().packages) {
+        for (File file : package.files) {
             if (webInstead) {
-                file.url() = file.web_url();
+                file.url = file.web_url;
             }
             files.push_back(std::move(file));
         }
@@ -333,10 +333,10 @@ void WebQueue::download(const std::string& id, const Files& files)
         [](const Transfers& transfers) {
             dcus_server_engine->postEvent(new ServerTransferEvent(Transfers(transfers)));
         });
-    if (status.state() == Core::SUCCEED) {
+    if (status.state == Core::SUCCEED) {
         dcus_server_engine->postEvent(new ServerEvent(ServerEvent::RES_DOWNLOAD_DONE));
-    } else if (status.state() == Core::FAILED) {
-        postError(status.error());
+    } else if (status.state == Core::FAILED) {
+        postError(status.error);
     }
 }
 
@@ -351,10 +351,10 @@ void WebQueue::verify(const std::string& id, const Files& files)
             Transfers t = transfers;
             dcus_server_engine->postEvent(new ServerTransferEvent(Transfers(transfers)));
         });
-    if (status.state() == Core::SUCCEED) {
+    if (status.state == Core::SUCCEED) {
         dcus_server_engine->postEvent(new ServerEvent(ServerEvent::RES_VERIFY_DONE));
-    } else if (status.state() == Core::FAILED) {
-        postError(status.error());
+    } else if (status.state == Core::FAILED) {
+        postError(status.error);
     }
 }
 
@@ -370,10 +370,10 @@ void WebQueue::distribute(const std::string& id, const Files& files)
             Transfers t = transfers;
             dcus_server_engine->postEvent(new ServerTransferEvent(Transfers(transfers)));
         });
-    if (status.state() == Core::SUCCEED) {
+    if (status.state == Core::SUCCEED) {
         dcus_server_engine->postEvent(new ServerEvent(ServerEvent::RES_DISTRUBUTE_DONE));
-    } else if (status.state() == Core::FAILED) {
-        postError(status.error());
+    } else if (status.state == Core::FAILED) {
+        postError(status.error);
     }
 }
 

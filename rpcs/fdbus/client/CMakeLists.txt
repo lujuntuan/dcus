@@ -14,7 +14,7 @@ begin_sub_project(lib ${RPC_NAME})
 
 add_library(
     ${PROJECT_NAME}
-    ${RPC_NAME}_lib.cpp
+    ${RPC_NAME}_client.cpp
     )
 
 add_dcus_interfaces()

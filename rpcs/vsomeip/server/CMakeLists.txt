@@ -14,7 +14,7 @@ begin_sub_project(app ${RPC_NAME})
 
 add_executable(
     ${PROJECT_NAME}
-    ${RPC_NAME}.cpp
+    ${RPC_NAME}_server.cpp
     )
 
 add_dcus_interfaces()

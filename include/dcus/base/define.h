@@ -51,17 +51,6 @@
     TypeName(const TypeName&) = delete;          \
     TypeName& operator=(const TypeName&) = delete;
 
-#define CREATE_PRIVATE_PROPERTY(ValueType, name, value)                \
-public:                                                                \
-    inline const ValueType& name() const noexcept { return m_##name; } \
-                                                                       \
-private:                                                               \
-    ValueType m_##name = value;
-#define CREATE_PUBLIC_PROPERTY(ValueType, name, value)     \
-public:                                                    \
-    inline ValueType& name() noexcept { return m_##name; } \
-    CREATE_PRIVATE_PROPERTY(ValueType, name, value)
-
 #define DCUS_UNUSED(Var) (void)(Var)
 #define DCUS_STRNAME(Name) #Name
 #define DCUS_GETNAME(Name) DCUS_STRNAME(Name)

@@ -82,8 +82,6 @@ Queue::~Queue()
         }
         m_hpr->eventQueue.pop();
     }
-    m_hpr->eventMutex.unlock();
-
     for (Timer* timer : m_hpr->timerList) {
         if (timer) {
             delete timer;
@@ -91,6 +89,7 @@ Queue::~Queue()
             LOG_WARNING("timer is null");
         }
     }
+    m_hpr->eventMutex.unlock();
     if (m_hpr->queueThread) {
         delete m_hpr->queueThread;
     }
@@ -214,13 +213,18 @@ int Queue::quitCode() const
 
 int Queue::eventCount() const
 {
-    return (int)m_hpr->eventQueue.size();
+    m_hpr->eventMutex.lock();
+    int count = (int)m_hpr->eventQueue.size();
+    m_hpr->eventMutex.unlock();
+    return count;
 }
 
 Timer* Queue::createTimer(uint32_t interval_milli_s, bool loop, const Timer::Function& function)
 {
     Timer* timer = new Timer(interval_milli_s, loop, function);
+    m_hpr->eventMutex.lock();
     m_hpr->timerList.push_back(timer);
+    m_hpr->eventMutex.unlock();
     return timer;
 }
 
@@ -229,7 +233,9 @@ void Queue::destroyTimer(Timer* timer)
     if (!timer) {
         LOG_WARNING("timer is null");
     }
+    m_hpr->eventMutex.lock();
     m_hpr->timerList.remove(timer);
+    m_hpr->eventMutex.unlock();
     delete timer;
 }
 
@@ -256,11 +262,11 @@ void Queue::postEvent(Event* event)
             return;
         }
     }
+    m_hpr->eventMutex.lock();
     if (m_hpr->eventQueue.size() > QUEUE_MAX_NUM) {
         LOG_WARNING("queue is full");
         std::terminate();
     }
-    m_hpr->eventMutex.lock();
     m_hpr->eventQueue.push(event);
     m_hpr->eventMutex.unlock();
     m_hpr->eventSemaPhore.reset();
@@ -299,8 +305,15 @@ void Queue::processEvent()
         }
         m_hpr->timerFunctionQueue.pop();
     }
-    for (; !m_hpr->eventQueue.empty();) {
+    for (;;) {
+        m_hpr->eventMutex.lock();
+        if (m_hpr->eventQueue.empty()) {
+            m_hpr->eventMutex.unlock();
+            break;
+        }
         Event* event = m_hpr->eventQueue.front();
+        m_hpr->eventQueue.pop();
+        m_hpr->eventMutex.unlock();
         if (event) {
             if (event->type() != Event::UNKNOWN) {
                 eventChanged(event);
@@ -312,15 +325,14 @@ void Queue::processEvent()
         } else {
             LOG_WARNING("event is null");
         }
-        m_hpr->eventMutex.lock();
-        m_hpr->eventQueue.pop();
-        m_hpr->eventMutex.unlock();
     }
     m_hpr->isBusy = false;
 }
 
 void Queue::processNextSleepTime()
 {
+    std::lock_guard<std::mutex> lock(m_hpr->eventMutex);
+    (void)lock;
     m_hpr->timeMethod.miniTime = -1;
     m_hpr->timeMethod.remainTime = -1;
     m_hpr->timeMethod.intervalTime = 0;

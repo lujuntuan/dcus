@@ -149,35 +149,35 @@ bool Domain::mrStateIsAsk(ServerState state) noexcept
 
 void Domain::update(const Domain& domain) noexcept
 {
-    if (m_name != domain.name()) {
+    if (name != domain.name) {
         return;
     }
-    m_state = domain.state();
-    m_last = domain.last();
-    m_watcher = domain.watcher();
-    m_error = domain.error();
-    m_version = domain.version();
-    m_attribute = domain.attribute();
-    m_meta = domain.meta();
-    m_progress = domain.progress();
-    m_message = domain.message();
-    m_answer = domain.answer();
+    state = domain.state;
+    last = domain.last;
+    watcher = domain.watcher;
+    error = domain.error;
+    version = domain.version;
+    attribute = domain.attribute;
+    meta = domain.meta;
+    progress = domain.progress;
+    message = domain.message;
+    answer = domain.answer;
 }
 
 bool Domain::isEqual(const Domain& domain) const noexcept
 {
-    return m_name == domain.name()
-        //&&guid() == domain.guid()
-        && m_state == domain.state()
-        && m_last == domain.last()
-        && m_watcher == domain.watcher()
-        && m_error == domain.error()
-        && m_version == domain.version()
-        && m_attribute == domain.attribute()
-        && m_meta == domain.meta()
-        && m_progress == domain.progress()
-        && m_message == domain.message()
-        && m_answer == domain.answer();
+    return name == domain.name
+        //&&guid == domain.guid
+        && state == domain.state
+        && last == domain.last
+        && watcher == domain.watcher
+        && error == domain.error
+        && version == domain.version
+        && attribute == domain.attribute
+        && meta == domain.meta
+        && progress == domain.progress
+        && message == domain.message
+        && answer == domain.answer;
 }
 
 bool Domain::operator==(const Domain& domain) const noexcept
@@ -192,40 +192,40 @@ bool Domain::operator!=(const Domain& domain) const noexcept
 
 std::ostream& operator<<(std::ostream& ostream, const Domain& domain) noexcept
 {
-    if (domain.name().empty()) {
+    if (domain.name.empty()) {
         ostream << "{\n  Unavailable domain\n}";
         return ostream;
     }
     ostream << "{\n";
-    ostream << "  [name]: " << domain.name() << "\n";
-    if (!domain.guid().empty()) {
-        ostream << "  [guid]: " << domain.guid() << "\n";
+    ostream << "  [name]: " << domain.name << "\n";
+    if (!domain.guid.empty()) {
+        ostream << "  [guid]: " << domain.guid << "\n";
     }
-    ostream << "  [state]: " << Domain::getWrStateStr(domain.state()) << "\n";
-    ostream << "  [last]: " << Domain::getWrStateStr(domain.last()) << "\n";
-    if (domain.watcher()) {
+    ostream << "  [state]: " << Domain::getWrStateStr(domain.state) << "\n";
+    ostream << "  [last]: " << Domain::getWrStateStr(domain.last) << "\n";
+    if (domain.watcher) {
         ostream << "  [watcher]: " << std::string("true") << "\n";
     }
-    if (domain.error() != 0) {
-        ostream << "  [error]: " << domain.error() << "\n";
+    if (domain.error != 0) {
+        ostream << "  [error]: " << domain.error << "\n";
     }
-    if (!domain.version().empty()) {
-        ostream << "  [version]: " << domain.version() << "\n";
+    if (!domain.version.empty()) {
+        ostream << "  [version]: " << domain.version << "\n";
     }
-    if (!domain.attribute().empty()) {
-        ostream << "  [attribute]: " << domain.attribute().toJson() << "\n";
+    if (!domain.attribute.empty()) {
+        ostream << "  [attribute]: " << domain.attribute.toJson() << "\n";
     }
-    if (!domain.meta().empty()) {
-        ostream << "  [meta]: " << domain.meta().toJson() << "\n";
+    if (!domain.meta.empty()) {
+        ostream << "  [meta]: " << domain.meta.toJson() << "\n";
     }
-    if (domain.progress() != 0) {
-        ostream << "  [progress]: " << Utils::doubleToString(domain.progress()) << "\n";
+    if (domain.progress != 0) {
+        ostream << "  [progress]: " << Utils::doubleToString(domain.progress) << "\n";
     }
-    if (!domain.message().empty()) {
-        ostream << "  [message]: " << domain.message() << "\n";
+    if (!domain.message.empty()) {
+        ostream << "  [message]: " << domain.message << "\n";
     }
-    if (domain.answer() != ANS_UNKNOWN) {
-        ostream << "  [answer]: " << Domain::getAnswerStr(domain.answer()) << "\n";
+    if (domain.answer != ANS_UNKNOWN) {
+        ostream << "  [answer]: " << Domain::getAnswerStr(domain.answer) << "\n";
     }
     ostream << "}";
     return ostream;
@@ -246,19 +246,19 @@ std::ostream& operator<<(std::ostream& ostream, const Depends& depends) noexcept
 
 bool Detail::detectVersionEqual() const noexcept
 {
-    if (m_domain.version().empty()) {
+    if (domain.version.empty()) {
         return false;
     }
-    return m_domain.version() == m_package.version();
+    return domain.version == package.version;
 }
 
 bool Detail::detectVersionVaild() const noexcept
 {
-    if (m_domain.version().empty() || m_package.version().empty()) {
+    if (domain.version.empty() || package.version.empty()) {
         return false;
     }
-    const auto currentVersionList = Utils::stringSplit(m_domain.version(), ".");
-    const auto targetVersionList = Utils::stringSplit(m_package.version(), ".");
+    const auto currentVersionList = Utils::stringSplit(domain.version, ".");
+    const auto targetVersionList = Utils::stringSplit(package.version, ".");
     if (currentVersionList.size() != targetVersionList.size()) {
         return false;
     }
@@ -299,7 +299,7 @@ inline static std::vector<std::string> getDependsNames(const VariantMap& meta)
 
 bool Detail::hasDepends(const Depends& depends) const noexcept
 {
-    const auto& requireNames = getDependsNames(m_package.meta());
+    const auto& requireNames = getDependsNames(package.meta);
     for (const auto& str : requireNames) {
         if (str.empty()) {
             continue;
@@ -315,34 +315,34 @@ bool Detail::hasDepends(const Depends& depends) const noexcept
 
 bool Detail::operator==(const Detail& detail) const noexcept
 {
-    return m_domain == detail.domain();
+    return domain == detail.domain;
 }
 
 bool Detail::operator!=(const Detail& detail) const noexcept
 {
-    return m_domain != detail.domain();
+    return domain != detail.domain;
 }
 
 bool Detail::operator<(const Detail& detail) const noexcept
 {
-    if (m_domain == detail.domain()) {
+    if (domain == detail.domain) {
         return false;
     }
-    const auto& requireNames = getDependsNames(detail.package().meta());
+    const auto& requireNames = getDependsNames(detail.package.meta);
     for (const auto& str : requireNames) {
         if (str.empty()) {
             continue;
         }
-        if (str == m_domain.name()) {
+        if (str == domain.name) {
             return true;
         }
     }
-    return m_domain.name() < detail.domain().name();
+    return domain.name < detail.domain.name;
 }
 
 bool Detail::operator>(const Detail& detail) const noexcept
 {
-    if (m_domain == detail.domain()) {
+    if (domain == detail.domain) {
         return true;
     }
     return !(*this < detail);
@@ -350,21 +350,21 @@ bool Detail::operator>(const Detail& detail) const noexcept
 
 std::ostream& operator<<(std::ostream& ostream, const Detail& detail) noexcept
 {
-    ostream << detail.domain() << "\n";
-    if (!detail.package().files().empty()) {
-        ostream << "  [package-size]: " << detail.package().files().size() << "\n";
+    ostream << detail.domain << "\n";
+    if (!detail.package.files.empty()) {
+        ostream << "  [package-size]: " << detail.package.files.size() << "\n";
     }
-    if (!detail.transfers().empty()) {
-        ostream << "  [transfers-size]: " << detail.transfers().size() << "\n";
+    if (!detail.transfers.empty()) {
+        ostream << "  [transfers-size]: " << detail.transfers.size() << "\n";
     }
-    if (detail.progress() != 0) {
-        ostream << "  [progress]: " << Utils::doubleToString(detail.progress()) << "\n";
+    if (detail.progress != 0) {
+        ostream << "  [progress]: " << Utils::doubleToString(detail.progress) << "\n";
     }
-    if (detail.deploy().active()) {
-        ostream << "  [deploy]: " << detail.deploy().get() << std::string(" ms") << "\n";
+    if (detail.deploy.active()) {
+        ostream << "  [deploy]: " << detail.deploy.get() << std::string(" ms") << "\n";
     }
-    if (detail.heartbeat().active()) {
-        ostream << "  [heartbeat]: " << detail.heartbeat().get() << std::string(" ms") << "\n";
+    if (detail.heartbeat.active()) {
+        ostream << "  [heartbeat]: " << detail.heartbeat.get() << std::string(" ms") << "\n";
     }
     return ostream;
 }
@@ -372,11 +372,11 @@ std::ostream& operator<<(std::ostream& ostream, const Detail& detail) noexcept
 Detail* Details::update(Domain&& domain, bool force) noexcept
 {
     for (Detail& d : *this) {
-        if (d.domain().name() == domain.name()) {
+        if (d.domain.name == domain.name) {
             if (force) {
-                d.domain() = domain;
+                d.domain = domain;
             } else {
-                d.domain().update(domain);
+                d.domain.update(domain);
             }
             return &d;
         }
@@ -398,7 +398,7 @@ void Details::sort() noexcept
 Detail* Details::find(const std::string& name) noexcept
 {
     for (auto& d : *this) {
-        if (d.domain().name() == name) {
+        if (d.domain.name == name) {
             return &d;
         }
     }

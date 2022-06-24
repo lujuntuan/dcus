@@ -1,14 +1,14 @@
 /*********************************************************************************
-  *Copyright(C): Juntuan.Lu 2021
-  *Author:  Juntuan.Lu
-  *Version: 1.0
-  *Date:  2022/04/01
-  *Phone: 15397182986
-  *Description:
-  *Others:
-  *Function List:
-  *History:
-**********************************************************************************/
+ *Copyright(C): Juntuan.Lu 2021
+ *Author:  Juntuan.Lu
+ *Version: 1.0
+ *Date:  2022/04/01
+ *Phone: 15397182986
+ *Description:
+ *Others:
+ *Function List:
+ *History:
+ **********************************************************************************/
 
 #ifndef DCUS_CORE_HELPER_H
 #define DCUS_CORE_HELPER_H
@@ -24,20 +24,20 @@ struct StatusHelper {
     explicit StatusHelper(const BreakFunction& breakFunction = nullptr)
         : m_breakFunction(breakFunction)
     {
-        status.state() = SUCCEED;
-        status.error() = 0;
+        status.state = SUCCEED;
+        status.error = 0;
     }
     bool checkDone()
     {
-        if (status.state() == FAILED) {
+        if (status.state == FAILED) {
             return true;
         }
         if (m_breakFunction) {
             if (m_breakFunction()) {
                 m_mutex.lock();
-                if (status.state() == SUCCEED) {
-                    status.state() = CANCELED;
-                    status.error() = 0;
+                if (status.state == SUCCEED) {
+                    status.state = CANCELED;
+                    status.error = 0;
                 }
                 m_mutex.unlock();
                 return true;
@@ -49,9 +49,9 @@ struct StatusHelper {
     {
         m_mutex.lock();
         if (critical) {
-            status.state() = FAILED;
+            status.state = FAILED;
         }
-        status.error() = error;
+        status.error = error;
         m_mutex.unlock();
     }
 
@@ -63,4 +63,4 @@ private:
 
 DCUS_NAMESPACE_END
 
-#endif //DCUS_CORE_HELPER_H
+#endif // DCUS_CORE_HELPER_H

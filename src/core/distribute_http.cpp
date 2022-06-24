@@ -44,8 +44,8 @@ Status distribute(DistributeHandle& handle, const std::string& url, int port, co
     Elapsed transferElapsed;
     transferElapsed.start();
     for (const File& file : files) {
-        if (distributeUrls.find(file.url()) == distributeUrls.end()) {
-            distributeUrls.insert(file.url());
+        if (distributeUrls.find(file.url) == distributeUrls.end()) {
+            distributeUrls.insert(file.url);
         } else {
             statusHelper.throwError(302);
             LOG_WARNING("distribute has repeat");
@@ -79,7 +79,7 @@ Status distribute(DistributeHandle& handle, const std::string& url, int port, co
         return new httplib::ThreadPool(files.size() > CPPHTTPLIB_THREAD_POOL_COUNT ? CPPHTTPLIB_THREAD_POOL_COUNT : files.size());
     };
     auto feedToServer = [&statusHelper](httplib::Response& res) {
-        res.status = statusHelper.status.error();
+        res.status = statusHelper.status.error;
         res.set_content(Utils::stringSprintf("<h1>Error %s</h1>", std::to_string(res.status)), "text/html");
     };
     if (!loadServerConfig(server, config)) {
@@ -119,7 +119,7 @@ Status distribute(DistributeHandle& handle, const std::string& url, int port, co
             if (statusHelper.checkDone()) {
                 return;
             }
-            if (file.domain() != spVector[2] || file.name() != spVector[3]) {
+            if (file.domain != spVector[2] || file.name != spVector[3]) {
                 continue;
             }
             Helper* helper = new Helper;
@@ -128,23 +128,23 @@ Status distribute(DistributeHandle& handle, const std::string& url, int port, co
             helper->finished = false;
             helper->hasFileflag = false;
             helpers.push_back(helper);
-            helper->hasFileflag = std::any_of(distributeUrls.begin(), distributeUrls.end(), [&](const std::string& one) { return one == file.url(); });
+            helper->hasFileflag = std::any_of(distributeUrls.begin(), distributeUrls.end(), [&](const std::string& one) { return one == file.url; });
             mutex.unlock();
             if (!helper->hasFileflag) {
                 // statusHelper.throwError(310);
-                LOG_WARNING("distribute can not find file", " (" + file.name() + ")");
+                LOG_WARNING("distribute can not find file", " (" + file.name + ")");
                 // feedToServer(res);
                 return;
             }
             //
-            helper->fileName = dir + "/" + file.domain() + "/" + file.name();
+            helper->fileName = dir + "/" + file.domain + "/" + file.name;
             helper->beginPos = 0;
             hasPull = true;
             helper->totalElapsed.restart();
             helper->elapsed.restart();
-            res.set_header("content-disposition", "attachment;filename=" + file.name());
+            res.set_header("content-disposition", "attachment;filename=" + file.name);
             res.set_header("Accept-Ranges", "bytes");
-            res.set_header("Content-Length", std::to_string(file.size()));
+            res.set_header("Content-Length", std::to_string(file.size));
             if (req.has_header("Range")) {
                 std::string range = req.get_header_value("Range"); // bytes=xxx
                 res.status = 206;
@@ -158,30 +158,30 @@ Status distribute(DistributeHandle& handle, const std::string& url, int port, co
                     }
                 }
             }
-            if (helper->beginPos > file.size()) {
+            if (helper->beginPos > file.size) {
                 statusHelper.throwError(311);
                 LOG_WARNING("distribute begin pos too big", " (" + helper->fileName + ")");
                 feedToServer(res);
                 return;
-            } else if (helper->beginPos == file.size()) {
+            } else if (helper->beginPos == file.size) {
                 res.status = 200;
                 res.set_content("", "");
                 mutex.lock();
-                distributeUrls.erase(file.url());
+                distributeUrls.erase(file.url);
                 if (distributeUrls.empty()) {
                     server.stop();
                 }
                 mutex.unlock();
                 if (progressFunction) {
                     Transfer transfer;
-                    transfer.domain() = file.domain();
-                    transfer.name() = file.name();
-                    transfer.progress() = 100.0f;
-                    transfer.total() = (uint32_t)(file.size() / 1024);
-                    transfer.current() = (uint32_t)(file.size() / 1024);
-                    transfer.speed() = 0;
-                    transfer.pass() = 0;
-                    transfer.left() = 0;
+                    transfer.domain = file.domain;
+                    transfer.name = file.name;
+                    transfer.progress = 100.0f;
+                    transfer.total = (uint32_t)(file.size / 1024);
+                    transfer.current = (uint32_t)(file.size / 1024);
+                    transfer.speed = 0;
+                    transfer.pass = 0;
+                    transfer.left = 0;
                     mutex.lock();
                     transfers.update(std::move(transfer), true);
                     transfers.sort();
@@ -196,7 +196,7 @@ Status distribute(DistributeHandle& handle, const std::string& url, int port, co
                 return;
             }
             res.set_content_provider(
-                file.size(),
+                file.size,
                 "application/x-download",
                 [&, helper, file](size_t offset, size_t length, httplib::DataSink& sink) {
                     if (statusHelper.checkDone()) {
@@ -230,15 +230,15 @@ Status distribute(DistributeHandle& handle, const std::string& url, int port, co
                             helper->finished = false;
                             return false;
                         }
-                        size_t size = std::min(file.size() - offset, helper->buffer.size());
+                        size_t size = std::min(file.size - offset, helper->buffer.size());
                         helper->rfile.read(helper->buffer.data(), size);
                         sink.write(helper->buffer.data(), size);
                         uint64_t current = offset + size;
 #if (DCUS_WEB_TRANSFER_TEST_TIME)
                         Utils::sleepMilli(DCUS_WEB_TRANSFER_TEST_TIME); // sleep_test
 #endif
-                        if (helper->elapsed.get() >= DCUS_WEB_TRANSFER_INTERVAL_MIN || current >= file.size()) {
-                            if (current >= file.size()) {
+                        if (helper->elapsed.get() >= DCUS_WEB_TRANSFER_INTERVAL_MIN || current >= file.size) {
+                            if (current >= file.size) {
                                 helper->finished = true;
                             } else {
                                 helper->finished = false;
@@ -246,24 +246,24 @@ Status distribute(DistributeHandle& handle, const std::string& url, int port, co
                             if (progressFunction) {
                                 helper->elapsed.restart();
                                 uint32_t pass = (uint32_t)(helper->totalElapsed.get() / 1000);
-                                uint32_t speed = pass <= 0 ? (uint32_t)(file.size() / 1024) : (uint32_t)((current - helper->beginPos) / 1024 / pass);
-                                if (speed > (uint32_t)(file.size() / 1024)) {
-                                    speed = (uint32_t)(file.size() / 1024);
+                                uint32_t speed = pass <= 0 ? (uint32_t)(file.size / 1024) : (uint32_t)((current - helper->beginPos) / 1024 / pass);
+                                if (speed > (uint32_t)(file.size / 1024)) {
+                                    speed = (uint32_t)(file.size / 1024);
                                 }
-                                uint32_t left = speed <= 0 ? 0 : (uint32_t)((file.size() - current) / 1024 / speed);
+                                uint32_t left = speed <= 0 ? 0 : (uint32_t)((file.size - current) / 1024 / speed);
                                 Transfer transfer;
-                                transfer.domain() = file.domain();
-                                transfer.name() = file.name();
-                                transfer.progress() = file.size() <= 0 ? 100.0f : current * 100.0f / file.size();
-                                transfer.total() = (uint32_t)(file.size() / 1024);
-                                transfer.current() = (uint32_t)(current / 1024);
-                                transfer.speed() = speed;
-                                transfer.pass() = pass;
-                                transfer.left() = left;
+                                transfer.domain = file.domain;
+                                transfer.name = file.name;
+                                transfer.progress = file.size <= 0 ? 100.0f : current * 100.0f / file.size;
+                                transfer.total = (uint32_t)(file.size / 1024);
+                                transfer.current = (uint32_t)(current / 1024);
+                                transfer.speed = speed;
+                                transfer.pass = pass;
+                                transfer.left = left;
                                 mutex.lock();
                                 transfers.update(std::move(transfer), true);
                                 mutex.unlock();
-                                if (transferElapsed.get() > DCUS_WEB_TRANSFER_INTERVAL && current < file.size()) {
+                                if (transferElapsed.get() > DCUS_WEB_TRANSFER_INTERVAL && current < file.size) {
                                     mutex.lock();
                                     transferElapsed.restart();
                                     transfers.sort();
@@ -297,7 +297,7 @@ Status distribute(DistributeHandle& handle, const std::string& url, int port, co
                     }
                     if (helper->finished) {
                         mutex.lock();
-                        distributeUrls.erase(file.url());
+                        distributeUrls.erase(file.url);
                         if (distributeUrls.empty()) {
                             server.stop();
                         }

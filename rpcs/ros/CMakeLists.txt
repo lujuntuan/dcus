@@ -25,9 +25,14 @@ macro(add_dcus_interfaces)
             ${RPC_INTERFACE_NAME}
             )
     else()
-        rosidl_target_interfaces_private(${PROJECT_NAME}
+        rosidl_get_typesupport_target(
+            ROS_IDL_TYPE
             ${RPC_INTERFACE_NAME}
             "rosidl_typesupport_cpp"
+        )
+        target_link_libraries(
+            ${PROJECT_NAME}
+            "${ROS_IDL_TYPE}"
             )
     endif()
 endmacro(add_dcus_interfaces)

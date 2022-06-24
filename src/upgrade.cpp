@@ -23,13 +23,13 @@ std::string File::getSizeStr(uint32_t size) noexcept
 
 bool File::operator==(const File& file) const noexcept
 {
-    return (m_domain == file.domain()
-        && m_name == file.name()
-        //&& m_url== file.url()
-        && m_md5 == file.md5()
-        && m_sha1 == file.sha1()
-        && m_sha256 == file.sha256()
-        && m_size == file.size());
+    return (domain == file.domain
+        && name == file.name
+        //&& url== file.url
+        && md5 == file.md5
+        && sha1 == file.sha1
+        && sha256 == file.sha256
+        && size == file.size);
 }
 
 bool File::operator!=(const File& file) const noexcept
@@ -40,25 +40,25 @@ bool File::operator!=(const File& file) const noexcept
 std::ostream& operator<<(std::ostream& ostream, const File& file) noexcept
 {
     ostream << "    {\n";
-    if (!file.domain().empty()) {
-        ostream << "      [domain]: " << file.domain() << "\n";
+    if (!file.domain.empty()) {
+        ostream << "      [domain]: " << file.domain << "\n";
     }
-    ostream << "      [name]: " << file.name() << "\n";
-    ostream << "      [url]: " << file.url() << "\n";
-    if (!file.md5().empty()) {
-        ostream << "      [md5]: " << file.md5() << "\n";
+    ostream << "      [name]: " << file.name << "\n";
+    ostream << "      [url]: " << file.url << "\n";
+    if (!file.md5.empty()) {
+        ostream << "      [md5]: " << file.md5 << "\n";
     }
-    if (!file.sha1().empty()) {
-        ostream << "      [sha1]: " << file.sha1() << "\n";
+    if (!file.sha1.empty()) {
+        ostream << "      [sha1]: " << file.sha1 << "\n";
     }
-    if (!file.sha256().empty()) {
-        ostream << "      [sha256]: " << file.sha256() << "\n";
+    if (!file.sha256.empty()) {
+        ostream << "      [sha256]: " << file.sha256 << "\n";
     }
-    ostream << "      [size]: " << file.size()
-            << "(" + File::getSizeStr((uint32_t)(file.size() / 1024)) + ")"
+    ostream << "      [size]: " << file.size
+            << "(" + File::getSizeStr((uint32_t)(file.size / 1024)) + ")"
             << "\n";
-    if (!file.web_url().empty()) {
-        ostream << "      [web_url]: " << file.web_url() << "\n";
+    if (!file.web_url.empty()) {
+        ostream << "      [web_url]: " << file.web_url << "\n";
     }
     ostream << "    }\n";
     return ostream;
@@ -75,10 +75,10 @@ std::ostream& operator<<(std::ostream& ostream, const Files& files) noexcept
 
 bool Package::operator==(const Package& package) const noexcept
 {
-    return (m_domain == package.domain()
-        && m_part == package.part()
-        && m_version == package.version()
-        && m_files == package.files());
+    return (domain == package.domain
+        && part == package.part
+        && version == package.version
+        && files == package.files);
 }
 
 bool Package::operator!=(const Package& package) const noexcept
@@ -89,15 +89,15 @@ bool Package::operator!=(const Package& package) const noexcept
 std::ostream& operator<<(std::ostream& ostream, const Package& package) noexcept
 {
     ostream << "  {\n";
-    ostream << "    [domain]: " << package.domain() << "\n";
-    ostream << "    [part]: " << package.part() << "\n";
-    ostream << "    [version]: " << package.version() << "\n";
-    if (package.meta().empty()) {
+    ostream << "    [domain]: " << package.domain << "\n";
+    ostream << "    [part]: " << package.part << "\n";
+    ostream << "    [version]: " << package.version << "\n";
+    if (package.meta.empty()) {
         ostream << "    [meta]: EMPTY\n";
     } else {
-        ostream << "    [meta]: " << package.meta().toJson() << "\n";
+        ostream << "    [meta]: " << package.meta.toJson() << "\n";
     }
-    ostream << package.files();
+    ostream << package.files;
     ostream << "  }\n";
     return ostream;
 }
@@ -127,14 +127,14 @@ std::string Upgrade::getMethodStr(int method) noexcept
 
 bool Upgrade::operator==(const Upgrade& upgrade) const noexcept
 {
-    if (m_id != upgrade.id()) {
+    if (id != upgrade.id) {
         return false;
     }
-    return (m_id == upgrade.id()
-        && m_download == upgrade.download()
-        && m_deploy == upgrade.deploy()
-        && m_maintenance == upgrade.maintenance()
-        && m_packages == upgrade.packages());
+    return (id == upgrade.id
+        && download == upgrade.download
+        && deploy == upgrade.deploy
+        && maintenance == upgrade.maintenance
+        && packages == upgrade.packages);
 }
 
 bool Upgrade::operator!=(const Upgrade& upgrade) const noexcept
@@ -145,11 +145,11 @@ bool Upgrade::operator!=(const Upgrade& upgrade) const noexcept
 std::ostream& operator<<(std::ostream& ostream, const Upgrade& upgrade) noexcept
 {
     ostream << "{\n";
-    ostream << "  [id]: " << upgrade.id() << "\n";
-    ostream << "  [download]: " << Upgrade::getMethodStr(upgrade.download()) << "\n";
-    ostream << "  [deploy]: " << Upgrade::getMethodStr(upgrade.deploy()) << "\n";
-    ostream << "  [maintenance]: " << (upgrade.maintenance() ? "true" : "false") << "\n";
-    ostream << upgrade.packages();
+    ostream << "  [id]: " << upgrade.id << "\n";
+    ostream << "  [download]: " << Upgrade::getMethodStr(upgrade.download) << "\n";
+    ostream << "  [deploy]: " << Upgrade::getMethodStr(upgrade.deploy) << "\n";
+    ostream << "  [maintenance]: " << (upgrade.maintenance ? "true" : "false") << "\n";
+    ostream << upgrade.packages;
     ostream << "}";
     return ostream;
 }

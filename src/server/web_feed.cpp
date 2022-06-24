@@ -1,14 +1,14 @@
 /*********************************************************************************
-  *Copyright(C): Juntuan.Lu 2021
-  *Author:  Juntuan.Lu
-  *Version: 1.0
-  *Date:  2022/04/01
-  *Phone: 15397182986
-  *Description:
-  *Others:
-  *Function List:
-  *History:
-**********************************************************************************/
+ *Copyright(C): Juntuan.Lu 2021
+ *Author:  Juntuan.Lu
+ *Version: 1.0
+ *Date:  2022/04/01
+ *Phone: 15397182986
+ *Description:
+ *Others:
+ *Function List:
+ *History:
+ **********************************************************************************/
 
 #include "dcus/server/web_feed.h"
 #include <iostream>
@@ -70,22 +70,22 @@ std::string WebFeed::getResultStr(int result) noexcept
 std::ostream& operator<<(std::ostream& ostream, const WebFeed& webFeed) noexcept
 {
     ostream << "{\n";
-    ostream << "  [id]: " << webFeed.id() << "\n";
-    ostream << "  [type]: " << WebFeed::getTypeStr(webFeed.type()) << "\n";
-    ostream << "  [execution]: " << WebFeed::getExecutionStr(webFeed.execution()) << "\n";
-    ostream << "  [result]: " << WebFeed::getResultStr(webFeed.result()) << "\n";
-    if (!webFeed.details().empty()) {
+    ostream << "  [id]: " << webFeed.id << "\n";
+    ostream << "  [type]: " << WebFeed::getTypeStr(webFeed.type) << "\n";
+    ostream << "  [execution]: " << WebFeed::getExecutionStr(webFeed.execution) << "\n";
+    ostream << "  [result]: " << WebFeed::getResultStr(webFeed.result) << "\n";
+    if (!webFeed.details.empty()) {
         ostream << "  [details]: ";
-        for (size_t i = 0; i < webFeed.details().size(); i++) {
+        for (size_t i = 0; i < webFeed.details.size(); i++) {
             if (i > 0) {
                 ostream << ",";
             }
-            ostream << webFeed.details().at(i);
+            ostream << webFeed.details.at(i);
         }
         ostream << "\n";
     }
-    if (webFeed.type() == WebFeed::TP_DEPLOY) {
-        ostream << "  [progress]: " << webFeed.progress().first << "," << webFeed.progress().second << "\n";
+    if (webFeed.type == WebFeed::TP_DEPLOY) {
+        ostream << "  [progress]: " << webFeed.progress.first << "," << webFeed.progress.second << "\n";
     }
     ostream << "}";
     return ostream;

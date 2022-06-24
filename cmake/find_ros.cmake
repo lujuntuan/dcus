@@ -10,6 +10,7 @@
 #  *History:
 #**********************************************************************************
 
+find_package (Python COMPONENTS Interpreter Development)
 find_package(ament_cmake QUIET)
 find_package(rclcpp QUIET)
 

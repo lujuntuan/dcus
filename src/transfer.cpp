@@ -20,9 +20,9 @@ DCUS_NAMESPACE_BEGIN
 
 bool Transfer::operator==(const Transfer& transfer) const noexcept
 {
-    return m_domain == transfer.domain()
-        && m_name == transfer.name()
-        && m_total == transfer.total();
+    return domain == transfer.domain
+        && name == transfer.name
+        && total == transfer.total;
 }
 
 bool Transfer::operator!=(const Transfer& transfer) const noexcept
@@ -32,10 +32,10 @@ bool Transfer::operator!=(const Transfer& transfer) const noexcept
 
 bool Transfer::operator<(const Transfer& transfer) const noexcept
 {
-    if (m_total == 0 || transfer.total() == 0) {
+    if (total == 0 || transfer.total == 0) {
         return false;
     }
-    if ((double)m_current / m_total > (double)transfer.current() / transfer.total()) {
+    if ((double)current / total > (double)transfer.current / transfer.total) {
         return true;
     };
     return false;
@@ -43,10 +43,10 @@ bool Transfer::operator<(const Transfer& transfer) const noexcept
 
 bool Transfer::operator>(const Transfer& transfer) const noexcept
 {
-    if (m_total == 0 || transfer.total() == 0) {
+    if (total == 0 || transfer.total == 0) {
         return false;
     }
-    if ((double)m_current / m_total < (double)transfer.current() / transfer.total()) {
+    if ((double)current / total < (double)transfer.current / transfer.total) {
         return true;
     };
     return false;
@@ -54,16 +54,16 @@ bool Transfer::operator>(const Transfer& transfer) const noexcept
 
 std::ostream& operator<<(std::ostream& ostream, const Transfer& transfer) noexcept
 {
-    ostream << "[progress]: " << Utils::doubleToString(transfer.progress()) << " %, ";
-    if (!transfer.domain().empty()) {
-        ostream << "[domain]: " << transfer.domain() << ", ";
+    ostream << "[progress]: " << Utils::doubleToString(transfer.progress) << " %, ";
+    if (!transfer.domain.empty()) {
+        ostream << "[domain]: " << transfer.domain << ", ";
     }
-    ostream << "[name]: " << transfer.name() << ", ";
-    ostream << "[speed]: " << File::getSizeStr(transfer.speed()) << "/S, ";
-    ostream << "[total]: " << File::getSizeStr(transfer.total()) << ", ";
-    ostream << "[current]: " << File::getSizeStr(transfer.current()) << ", ";
-    ostream << "[pass]: " << transfer.pass() << " s, ";
-    ostream << "[left]: " << transfer.left() << " s";
+    ostream << "[name]: " << transfer.name << ", ";
+    ostream << "[speed]: " << File::getSizeStr(transfer.speed) << "/S, ";
+    ostream << "[total]: " << File::getSizeStr(transfer.total) << ", ";
+    ostream << "[current]: " << File::getSizeStr(transfer.current) << ", ";
+    ostream << "[pass]: " << transfer.pass << " s, ";
+    ostream << "[left]: " << transfer.left << " s";
     return ostream;
 }
 

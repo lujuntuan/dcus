@@ -114,8 +114,8 @@ ClientEngine::ClientEngine(int argc, char** argv)
         m_hpr->guid = guid.toString();
     }
 
-    m_hpr->detail.domain().state() = WR_IDLE;
-    m_hpr->detail.domain().last() = WR_OFFLINE;
+    m_hpr->detail.domain.state = WR_IDLE;
+    m_hpr->detail.domain.last = WR_OFFLINE;
 }
 
 ClientEngine::~ClientEngine()
@@ -179,7 +179,7 @@ const VariantMap& ClientEngine::meta() const
 
 const VariantMap& ClientEngine::packageMeta() const
 {
-    return m_hpr->detail.package().meta();
+    return m_hpr->detail.package.meta;
 }
 
 void ClientEngine::setCancelEnable(bool cancelEnable)
@@ -213,7 +213,7 @@ void ClientEngine::subscibeDeploy(const DeployFunction& function)
 
 void ClientEngine::postDeployDone(bool success, int errorCode)
 {
-    if (m_hpr->detail.domain().state() != WR_DEPLOY && m_hpr->detail.domain().state() != WR_CANCEL) {
+    if (m_hpr->detail.domain.state != WR_DEPLOY && m_hpr->detail.domain.state != WR_CANCEL) {
         LOG_WARNING("can not postDeployDone");
         return;
     }
@@ -226,7 +226,7 @@ void ClientEngine::postDeployDone(bool success, int errorCode)
 
 void ClientEngine::postDeployProgress(float progress, const std::string& message)
 {
-    if (m_hpr->detail.domain().state() != WR_DEPLOY && m_hpr->detail.domain().state() != WR_CANCEL) {
+    if (m_hpr->detail.domain.state != WR_DEPLOY && m_hpr->detail.domain.state != WR_CANCEL) {
         LOG_WARNING("can not postDeployProgress");
         return;
     }
@@ -235,7 +235,7 @@ void ClientEngine::postDeployProgress(float progress, const std::string& message
 
 void ClientEngine::postCancelDone(bool success, int errorCode)
 {
-    if (m_hpr->detail.domain().state() != WR_CANCEL) {
+    if (m_hpr->detail.domain.state != WR_CANCEL) {
         LOG_WARNING("can not postCancelDone");
         return;
     }
@@ -289,10 +289,10 @@ void ClientEngine::eventChanged(Event* event)
     if (clientEvent->type() == ClientEvent::RES_ERROR) {
         int error = clientEvent->data().value("error").toInt();
         setDomainState(WR_ERROR);
-        m_hpr->detail.domain().error() = error;
-        m_hpr->detail.domain().answer() = ANS_UNKNOWN;
-        m_hpr->detail.domain().progress() = .0f;
-        m_hpr->detail.domain().message() = "Errored !";
+        m_hpr->detail.domain.error = error;
+        m_hpr->detail.domain.answer = ANS_UNKNOWN;
+        m_hpr->detail.domain.progress = .0f;
+        m_hpr->detail.domain.message = "Errored !";
         sendDomainMessage();
         return;
     }
@@ -305,14 +305,14 @@ void ClientEngine::eventChanged(Event* event)
         }
         m_hpr->control = controlEvent->control();
         m_hpr->upgrade = controlEvent->upgrade();
-        m_hpr->detail.domain().name() = m_hpr->name;
-        m_hpr->detail.domain().guid() = m_hpr->guid;
-        m_hpr->detail.domain().version() = m_hpr->version;
-        m_hpr->detail.domain().attribute() = m_hpr->attribute;
-        m_hpr->detail.domain().meta() = m_hpr->meta;
-        for (const auto& packge : controlEvent->upgrade().packages()) {
-            if (m_hpr->detail.domain().name() == packge.domain()) {
-                m_hpr->detail.package() = packge;
+        m_hpr->detail.domain.name = m_hpr->name;
+        m_hpr->detail.domain.guid = m_hpr->guid;
+        m_hpr->detail.domain.version = m_hpr->version;
+        m_hpr->detail.domain.attribute = m_hpr->attribute;
+        m_hpr->detail.domain.meta = m_hpr->meta;
+        for (const auto& packge : controlEvent->upgrade().packages) {
+            if (m_hpr->detail.domain.name == packge.domain) {
+                m_hpr->detail.package = packge;
                 break;
             }
         }
@@ -323,51 +323,51 @@ void ClientEngine::eventChanged(Event* event)
         }
         case CTL_RESET: {
             m_hpr->hasCancelAction = false;
-            m_hpr->detail.domain().error() = 0;
-            if (m_hpr->detail.domain().state() == WR_OFFLINE) {
+            m_hpr->detail.domain.error = 0;
+            if (m_hpr->detail.domain.state == WR_OFFLINE) {
                 setDomainState(WR_IDLE);
             }
             break;
         }
         case CTL_DOWNLOAD: {
             m_hpr->hasCancelAction = false;
-            if (m_hpr->detail.package().files().empty()) {
+            if (m_hpr->detail.package.files.empty()) {
                 break;
             }
-            if (m_hpr->detail.domain().state() == WR_DOWNLOAD || m_hpr->detail.domain().state() == WR_ERROR) {
+            if (m_hpr->detail.domain.state == WR_DOWNLOAD || m_hpr->detail.domain.state == WR_ERROR) {
                 break;
             }
-            m_hpr->detail.domain().error() = 0;
+            m_hpr->detail.domain.error = 0;
             setDomainState(WR_DOWNLOAD);
-            m_hpr->detail.domain().answer() = ANS_UNKNOWN;
-            m_hpr->detail.domain().progress() = .0f;
-            m_hpr->detail.domain().message() = "Download ...";
+            m_hpr->detail.domain.answer = ANS_UNKNOWN;
+            m_hpr->detail.domain.progress = .0f;
+            m_hpr->detail.domain.message = "Download ...";
             stopThread();
-            m_hpr->workThread.start(std::bind(&ClientEngine::download, this, m_hpr->upgrade.id(), m_hpr->detail.package().files()));
+            m_hpr->workThread.start(std::bind(&ClientEngine::download, this, m_hpr->upgrade.id, m_hpr->detail.package.files));
             break;
         }
         case CTL_DEPLOY: {
             m_hpr->hasCancelAction = false;
-            if (m_hpr->detail.package().files().empty()) {
+            if (m_hpr->detail.package.files.empty()) {
                 break;
             }
-            if (m_hpr->detail.domain().state() == WR_DEPLOY || m_hpr->detail.domain().state() == WR_ERROR) {
+            if (m_hpr->detail.domain.state == WR_DEPLOY || m_hpr->detail.domain.state == WR_ERROR) {
                 break;
             }
-            if (m_hpr->detail.detectVersionEqual() && m_hpr->detail.domain().state() == WR_IDLE) {
+            if (m_hpr->detail.detectVersionEqual() && m_hpr->detail.domain.state == WR_IDLE) {
                 break;
             }
-            if (m_hpr->detail.domain().state() == WR_IDLE) {
+            if (m_hpr->detail.domain.state == WR_IDLE) {
                 setDomainState(WR_WAIT);
             }
             if (m_hpr->detail.hasDepends(controlEvent->depends())) {
                 break;
             }
-            m_hpr->detail.domain().error() = 0;
+            m_hpr->detail.domain.error = 0;
             setDomainState(WR_DEPLOY);
-            m_hpr->detail.domain().answer() = ANS_UNKNOWN;
-            m_hpr->detail.domain().progress() = .0f;
-            m_hpr->detail.domain().message() = "Deploy ...";
+            m_hpr->detail.domain.answer = ANS_UNKNOWN;
+            m_hpr->detail.domain.progress = .0f;
+            m_hpr->detail.domain.message = "Deploy ...";
             stopThread();
             if (m_hpr->detail.detectVersionEqual()) {
                 this->postEvent(new ClientEvent(ClientEvent::RES_DEPLOY_DONE));
@@ -375,37 +375,37 @@ void ClientEngine::eventChanged(Event* event)
             }
             if (!m_hpr->detail.detectVersionVaild()) {
                 this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, VariantMap { { "error", 2900 } }));
-                LOG_WARNING("deploy version not vaild(", m_hpr->detail.domain().version(), ")");
+                LOG_WARNING("deploy version not vaild(", m_hpr->detail.domain.version, ")");
                 break;
             }
-            m_hpr->workThread.start(std::bind(&ClientEngine::deploy, this, m_hpr->upgrade.id(), m_hpr->detail.package().files()));
+            m_hpr->workThread.start(std::bind(&ClientEngine::deploy, this, m_hpr->upgrade.id, m_hpr->detail.package.files));
             break;
         }
         case CTL_CANCEL: {
             m_hpr->hasCancelAction = true;
-            if (m_hpr->detail.package().files().empty()) {
+            if (m_hpr->detail.package.files.empty()) {
                 break;
             }
-            if (m_hpr->detail.domain().state() == WR_CANCEL || m_hpr->detail.domain().state() == WR_ERROR) {
+            if (m_hpr->detail.domain.state == WR_CANCEL || m_hpr->detail.domain.state == WR_ERROR) {
                 break;
             }
-            m_hpr->detail.domain().error() = 0;
+            m_hpr->detail.domain.error = 0;
             setDomainState(WR_CANCEL);
-            m_hpr->detail.domain().message() = "Cancel ...";
+            m_hpr->detail.domain.message = "Cancel ...";
             if (m_hpr->detail.detectVersionEqual()) {
                 this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, VariantMap { { "error", 2901 } }));
                 break;
             }
-            if (m_hpr->detail.domain().last() == WR_IDLE) {
+            if (m_hpr->detail.domain.last == WR_IDLE) {
                 this->postEvent(new ClientEvent(ClientEvent::RES_CANCEL_DONE));
                 break;
             }
             if (m_hpr->cancelEnable) {
-                if (m_hpr->detail.domain().last() == WR_WAIT) {
+                if (m_hpr->detail.domain.last == WR_WAIT) {
                     this->postEvent(new ClientEvent(ClientEvent::RES_CANCEL_DONE));
                 }
             } else {
-                if (m_hpr->detail.domain().last() == WR_DEPLOY) {
+                if (m_hpr->detail.domain.last == WR_DEPLOY) {
                     this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, VariantMap { { "error", 2902 } }));
                 }
             }
@@ -415,9 +415,9 @@ void ClientEngine::eventChanged(Event* event)
             m_hpr->hasCancelAction = false;
             stopThread();
             setDomainState(WR_IDLE);
-            m_hpr->detail.domain().answer() = ANS_UNKNOWN;
-            m_hpr->detail.domain().progress() = .0f;
-            m_hpr->detail.domain().message() = "";
+            m_hpr->detail.domain.answer = ANS_UNKNOWN;
+            m_hpr->detail.domain.progress = .0f;
+            m_hpr->detail.domain.message = "";
             Utils::freeUnusedMemory();
             break;
         }
@@ -434,8 +434,8 @@ void ClientEngine::eventChanged(Event* event)
             break;
         }
         bool stateChanged = false;
-        if (m_hpr->serverState != detailEvent->detailMessage().state()) {
-            m_hpr->serverState = detailEvent->detailMessage().state();
+        if (m_hpr->serverState != detailEvent->detailMessage().state) {
+            m_hpr->serverState = detailEvent->detailMessage().state;
             stateChanged = true;
         }
         m_hpr->detailFunction(detailEvent->detailMessage(), stateChanged);
@@ -443,34 +443,34 @@ void ClientEngine::eventChanged(Event* event)
     }
     case ClientEvent::RES_DOWNLOAD: {
         setDomainState(WR_VERIFY);
-        m_hpr->detail.domain().answer() = ANS_UNKNOWN;
-        m_hpr->detail.domain().progress() = .0f;
-        m_hpr->detail.domain().message() = "Verify ...";
+        m_hpr->detail.domain.answer = ANS_UNKNOWN;
+        m_hpr->detail.domain.progress = .0f;
+        m_hpr->detail.domain.message = "Verify ...";
         stopThread();
-        m_hpr->workThread.start(std::bind(&ClientEngine::verify, this, m_hpr->upgrade.id(), m_hpr->detail.package().files()));
+        m_hpr->workThread.start(std::bind(&ClientEngine::verify, this, m_hpr->upgrade.id, m_hpr->detail.package.files));
         sendDomainMessage();
         break;
     }
     case ClientEvent::RES_VERIFY: {
         FilePaths patchPaths;
-        for (const auto& file : m_hpr->detail.package().files()) {
-            if (Utils::getPathSuffixName(file.name()) == "patch") {
-                patchPaths.push_back(m_hpr->downloadDir + "/" + m_hpr->upgrade.id() + "/" + file.domain() + "/" + file.name());
+        for (const auto& file : m_hpr->detail.package.files) {
+            if (Utils::getPathSuffixName(file.name) == "patch") {
+                patchPaths.push_back(m_hpr->downloadDir + "/" + m_hpr->upgrade.id + "/" + file.domain + "/" + file.name);
             }
         }
         if (patchPaths.empty() || !m_hpr->patchNewFiles.empty()) {
             m_hpr->patchNewFiles.clear();
             m_hpr->patchNewFiles.shrink_to_fit();
             setDomainState(WR_WAIT);
-            m_hpr->detail.domain().answer() = ANS_UNKNOWN;
-            m_hpr->detail.domain().progress() = .0f;
-            m_hpr->detail.domain().message() = "Waiting for deploy ...";
+            m_hpr->detail.domain.answer = ANS_UNKNOWN;
+            m_hpr->detail.domain.progress = .0f;
+            m_hpr->detail.domain.message = "Waiting for deploy ...";
             sendDomainMessage();
         } else {
             setDomainState(WR_PATCH);
-            m_hpr->detail.domain().answer() = ANS_UNKNOWN;
-            m_hpr->detail.domain().progress() = .0f;
-            m_hpr->detail.domain().message() = "Patch ...";
+            m_hpr->detail.domain.answer = ANS_UNKNOWN;
+            m_hpr->detail.domain.progress = .0f;
+            m_hpr->detail.domain.message = "Patch ...";
             stopThread();
             m_hpr->workThread.start(std::bind(&ClientEngine::patch, this, patchPaths));
             sendDomainMessage();
@@ -479,19 +479,19 @@ void ClientEngine::eventChanged(Event* event)
     }
     case ClientEvent::RES_PATCH: {
         setDomainState(WR_VERIFY);
-        m_hpr->detail.domain().answer() = ANS_UNKNOWN;
-        m_hpr->detail.domain().progress() = .0f;
-        m_hpr->detail.domain().message() = "Verify ...";
+        m_hpr->detail.domain.answer = ANS_UNKNOWN;
+        m_hpr->detail.domain.progress = .0f;
+        m_hpr->detail.domain.message = "Verify ...";
         stopThread();
-        m_hpr->workThread.start(std::bind(&ClientEngine::verify, this, m_hpr->upgrade.id(), m_hpr->detail.package().files()));
+        m_hpr->workThread.start(std::bind(&ClientEngine::verify, this, m_hpr->upgrade.id, m_hpr->detail.package.files));
         sendDomainMessage();
         break;
     }
     case ClientEvent::RES_ANSWER: {
         int answer = clientEvent->data().value("answer").toInt();
-        m_hpr->detail.domain().answer() = (Answer)answer;
+        m_hpr->detail.domain.answer = (Answer)answer;
         sendDomainMessage();
-        m_hpr->detail.domain().answer() = ANS_UNKNOWN;
+        m_hpr->detail.domain.answer = ANS_UNKNOWN;
         break;
     }
     case ClientEvent::RES_TRANSFER_PROGRESS: {
@@ -502,43 +502,43 @@ void ClientEngine::eventChanged(Event* event)
         }
         uint32_t current = 0;
         uint32_t total = 0;
-        for (const auto& file : m_hpr->detail.package().files()) {
-            total += uint32_t(file.size() / 1024);
+        for (const auto& file : m_hpr->detail.package.files) {
+            total += uint32_t(file.size / 1024);
         }
         for (const auto& transfer : transferEvent->transfers()) {
-            if (transfer.domain() == m_hpr->detail.domain().name()) {
-                current += transfer.current();
+            if (transfer.domain == m_hpr->detail.domain.name) {
+                current += transfer.current;
             }
         }
-        m_hpr->detail.domain().answer() = ANS_UNKNOWN;
-        m_hpr->detail.domain().progress() = current * 100.0f / total;
+        m_hpr->detail.domain.answer = ANS_UNKNOWN;
+        m_hpr->detail.domain.progress = current * 100.0f / total;
         sendDomainMessage();
         break;
     }
     case ClientEvent::RES_DEPLOY_DONE: {
-        m_hpr->version = m_hpr->detail.package().version();
+        m_hpr->version = m_hpr->detail.package.version;
         setDomainState(WR_IDLE);
-        m_hpr->detail.domain().answer() = ANS_UNKNOWN;
-        m_hpr->detail.domain().progress() = 100.0f;
-        m_hpr->detail.domain().message() = "Deploy succeed !";
-        m_hpr->detail.domain().version() = m_hpr->version;
+        m_hpr->detail.domain.answer = ANS_UNKNOWN;
+        m_hpr->detail.domain.progress = 100.0f;
+        m_hpr->detail.domain.message = "Deploy succeed !";
+        m_hpr->detail.domain.version = m_hpr->version;
         sendDomainMessage();
         break;
     }
     case ClientEvent::RES_CANCEL_DONE: {
         setDomainState(WR_IDLE);
-        m_hpr->detail.domain().answer() = ANS_UNKNOWN;
-        m_hpr->detail.domain().progress() = .0f;
-        m_hpr->detail.domain().message() = "Cancel done !";
+        m_hpr->detail.domain.answer = ANS_UNKNOWN;
+        m_hpr->detail.domain.progress = .0f;
+        m_hpr->detail.domain.message = "Cancel done !";
         sendDomainMessage();
         break;
     }
     case ClientEvent::RES_DEPLOY_PROGRESS: {
         double progress = clientEvent->data().value("progress").toDouble();
         std::string message = clientEvent->data().value("message").toString();
-        m_hpr->detail.domain().answer() = ANS_UNKNOWN;
-        m_hpr->detail.domain().progress() = (float)progress;
-        m_hpr->detail.domain().message() = message;
+        m_hpr->detail.domain.answer = ANS_UNKNOWN;
+        m_hpr->detail.domain.progress = (float)progress;
+        m_hpr->detail.domain.message = message;
         sendDomainMessage();
         break;
     }
@@ -601,26 +601,26 @@ bool ClientEngine::checkDetailMessageId(uint32_t id) const
 
 void ClientEngine::setDomainState(ClientState state)
 {
-    if (m_hpr->detail.domain().state() != state) {
-        m_hpr->detail.domain().last() = m_hpr->detail.domain().state();
-        m_hpr->detail.domain().state() = state;
+    if (m_hpr->detail.domain.state != state) {
+        m_hpr->detail.domain.last = m_hpr->detail.domain.state;
+        m_hpr->detail.domain.state = state;
     }
 }
 
 void ClientEngine::sendDomainMessage()
 {
-    m_hpr->detail.domain().name() = m_hpr->name;
-    m_hpr->detail.domain().guid() = m_hpr->guid;
-    m_hpr->detail.domain().version() = m_hpr->version;
-    m_hpr->detail.domain().attribute() = m_hpr->attribute;
-    m_hpr->detail.domain().meta() = m_hpr->meta;
+    m_hpr->detail.domain.name = m_hpr->name;
+    m_hpr->detail.domain.guid = m_hpr->guid;
+    m_hpr->detail.domain.version = m_hpr->version;
+    m_hpr->detail.domain.attribute = m_hpr->attribute;
+    m_hpr->detail.domain.meta = m_hpr->meta;
     if (m_hpr->detailFunction) {
-        m_hpr->detail.domain().watcher() = true;
+        m_hpr->detail.domain.watcher = true;
     } else {
-        m_hpr->detail.domain().watcher() = false;
-        m_hpr->detail.domain().answer() = ANS_UNKNOWN;
+        m_hpr->detail.domain.watcher = false;
+        m_hpr->detail.domain.answer = ANS_UNKNOWN;
     }
-    bool ok = onSendDomainMessage(m_hpr->detail.domain(), m_hpr->needDiscovery);
+    bool ok = onSendDomainMessage(m_hpr->detail.domain, m_hpr->needDiscovery);
     if (ok) {
         m_hpr->needDiscovery = false;
     } else {
@@ -630,8 +630,8 @@ void ClientEngine::sendDomainMessage()
         if (m_hpr->detailFunction) {
             if (m_hpr->serverState != MR_OFFLINE) {
                 DetailMessage detailMessage;
-                detailMessage.state() = MR_OFFLINE;
-                detailMessage.last() = m_hpr->serverState;
+                detailMessage.state = MR_OFFLINE;
+                detailMessage.last = m_hpr->serverState;
                 m_hpr->detailFunction(detailMessage, true);
                 m_hpr->serverState = MR_OFFLINE;
             }
@@ -669,15 +669,15 @@ void ClientEngine::download(const std::string& id, const Files& files)
         }
         status = Core::download(m_hpr->downloadDir + "/" + id, files, dcus_client_config,
             stopFunction);
-        if (status.state() != Core::FAILED) {
+        if (status.state != Core::FAILED) {
             break;
         }
         times++;
     }
-    if (status.state() == Core::SUCCEED) {
+    if (status.state == Core::SUCCEED) {
         this->postEvent(new ClientEvent(ClientEvent::RES_DOWNLOAD));
-    } else if (status.state() == Core::FAILED) {
-        this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, VariantMap { { "error", 2000 + status.error() } }));
+    } else if (status.state == Core::FAILED) {
+        this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, VariantMap { { "error", 2000 + status.error } }));
     } else {
         if (m_hpr->hasCancelAction) {
             this->postEvent(new ClientEvent(ClientEvent::RES_CANCEL_DONE));
@@ -704,10 +704,10 @@ void ClientEngine::verify(const std::string& id, const Files& files)
             DCUS_UNUSED(transfers);
             // this->postEvent(new ClientTransferEvent(Transfers(transfers)));
         });
-    if (status.state() == Core::SUCCEED) {
+    if (status.state == Core::SUCCEED) {
         this->postEvent(new ClientEvent(ClientEvent::RES_VERIFY));
-    } else if (status.state() == Core::FAILED) {
-        this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, VariantMap { { "error", 2000 + status.error() } }));
+    } else if (status.state == Core::FAILED) {
+        this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, VariantMap { { "error", 2000 + status.error } }));
     } else {
         if (m_hpr->hasCancelAction) {
             this->postEvent(new ClientEvent(ClientEvent::RES_CANCEL_DONE));
@@ -737,10 +737,10 @@ void ClientEngine::patch(const FilePaths& patchPaths)
             DCUS_UNUSED(transfers);
             // this->postEvent(new ClientTransferEvent(Transfers(transfers)));
         });
-    if (status.state() == Core::SUCCEED) {
+    if (status.state == Core::SUCCEED) {
         this->postEvent(new ClientEvent(ClientEvent::RES_PATCH));
-    } else if (status.state() == Core::FAILED) {
-        this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, VariantMap { { "error", 2000 + status.error() } }));
+    } else if (status.state == Core::FAILED) {
+        this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, VariantMap { { "error", 2000 + status.error } }));
     } else {
         if (m_hpr->hasCancelAction) {
             this->postEvent(new ClientEvent(ClientEvent::RES_CANCEL_DONE));
@@ -755,8 +755,8 @@ void ClientEngine::deploy(const std::string& id, const Files& files)
     std::string dir;
     FilePaths filePaths;
     for (const auto& file : files) {
-        dir = m_hpr->downloadDir + "/" + id + "/" + file.domain();
-        const std::string& path = dir + "/" + file.name();
+        dir = m_hpr->downloadDir + "/" + id + "/" + file.domain;
+        const std::string& path = dir + "/" + file.name;
         if (!Utils::exists(path)) {
             LOG_WARNING("deploy file is not exists(", path, ")");
             this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, VariantMap { { "error", 2910 } }));

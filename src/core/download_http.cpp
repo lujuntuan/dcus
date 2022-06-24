@@ -63,8 +63,8 @@ Status httpDownloadCommon(const std::string& dir, const Files& files, const Vari
     Elapsed transferElapsed;
     transferElapsed.start();
     for (const File& file : files) {
-        if (downloadUrls.find(file.url()) == downloadUrls.end()) {
-            downloadUrls.insert(file.url());
+        if (downloadUrls.find(file.url) == downloadUrls.end()) {
+            downloadUrls.insert(file.url);
         } else {
             statusHelper.throwError(102);
             LOG_WARNING("download has repeat");
@@ -91,21 +91,21 @@ Status httpDownloadCommon(const std::string& dir, const Files& files, const Vari
             if (statusHelper.checkDone()) {
                 return;
             }
-            const auto& clientUrlPair = Utils::getIpaddrMethod(file.url());
+            const auto& clientUrlPair = Utils::getIpaddrMethod(file.url);
             if (clientUrlPair.first.empty()) {
                 statusHelper.throwError(105);
-                LOG_WARNING("download url error", " (" + file.name() + ")");
+                LOG_WARNING("download url error", " (" + file.name + ")");
                 return;
             }
             if (clientUrlPair.second.empty()) {
                 statusHelper.throwError(106);
-                LOG_WARNING("download url error", " (" + file.name() + ")");
+                LOG_WARNING("download url error", " (" + file.name + ")");
                 return;
             }
             httplib::Client client(clientUrlPair.first);
             if (!loadClientConfig(client, config)) {
                 statusHelper.throwError(107);
-                LOG_WARNING("load client config error", " (" + file.name() + ")");
+                LOG_WARNING("load client config error", " (" + file.name + ")");
                 return;
             }
             Helper* helper = new Helper();
@@ -114,8 +114,8 @@ Status httpDownloadCommon(const std::string& dir, const Files& files, const Vari
             mutex.lock();
             helpers.push_back(helper);
             mutex.unlock();
-            if (!Utils::exists(dir + "/" + file.domain())) {
-                Utils::mkPath(dir + "/" + file.domain());
+            if (!Utils::exists(dir + "/" + file.domain)) {
+                Utils::mkPath(dir + "/" + file.domain);
             }
             helper->totalElapsed.restart();
             helper->elapsed.restart();
@@ -123,7 +123,7 @@ Status httpDownloadCommon(const std::string& dir, const Files& files, const Vari
             if (helper->wCachefile.is_open()) {
                 helper->wCachefile.close();
             }
-            helper->fileName = dir + "/" + file.domain() + "/" + file.name();
+            helper->fileName = dir + "/" + file.domain + "/" + file.name;
             if (Utils::exists(helper->fileName + ".cache")) {
                 helper->wCachefile.open(helper->fileName + ".cache", std::ios::in);
                 if (!helper->wCachefile.is_open()) {
@@ -136,7 +136,7 @@ Status httpDownloadCommon(const std::string& dir, const Files& files, const Vari
                 buffer << helper->wCachefile.rdbuf();
                 helper->currentSizeStr = buffer.str();
                 buffer >> helper->currentSize;
-                const auto& range = httplib::make_range_header({ { helper->currentSize, file.size() } });
+                const auto& range = httplib::make_range_header({ { helper->currentSize, file.size } });
                 helper->headers.insert(std::move(range));
                 helper->offsetSize = helper->currentSize;
                 helper->wCachefile.close();
@@ -162,26 +162,26 @@ Status httpDownloadCommon(const std::string& dir, const Files& files, const Vari
                     helper->wCachefile.seekg(0, helper->wCachefile.end);
                     size_t checkfileSize = helper->wCachefile.tellg();
                     helper->wCachefile.close();
-                    if (checkfileSize == file.size()) {
+                    if (checkfileSize == file.size) {
                         helper->finished = true;
-                        helper->currentSize = file.size();
-                        const auto& range = httplib::make_range_header({ { helper->currentSize, file.size() } });
+                        helper->currentSize = file.size;
+                        const auto& range = httplib::make_range_header({ { helper->currentSize, file.size } });
                         helper->headers.insert(std::move(range));
                         helper->offsetSize = helper->currentSize;
                         helper->exists = true;
                         mutex.lock();
-                        downloadUrls.erase(file.url());
+                        downloadUrls.erase(file.url);
                         mutex.unlock();
                         if (progressFunction) {
                             Transfer transfer;
-                            transfer.domain() = file.domain();
-                            transfer.name() = file.name();
-                            transfer.progress() = 100.0f;
-                            transfer.total() = (uint32_t)(file.size() / 1024);
-                            transfer.current() = (uint32_t)(file.size() / 1024);
-                            transfer.speed() = 0;
-                            transfer.pass() = 0;
-                            transfer.left() = 0;
+                            transfer.domain = file.domain;
+                            transfer.name = file.name;
+                            transfer.progress = 100.0f;
+                            transfer.total = (uint32_t)(file.size / 1024);
+                            transfer.current = (uint32_t)(file.size / 1024);
+                            transfer.speed = 0;
+                            transfer.pass = 0;
+                            transfer.left = 0;
                             mutex.lock();
                             transfers.update(std::move(transfer), true);
                             transfers.sort();
@@ -254,7 +254,7 @@ Status httpDownloadCommon(const std::string& dir, const Files& files, const Vari
                     }
                     if (progressFunction) {
                         if (helper->elapsed.get() >= DCUS_WEB_TRANSFER_INTERVAL_MIN || current >= total) {
-                            if (total + helper->offsetSize != file.size()) {
+                            if (total + helper->offsetSize != file.size) {
                                 statusHelper.throwError(113);
                                 LOG_WARNING("download size error", " (" + helper->fileName + ")");
                                 helper->finished = false;
@@ -262,20 +262,20 @@ Status httpDownloadCommon(const std::string& dir, const Files& files, const Vari
                             }
                             helper->elapsed.restart();
                             uint32_t pass = (uint32_t)(helper->totalElapsed.get() / 1000);
-                            uint32_t speed = pass <= 0 ? (uint32_t)(file.size() / 1024) : (uint32_t)(current / 1024 / pass);
-                            if (speed > (uint32_t)(file.size() / 1024)) {
-                                speed = (uint32_t)(file.size() / 1024);
+                            uint32_t speed = pass <= 0 ? (uint32_t)(file.size / 1024) : (uint32_t)(current / 1024 / pass);
+                            if (speed > (uint32_t)(file.size / 1024)) {
+                                speed = (uint32_t)(file.size / 1024);
                             }
                             uint32_t left = speed <= 0 ? 0 : (uint32_t)((total - current) / 1024 / speed);
                             Transfer transfer;
-                            transfer.domain() = file.domain();
-                            transfer.name() = file.name();
-                            transfer.progress() = file.size() <= 0 ? 100.0f : (current + helper->offsetSize) * 100.0f / file.size();
-                            transfer.total() = (uint32_t)(file.size() / 1024);
-                            transfer.current() = (uint32_t)((current + helper->offsetSize) / 1024);
-                            transfer.speed() = speed;
-                            transfer.pass() = pass;
-                            transfer.left() = left;
+                            transfer.domain = file.domain;
+                            transfer.name = file.name;
+                            transfer.progress = file.size <= 0 ? 100.0f : (current + helper->offsetSize) * 100.0f / file.size;
+                            transfer.total = (uint32_t)(file.size / 1024);
+                            transfer.current = (uint32_t)((current + helper->offsetSize) / 1024);
+                            transfer.speed = speed;
+                            transfer.pass = pass;
+                            transfer.left = left;
                             mutex.lock();
                             transfers.update(std::move(transfer), true);
                             mutex.unlock();
@@ -291,7 +291,7 @@ Status httpDownloadCommon(const std::string& dir, const Files& files, const Vari
                     return true;
                 });
             if (!res) {
-                if (res.error() != httplib::Error::Canceled && statusHelper.status.state() != CANCELED) {
+                if (res.error() != httplib::Error::Canceled && statusHelper.status.state != CANCELED) {
                     if (Utils::exists(helper->fileName + ".cache")) {
                         if (helper->wCachefile.is_open()) {
                             helper->wCachefile.close();
@@ -313,7 +313,7 @@ Status httpDownloadCommon(const std::string& dir, const Files& files, const Vari
                 }
                 if (helper->finished) {
                     mutex.lock();
-                    downloadUrls.erase(file.url());
+                    downloadUrls.erase(file.url);
                     mutex.unlock();
                     if (!transfers.empty()) {
                         if (progressFunction) {

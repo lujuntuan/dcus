@@ -45,7 +45,7 @@ Status verify(const std::string& dir, const Files& files,
     Elapsed verifyElapsed;
     verifyElapsed.start();
     for (const File& file : files) {
-        verifyUrls.push_back(file.url());
+        verifyUrls.push_back(file.url);
     }
     auto dealProgress = [&](const File& file, Elapsed& elapsed, uint64_t total, uint64_t current) {
         if (!progressFunction) {
@@ -60,14 +60,14 @@ Status verify(const std::string& dir, const Files& files,
             }
             uint32_t left = speed <= 0 ? 0 : (uint32_t)((total - current) / 1024 / speed);
             Transfer transfer;
-            transfer.domain() = file.domain();
-            transfer.name() = file.name();
-            transfer.progress() = current * 100.0f / total;
-            transfer.total() = (uint32_t)(total / 1024);
-            transfer.current() = (uint32_t)(current / 1024);
-            transfer.speed() = speed;
-            transfer.pass() = pass;
-            transfer.left() = left;
+            transfer.domain = file.domain;
+            transfer.name = file.name;
+            transfer.progress = current * 100.0f / total;
+            transfer.total = (uint32_t)(total / 1024);
+            transfer.current = (uint32_t)(current / 1024);
+            transfer.speed = speed;
+            transfer.pass = pass;
+            transfer.left = left;
             mutex.lock();
             transfers.update(std::move(transfer), true);
             mutex.unlock();
@@ -86,7 +86,7 @@ Status verify(const std::string& dir, const Files& files,
             if (statusHelper.checkDone()) {
                 return;
             }
-            std::string filePath = dir + "/" + file.domain() + "/" + file.name();
+            std::string filePath = dir + "/" + file.domain + "/" + file.name;
             Elapsed elapsed;
             elapsed.start();
             if (!Utils::exists(filePath)) {
@@ -94,7 +94,7 @@ Status verify(const std::string& dir, const Files& files,
                 LOG_WARNING("file not exists", " (" + filePath + ")");
                 return;
             }
-            if (!file.sha256().empty()) {
+            if (!file.sha256.empty()) {
                 std::string targetSha256 = Utils::getFileSha256(filePath,
                     std::bind(&StatusHelper::checkDone, &statusHelper),
                     std::bind(dealProgress, file, elapsed, std::placeholders::_1, std::placeholders::_2));
@@ -106,12 +106,12 @@ Status verify(const std::string& dir, const Files& files,
                     LOG_WARNING("read sha256 error", " (" + filePath + ")");
                     return;
                 }
-                if (targetSha256 != file.sha256()) {
+                if (targetSha256 != file.sha256) {
                     statusHelper.throwError(208);
                     LOG_WARNING("check sha256 error", " (" + filePath + ")");
                     return;
                 }
-            } else if (!file.sha1().empty()) {
+            } else if (!file.sha1.empty()) {
                 std::string targetSha1 = Utils::getFileSha1(filePath,
                     std::bind(&StatusHelper::checkDone, &statusHelper),
                     std::bind(dealProgress, file, elapsed, std::placeholders::_1, std::placeholders::_2));
@@ -123,12 +123,12 @@ Status verify(const std::string& dir, const Files& files,
                     LOG_WARNING("read sha1 error", " (" + filePath + ")");
                     return;
                 }
-                if (targetSha1 != file.sha1()) {
+                if (targetSha1 != file.sha1) {
                     statusHelper.throwError(206);
                     LOG_WARNING("check sha1 error", " (" + filePath + ")");
                     return;
                 }
-            } else if (!file.md5().empty()) {
+            } else if (!file.md5.empty()) {
                 std::string targetMd5 = Utils::getFileMd5(filePath,
                     std::bind(&StatusHelper::checkDone, &statusHelper),
                     std::bind(dealProgress, file, elapsed, std::placeholders::_1, std::placeholders::_2));
@@ -140,7 +140,7 @@ Status verify(const std::string& dir, const Files& files,
                     LOG_WARNING("read md5 error", " (" + filePath + ")");
                     return;
                 }
-                if (targetMd5 != file.md5()) {
+                if (targetMd5 != file.md5) {
                     statusHelper.throwError(204);
                     LOG_WARNING("check md5 error", " (" + filePath + ")");
                     return;
@@ -151,7 +151,7 @@ Status verify(const std::string& dir, const Files& files,
                 return;
             }
             mutex.lock();
-            verifyUrls.remove(file.url());
+            verifyUrls.remove(file.url);
             mutex.unlock();
         });
     }

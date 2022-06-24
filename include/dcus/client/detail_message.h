@@ -13,6 +13,7 @@
 #ifndef DCUS_DETAIL_MESSAGE_H
 #define DCUS_DETAIL_MESSAGE_H
 
+#include "dcus/base/variant.h"
 #include "dcus/domain.h"
 #include "dcus/upgrade.h"
 
@@ -21,29 +22,31 @@ DCUS_NAMESPACE_BEGIN
 struct DetailMessage {
     DetailMessage() = default;
     template <typename T>
-    explicit DetailMessage(ServerState state, ServerState last, bool active, int error, float step, float progress, const std::string& messgae, T&& details) noexcept
-        : m_state(state)
-        , m_last(last)
-        , m_active(active)
-        , m_error(error)
-        , m_step(step)
-        , m_progress(progress)
-        , m_message(messgae)
-        , m_details(std::forward<T>(details))
+    explicit DetailMessage(ServerState _state, ServerState _last, bool _active, int _error, float _step, float _progress, const std::string& _messgae, T&& _details) noexcept
+        : state(_state)
+        , last(_last)
+        , active(_active)
+        , error(_error)
+        , step(_step)
+        , progress(_progress)
+        , message(_messgae)
+        , details(std::forward<T>(_details))
     {
     }
-    CREATE_PUBLIC_PROPERTY(ServerState, state, MR_UNKNOWN)
-    CREATE_PUBLIC_PROPERTY(ServerState, last, MR_UNKNOWN)
-    CREATE_PUBLIC_PROPERTY(bool, active, false)
-    CREATE_PUBLIC_PROPERTY(int, error, 0)
-    CREATE_PUBLIC_PROPERTY(float, step, .0f)
-    CREATE_PUBLIC_PROPERTY(float, progress, .0f)
-    CREATE_PUBLIC_PROPERTY(std::string, message, "")
-    CREATE_PUBLIC_PROPERTY(Details, details, Details())
+    ServerState state = MR_UNKNOWN;
+    ServerState last = MR_UNKNOWN;
+    bool active = false;
+    int error = 0;
+    float step = .0f;
+    float progress = .0f;
+    std::string message;
+    Details details;
 
 public:
     DCUS_EXPORT friend std::ostream& operator<<(std::ostream& ostream, const DetailMessage& webStatus) noexcept;
 };
+
+VARIANT_DECLARE_TYPE(DetailMessage);
 
 DCUS_NAMESPACE_END
 

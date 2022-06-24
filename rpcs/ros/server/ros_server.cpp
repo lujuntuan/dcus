@@ -22,19 +22,19 @@ using namespace dcus_interfaces_ros;
 static msg::Package transformPackage(const Package& package)
 {
     msg::Package msg_package;
-    msg_package.domain = package.domain();
-    msg_package.part = package.part();
-    msg_package.version = package.version();
-    msg_package.meta = package.meta().toJson();
-    for (const File& file : package.files()) {
+    msg_package.domain = package.domain;
+    msg_package.part = package.part;
+    msg_package.version = package.version;
+    msg_package.meta = package.meta.toJson();
+    for (const File& file : package.files) {
         msg::File msg_file;
-        msg_file.domain = file.domain();
-        msg_file.name = file.name();
-        msg_file.url = file.url();
-        msg_file.size = file.size();
-        msg_file.md5 = file.md5();
-        msg_file.sha1 = file.sha1();
-        msg_file.sha256 = file.sha256();
+        msg_file.domain = file.domain;
+        msg_file.name = file.name;
+        msg_file.url = file.url;
+        msg_file.size = file.size;
+        msg_file.md5 = file.md5;
+        msg_file.sha1 = file.sha1;
+        msg_file.sha256 = file.sha256;
         msg_package.files.push_back(std::move(msg_file));
     }
     return msg_package;
@@ -70,11 +70,11 @@ protected:
         msg::ControlMessage msg_ctl;
         msg_ctl.id = messageId;
         msg_ctl.control = control();
-        msg_ctl.upgrade.id = upgrade().id();
-        msg_ctl.upgrade.download = upgrade().download();
-        msg_ctl.upgrade.deploy = upgrade().deploy();
-        msg_ctl.upgrade.maintenance = upgrade().maintenance();
-        for (const auto& package : upgrade().packages()) {
+        msg_ctl.upgrade.id = upgrade().id;
+        msg_ctl.upgrade.download = upgrade().download;
+        msg_ctl.upgrade.deploy = upgrade().deploy;
+        msg_ctl.upgrade.maintenance = upgrade().maintenance;
+        for (const auto& package : upgrade().packages) {
             msg_ctl.upgrade.packages.push_back(transformPackage(package));
         }
         msg_ctl.depends = depends();
@@ -94,33 +94,33 @@ protected:
         msg_dtl.message = message();
         for (const auto& d : details()) {
             msg::Detail msg_detail;
-            msg_detail.domain.name = d.domain().name();
-            msg_detail.domain.guid = d.domain().guid();
-            msg_detail.domain.state = d.domain().state();
-            msg_detail.domain.last = d.domain().last();
-            msg_detail.domain.watcher = d.domain().watcher();
-            msg_detail.domain.error = d.domain().error();
-            msg_detail.domain.version = d.domain().version();
-            msg_detail.domain.attribute = d.domain().attribute().toJson();
-            msg_detail.domain.meta = d.domain().meta().toJson();
-            msg_detail.domain.progress = d.domain().progress();
-            msg_detail.domain.message = d.domain().message();
-            msg_detail.domain.answer = d.domain().answer();
-            msg_detail.package = transformPackage(d.package());
-            for (const Transfer& transfer : d.transfers()) {
+            msg_detail.domain.name = d.domain.name;
+            msg_detail.domain.guid = d.domain.guid;
+            msg_detail.domain.state = d.domain.state;
+            msg_detail.domain.last = d.domain.last;
+            msg_detail.domain.watcher = d.domain.watcher;
+            msg_detail.domain.error = d.domain.error;
+            msg_detail.domain.version = d.domain.version;
+            msg_detail.domain.attribute = d.domain.attribute.toJson();
+            msg_detail.domain.meta = d.domain.meta.toJson();
+            msg_detail.domain.progress = d.domain.progress;
+            msg_detail.domain.message = d.domain.message;
+            msg_detail.domain.answer = d.domain.answer;
+            msg_detail.package = transformPackage(d.package);
+            for (const Transfer& transfer : d.transfers) {
                 msg::Transfer msg_transfer;
-                msg_transfer.domain = transfer.domain();
-                msg_transfer.name = transfer.name();
-                msg_transfer.progress = transfer.progress();
-                msg_transfer.speed = transfer.speed();
-                msg_transfer.total = transfer.total();
-                msg_transfer.current = transfer.current();
-                msg_transfer.pass = transfer.pass();
-                msg_transfer.left = transfer.left();
+                msg_transfer.domain = transfer.domain;
+                msg_transfer.name = transfer.name;
+                msg_transfer.progress = transfer.progress;
+                msg_transfer.speed = transfer.speed;
+                msg_transfer.total = transfer.total;
+                msg_transfer.current = transfer.current;
+                msg_transfer.pass = transfer.pass;
+                msg_transfer.left = transfer.left;
                 msg_detail.transfers.push_back(std::move(msg_transfer));
             }
-            msg_detail.progress = d.progress();
-            msg_detail.deploy = d.deploy().get();
+            msg_detail.progress = d.progress;
+            msg_detail.deploy = d.deploy.get();
             msg_dtl.details.push_back(std::move(msg_detail));
         }
         return msg_dtl;
@@ -128,16 +128,16 @@ protected:
     void respondDomainMessage(msg::DomainMessage::UniquePtr msg_domain)
     {
         Domain domain(msg_domain->domain.name, msg_domain->domain.guid);
-        domain.state() = (ClientState)msg_domain->domain.state;
-        domain.last() = (ClientState)msg_domain->domain.last;
-        domain.watcher() = msg_domain->domain.watcher;
-        domain.error() = msg_domain->domain.error;
-        domain.version() = msg_domain->domain.version;
-        domain.attribute() = Variant::readJson(msg_domain->domain.attribute);
-        domain.meta() = Variant::readJson(msg_domain->domain.meta);
-        domain.progress() = msg_domain->domain.progress;
-        domain.message() = msg_domain->domain.message;
-        domain.answer() = (Answer)msg_domain->domain.answer;
+        domain.state = (ClientState)msg_domain->domain.state;
+        domain.last = (ClientState)msg_domain->domain.last;
+        domain.watcher = msg_domain->domain.watcher;
+        domain.error = msg_domain->domain.error;
+        domain.version = msg_domain->domain.version;
+        domain.attribute = Variant::readJson(msg_domain->domain.attribute);
+        domain.meta = Variant::readJson(msg_domain->domain.meta);
+        domain.progress = msg_domain->domain.progress;
+        domain.message = msg_domain->domain.message;
+        domain.answer = (Answer)msg_domain->domain.answer;
         bool discovery = msg_domain->discovery;
         processDomainMessage(std::move(domain), discovery);
     }

@@ -43,21 +43,22 @@ struct DCUS_EXPORT WebFeed final {
         RS_NONE,
     };
     WebFeed() = default;
-    explicit WebFeed(const std::string& id, Type type, Execution execution, Result result, const Details& details = Details(), const Progress& progress = { 1, 1 }) noexcept
-        : m_id(id)
-        , m_type(type)
-        , m_execution(execution)
-        , m_result(result)
-        , m_details(details)
-        , m_progress(progress)
+    explicit WebFeed(const std::string& _id, Type _type, Execution _execution, Result _result, const Details& _details = Details(), const Progress& _progress = { 1, 1 }) noexcept
+        : id(_id)
+        , type(_type)
+        , execution(_execution)
+        , result(_result)
+        , details(_details)
+        , progress(_progress)
     {
     }
-    CREATE_PUBLIC_PROPERTY(std::string, id, "")
-    CREATE_PUBLIC_PROPERTY(Type, type, TP_UNKNOWN)
-    CREATE_PUBLIC_PROPERTY(Execution, execution, EXE_UNKNOWN)
-    CREATE_PUBLIC_PROPERTY(Result, result, RS_UNKNOWN)
-    CREATE_PUBLIC_PROPERTY(Details, details, {})
-    CREATE_PUBLIC_PROPERTY(Progress, progress, std::make_pair(0, 0))
+    std::string id;
+    Type type = TP_UNKNOWN;
+    Execution execution = EXE_UNKNOWN;
+    Result result = RS_UNKNOWN;
+    Details details;
+    Progress progress = std::make_pair(0, 0);
+
 public:
     static std::string getTypeStr(int type) noexcept;
     static std::string getExecutionStr(int execution) noexcept;

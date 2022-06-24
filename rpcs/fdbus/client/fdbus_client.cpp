@@ -20,21 +20,21 @@ using namespace DCus;
 static Package transformPackage(const DCusInterfaces::Package& pb_package)
 {
     Package package;
-    package.domain() = pb_package.domain();
-    package.part() = pb_package.part();
-    package.version() = pb_package.version();
-    package.meta() = Variant::readJson(pb_package.meta());
+    package.domain = pb_package.domain();
+    package.part = pb_package.part();
+    package.version = pb_package.version();
+    package.meta = Variant::readJson(pb_package.meta());
     for (int i = 0; i < pb_package.files_size(); i++) {
         File file;
         const auto& pb_file = pb_package.files(i);
-        file.domain() = pb_file.domain();
-        file.name() = pb_file.name();
-        file.url() = pb_file.url();
-        file.size() = pb_file.size();
-        file.md5() = pb_file.md5();
-        file.sha1() = pb_file.sha1();
-        file.sha256() = pb_file.sha256();
-        package.files().push_back(std::move(file));
+        file.domain = pb_file.domain();
+        file.name = pb_file.name();
+        file.url = pb_file.url();
+        file.size = pb_file.size();
+        file.md5 = pb_file.md5();
+        file.sha1 = pb_file.sha1();
+        file.sha256 = pb_file.sha256();
+        package.files.push_back(std::move(file));
     }
     return package;
 }
@@ -77,14 +77,14 @@ protected:
         //
         Control control = (Control)pb_ctl.control();
         Upgrade upgrade;
-        upgrade.id() = pb_ctl.upgrade().id();
-        upgrade.download() = (Upgrade::Method)pb_ctl.upgrade().download();
-        upgrade.deploy() = (Upgrade::Method)pb_ctl.upgrade().deploy();
-        upgrade.maintenance() = pb_ctl.upgrade().maintenance();
+        upgrade.id = pb_ctl.upgrade().id();
+        upgrade.download = (Upgrade::Method)pb_ctl.upgrade().download();
+        upgrade.deploy = (Upgrade::Method)pb_ctl.upgrade().deploy();
+        upgrade.maintenance = pb_ctl.upgrade().maintenance();
         for (int i = 0; i < pb_ctl.upgrade().packages_size(); i++) {
             const auto& pb_package = pb_ctl.upgrade().packages(i);
             const Package& package = transformPackage(pb_package);
-            upgrade.packages().push_back(std::move(package));
+            upgrade.packages.push_back(std::move(package));
         }
         Depends depends;
         for (int i = 0; i < pb_ctl.depends_size(); i++) {
@@ -101,47 +101,47 @@ protected:
         }
         //
         DetailMessage detailMessage;
-        detailMessage.state() = (ServerState)pb_dtl.state();
-        detailMessage.last() = (ServerState)pb_dtl.last();
-        detailMessage.active() = pb_dtl.active();
-        detailMessage.error() = pb_dtl.error();
-        detailMessage.step() = pb_dtl.step();
-        detailMessage.progress() = pb_dtl.progress();
-        detailMessage.message() = pb_dtl.message();
+        detailMessage.state = (ServerState)pb_dtl.state();
+        detailMessage.last = (ServerState)pb_dtl.last();
+        detailMessage.active = pb_dtl.active();
+        detailMessage.error = pb_dtl.error();
+        detailMessage.step = pb_dtl.step();
+        detailMessage.progress = pb_dtl.progress();
+        detailMessage.message = pb_dtl.message();
         for (int i = 0; i < pb_dtl.details_size(); i++) {
             const auto& pb_detail = pb_dtl.details(i);
             Domain domain(pb_detail.domain().name(), pb_detail.domain().guid());
-            domain.state() = (ClientState)pb_detail.domain().state();
-            domain.last() = (ClientState)pb_detail.domain().last();
-            domain.watcher() = pb_detail.domain().watcher();
-            domain.error() = pb_detail.domain().error();
-            domain.version() = pb_detail.domain().version();
-            domain.attribute() = Variant::readJson(pb_detail.domain().attribute());
-            domain.meta() = Variant::readJson(pb_detail.domain().meta());
-            domain.progress() = pb_detail.domain().progress();
-            domain.message() = pb_detail.domain().message();
-            domain.answer() = (Answer)pb_detail.domain().answer();
+            domain.state = (ClientState)pb_detail.domain().state();
+            domain.last = (ClientState)pb_detail.domain().last();
+            domain.watcher = pb_detail.domain().watcher();
+            domain.error = pb_detail.domain().error();
+            domain.version = pb_detail.domain().version();
+            domain.attribute = Variant::readJson(pb_detail.domain().attribute());
+            domain.meta = Variant::readJson(pb_detail.domain().meta());
+            domain.progress = pb_detail.domain().progress();
+            domain.message = pb_detail.domain().message();
+            domain.answer = (Answer)pb_detail.domain().answer();
             Detail detail(std::move(domain));
             const Package& package = transformPackage(pb_detail.package());
-            detail.package() = package;
+            detail.package = package;
             for (int j = 0; j < pb_detail.transfers_size(); j++) {
                 const auto& pb_transfer = pb_detail.transfers(j);
                 Transfer transfer;
-                transfer.domain() = pb_transfer.domain();
-                transfer.name() = pb_transfer.name();
-                transfer.progress() = pb_transfer.progress();
-                transfer.speed() = pb_transfer.speed();
-                transfer.total() = pb_transfer.total();
-                transfer.current() = pb_transfer.current();
-                transfer.pass() = pb_transfer.pass();
-                transfer.left() = pb_transfer.left();
-                detail.transfers().push_back(std::move(transfer));
+                transfer.domain = pb_transfer.domain();
+                transfer.name = pb_transfer.name();
+                transfer.progress = pb_transfer.progress();
+                transfer.speed = pb_transfer.speed();
+                transfer.total = pb_transfer.total();
+                transfer.current = pb_transfer.current();
+                transfer.pass = pb_transfer.pass();
+                transfer.left = pb_transfer.left();
+                detail.transfers.push_back(std::move(transfer));
             }
-            detail.progress() = pb_detail.progress();
+            detail.progress = pb_detail.progress();
             if (pb_detail.deploy() > 0) {
-                detail.deploy().start(Elapsed::current() - pb_detail.deploy());
+                detail.deploy.start(Elapsed::current() - pb_detail.deploy());
             }
-            detailMessage.details().push_back(std::move(detail));
+            detailMessage.details.push_back(std::move(detail));
         }
         processDetailMessage(std::move(detailMessage));
     }
@@ -162,18 +162,18 @@ private:
             return false;
         }
         DCusInterfaces::DomainMessage domainMessage;
-        domainMessage.mutable_domain()->set_name(domain.name());
-        domainMessage.mutable_domain()->set_guid(domain.guid());
-        domainMessage.mutable_domain()->set_state((DCusInterfaces::Domain_ClientState)domain.state());
-        domainMessage.mutable_domain()->set_last((DCusInterfaces::Domain_ClientState)domain.last());
-        domainMessage.mutable_domain()->set_watcher(domain.watcher());
-        domainMessage.mutable_domain()->set_error(domain.error());
-        domainMessage.mutable_domain()->set_version(domain.version());
-        domainMessage.mutable_domain()->set_attribute(domain.attribute().toJson());
-        domainMessage.mutable_domain()->set_meta(domain.meta().toJson());
-        domainMessage.mutable_domain()->set_progress(domain.progress());
-        domainMessage.mutable_domain()->set_message(domain.message());
-        domainMessage.mutable_domain()->set_answer((DCusInterfaces::Domain_Answer)domain.answer());
+        domainMessage.mutable_domain()->set_name(domain.name);
+        domainMessage.mutable_domain()->set_guid(domain.guid);
+        domainMessage.mutable_domain()->set_state((DCusInterfaces::Domain_ClientState)domain.state);
+        domainMessage.mutable_domain()->set_last((DCusInterfaces::Domain_ClientState)domain.last);
+        domainMessage.mutable_domain()->set_watcher(domain.watcher);
+        domainMessage.mutable_domain()->set_error(domain.error);
+        domainMessage.mutable_domain()->set_version(domain.version);
+        domainMessage.mutable_domain()->set_attribute(domain.attribute.toJson());
+        domainMessage.mutable_domain()->set_meta(domain.meta.toJson());
+        domainMessage.mutable_domain()->set_progress(domain.progress);
+        domainMessage.mutable_domain()->set_message(domain.message);
+        domainMessage.mutable_domain()->set_answer((DCusInterfaces::Domain_Answer)domain.answer);
         domainMessage.set_discovery(discovery);
         CFdbProtoMsgBuilder builder(domainMessage);
         invoke(DCusInterfaces::TP_DOMAIN_MSG, builder);

@@ -45,9 +45,9 @@ HawkbitQueue::~HawkbitQueue()
 
 bool HawkbitQueue::init(const WebInit& webInit)
 {
-    m_hpr->url = webInit.url();
-    m_hpr->token = webInit.token();
-    m_hpr->path = Utils::stringSprintf("/%s/controller/v1/%s", webInit.tenant(), webInit.id());
+    m_hpr->url = webInit.url;
+    m_hpr->token = webInit.token;
+    m_hpr->path = Utils::stringSprintf("/%s/controller/v1/%s", webInit.tenant, webInit.id);
     return true;
 }
 
@@ -56,7 +56,7 @@ bool HawkbitQueue::detect()
     Core::Status status;
     std::string body;
     status = Core::getMessage(m_hpr->url, m_hpr->path, body, dcus_server_config, m_hpr->token);
-    if (status.state() != Core::SUCCEED) {
+    if (status.state != Core::SUCCEED) {
         // postError(801);
         return false;
     }
@@ -91,7 +91,7 @@ bool HawkbitQueue::detect()
         rootData["data"] = Variant::fromJson(attributesStr, &errorString);
         std::string contentStr = Variant(std::move(rootData)).toJson();
         status = Core::putMessage(m_hpr->url, path, std::move(contentStr), dcus_server_config, m_hpr->token);
-        if (status.state() != Core::SUCCEED) {
+        if (status.state != Core::SUCCEED) {
             LOG_WARNING("put json error");
             // postError(status.error());
             return true;
@@ -107,7 +107,7 @@ bool HawkbitQueue::detect()
         return true;
     }
     status = Core::getMessage(m_hpr->url, path, body, dcus_server_config, m_hpr->token);
-    if (status.state() != Core::SUCCEED) {
+    if (status.state != Core::SUCCEED) {
         LOG_WARNING("get deployment url error");
         // postError(802);
         return true;
@@ -145,25 +145,25 @@ bool HawkbitQueue::detect()
 
 bool HawkbitQueue::feedback(const WebFeed& webFeed)
 {
-    if (webFeed.id().empty()) {
+    if (webFeed.id.empty()) {
         LOG_WARNING("webFeed id is empty");
         postError(805);
         return false;
     }
-    if (webFeed.type() == WebFeed::TP_UNKNOWN || webFeed.execution() == WebFeed::EXE_UNKNOWN || webFeed.result() == WebFeed::RS_UNKNOWN) {
+    if (webFeed.type == WebFeed::TP_UNKNOWN || webFeed.execution == WebFeed::EXE_UNKNOWN || webFeed.result == WebFeed::RS_UNKNOWN) {
         LOG_WARNING("feedback data error");
         postError(806);
         return false;
     }
-    const std::string& id = webFeed.id();
-    const WebFeed::Details& details = webFeed.details();
-    const WebFeed::Progress& progress = webFeed.progress();
-    std::string execution = WebFeed::getExecutionStr(webFeed.execution());
-    std::string result = WebFeed::getResultStr(webFeed.result());
+    const std::string& id = webFeed.id;
+    const WebFeed::Details& details = webFeed.details;
+    const WebFeed::Progress& progress = webFeed.progress;
+    std::string execution = WebFeed::getExecutionStr(webFeed.execution);
+    std::string result = WebFeed::getResultStr(webFeed.result);
     std::string urlStr;
-    if (webFeed.type() == WebFeed::TP_DEPLOY) {
+    if (webFeed.type == WebFeed::TP_DEPLOY) {
         urlStr = "/deploymentBase/" + id + "/feedback";
-    } else if (webFeed.type() == WebFeed::TP_CANCEL) {
+    } else if (webFeed.type == WebFeed::TP_CANCEL) {
         urlStr = "/cancelAction/" + id + "/feedback";
     } else {
         LOG_WARNING("feedback unknown type");
@@ -178,7 +178,7 @@ bool HawkbitQueue::feedback(const WebFeed& webFeed)
     statusData["details"] = Variant(details);
     VariantMap resultData;
     resultData["finished"] = Variant(std::move(result));
-    if (webFeed.type() == WebFeed::TP_DEPLOY) {
+    if (webFeed.type == WebFeed::TP_DEPLOY) {
         VariantMap progressJson;
         progressJson["of"] = progress.first;
         progressJson["cnt"] = progress.second;
@@ -189,8 +189,8 @@ bool HawkbitQueue::feedback(const WebFeed& webFeed)
     //
     std::string contentStr = Variant(std::move(rootData)).toJson();
     Core::Status status = Core::postMessage(m_hpr->url, m_hpr->path + urlStr, std::move(contentStr), dcus_server_config, m_hpr->token);
-    if (status.state() != Core::SUCCEED) {
-        postError(status.error());
+    if (status.state != Core::SUCCEED) {
+        postError(status.error);
         return false;
     }
     return true;
@@ -199,8 +199,8 @@ bool HawkbitQueue::feedback(const WebFeed& webFeed)
 bool HawkbitQueue::transformUpgrade(Upgrade& upgrade, const std::string& jsonString)
 {
     std::string targetLocalUrl = this->localUrl();
-    upgrade.packages().clear();
-    upgrade.packages().shrink_to_fit();
+    upgrade.packages.clear();
+    upgrade.packages.shrink_to_fit();
     std::string jsonErrorStr;
     Variant data = Variant::fromJson(jsonString, &jsonErrorStr);
     if (!jsonErrorStr.empty()) {
@@ -209,31 +209,31 @@ bool HawkbitQueue::transformUpgrade(Upgrade& upgrade, const std::string& jsonStr
     if (data["id"].toString().empty()) {
         return false;
     }
-    upgrade.id() = data["id"].toString();
+    upgrade.id = data["id"].toString();
     if (data["deployment"]["download"].toString() == "attempt") {
-        upgrade.download() = Upgrade::MTHD_ATTEMPT;
+        upgrade.download = Upgrade::MTHD_ATTEMPT;
     } else if (data["deployment"]["download"].toString() == "forced") {
-        upgrade.download() = Upgrade::MTHD_FORCED;
+        upgrade.download = Upgrade::MTHD_FORCED;
     } else {
-        upgrade.download() = Upgrade::MTHD_SKIP;
+        upgrade.download = Upgrade::MTHD_SKIP;
     }
     if (data["deployment"]["update"].toString() == "attempt") {
-        upgrade.deploy() = Upgrade::MTHD_ATTEMPT;
+        upgrade.deploy = Upgrade::MTHD_ATTEMPT;
     } else if (data["deployment"]["update"].toString() == "forced") {
-        upgrade.deploy() = Upgrade::MTHD_FORCED;
+        upgrade.deploy = Upgrade::MTHD_FORCED;
     } else {
-        upgrade.deploy() = Upgrade::MTHD_SKIP;
+        upgrade.deploy = Upgrade::MTHD_SKIP;
     }
     if (data["deployment"]["maintenanceWindow"].toString() == "available") {
-        upgrade.maintenance() = true;
+        upgrade.maintenance = true;
     } else {
-        upgrade.maintenance() = false;
+        upgrade.maintenance = false;
     }
     for (const auto& packageData : data["deployment"]["chunks"].toList()) {
         Package package;
-        package.domain() = packageData["name"].toString();
-        package.part() = packageData["part"].toString();
-        package.version() = packageData["version"].toString();
+        package.domain = packageData["name"].toString();
+        package.part = packageData["part"].toString();
+        package.version = packageData["version"].toString();
         VariantMap metaData;
         for (const auto& subMetaData : packageData["metadata"].toList()) {
             if (subMetaData["key"].isNull() || subMetaData["value"].isNull()) {
@@ -249,28 +249,28 @@ bool HawkbitQueue::transformUpgrade(Upgrade& upgrade, const std::string& jsonStr
                 metaData.insert(subMetaData["key"].toString(), subMetaData["value"].toString());
             }
         }
-        package.meta() = metaData;
+        package.meta = metaData;
         for (const auto& fileData : packageData["artifacts"].toList()) {
             File file;
-            file.domain() = package.domain();
-            file.name() = fileData["filename"].toString();
+            file.domain = package.domain;
+            file.name = fileData["filename"].toString();
             if (targetLocalUrl.empty()) {
-                file.url() = "";
+                file.url = "";
             } else {
-                file.url() = targetLocalUrl + "/" + package.domain() + "/" + file.name();
+                file.url = targetLocalUrl + "/" + package.domain + "/" + file.name;
             }
-            file.md5() = fileData["hashes"]["md5"].toString();
+            file.md5 = fileData["hashes"]["md5"].toString();
             // file.sha1() = fileData["hashes"]["sha1"].toString();
-            file.sha256() = fileData["hashes"]["sha256"].toString();
-            file.size() = fileData["size"].toInt();
+            file.sha256 = fileData["hashes"]["sha256"].toString();
+            file.size = fileData["size"].toInt();
             if (!fileData["_links"]["download"]["href"].toString().empty()) {
-                file.web_url() = fileData["_links"]["download"]["href"].toString();
+                file.web_url = fileData["_links"]["download"]["href"].toString();
             } else {
-                file.web_url() = fileData["_links"]["download-http"]["href"].toString();
+                file.web_url = fileData["_links"]["download-http"]["href"].toString();
             }
-            package.files().push_back(std::move(file));
+            package.files.push_back(std::move(file));
         }
-        upgrade.packages().push_back(std::move(package));
+        upgrade.packages.push_back(std::move(package));
     }
     return true;
 }
