@@ -55,7 +55,7 @@ private:
     void addTimer(const std::shared_ptr<Timer>& timer);
     void removeTimer(const std::shared_ptr<Timer>& timer);
     void removeTimer(Timer* timer);
-    virtual void processNextSleepTime();
+    void processNextSleepTime();
 
 private:
     friend Timer;
