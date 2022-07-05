@@ -21,12 +21,10 @@
 
 DCUS_NAMESPACE_BEGIN
 
-static Application* _intance = nullptr;
-static struct getopt* _cmd_map = nullptr;
-
 struct ApplicationHelper {
     int argc = 0;
     char** argv = nullptr;
+    std::unique_ptr<struct getopt> cmd_map;
     std::string typeName;
     std::string exePath;
     std::string exeDir;
@@ -36,20 +34,15 @@ struct ApplicationHelper {
 
 Application::Application(int argc, char** argv, const std::string& typeName)
 {
-    if (!m_hpr) {
-        m_hpr = new ApplicationHelper;
-    }
+    DCUS_HELPER_CREATE(m_hpr);
     m_hpr->argc = argc;
     m_hpr->argv = argv;
     m_hpr->exePath = Utils::getExePath();
     m_hpr->exeDir = Utils::getExeDir(m_hpr->exePath);
     m_hpr->exeName = Utils::getExeName(m_hpr->exePath);
     m_hpr->typeName = typeName;
+    m_hpr->cmd_map = std::make_unique<struct getopt>(argc, argv);
     Utils::setCurrentPath(m_hpr->exeDir);
-    struct getopt args(argc, argv);
-    if (!_cmd_map) {
-        _cmd_map = new struct getopt(argc, argv);
-    }
     if (!m_hpr->typeName.empty()) {
         m_hpr->config = readConfig(m_hpr->typeName + ".conf");
         if (m_hpr->config.empty()) {
@@ -61,14 +54,8 @@ Application::Application(int argc, char** argv, const std::string& typeName)
 
 Application::~Application()
 {
-    if (m_hpr) {
-        delete m_hpr;
-        m_hpr = nullptr;
-    }
+    DCUS_HELPER_DESTROY(m_hpr);
     dcus_print_uninitialize();
-    if (_cmd_map) {
-        delete _cmd_map;
-    }
 }
 
 bool Application::getOptions(Variant& value, const std::vector<std::string>& optNames, const std::string& configName) const
@@ -76,32 +63,32 @@ bool Application::getOptions(Variant& value, const std::vector<std::string>& opt
     switch (value.type()) {
     case Variant::TYPE_BOOL:
         for (const std::string& name : optNames) {
-            if (_cmd_map->has(name)) {
-                value = getarg<bool>(_cmd_map, value.toBool(), name.c_str());
+            if (m_hpr->cmd_map->has(name)) {
+                value = getarg<bool>(m_hpr->cmd_map.get(), value.toBool(), name.c_str());
                 return true;
             }
         }
         break;
     case Variant::TYPE_INT:
         for (const std::string& name : optNames) {
-            if (_cmd_map->has(name)) {
-                value = getarg<int>(_cmd_map, value.toInt(), name.c_str());
+            if (m_hpr->cmd_map->has(name)) {
+                value = getarg<int>(m_hpr->cmd_map.get(), value.toInt(), name.c_str());
                 return true;
             }
         }
         break;
     case Variant::TYPE_DOUBLE:
         for (const std::string& name : optNames) {
-            if (_cmd_map->has(name)) {
-                value = getarg<double>(_cmd_map, value.toDouble(), name.c_str());
+            if (m_hpr->cmd_map->has(name)) {
+                value = getarg<double>(m_hpr->cmd_map.get(), value.toDouble(), name.c_str());
                 return true;
             }
         }
         break;
     case Variant::TYPE_STRING:
         for (const std::string& name : optNames) {
-            if (_cmd_map->has(name)) {
-                value = getarg(_cmd_map, value.toCString(), name.c_str());
+            if (m_hpr->cmd_map->has(name)) {
+                value = getarg(m_hpr->cmd_map.get(), value.toCString(), name.c_str());
                 return true;
             }
         }
@@ -202,21 +189,21 @@ void Application::loadFlagOnExec(int flag)
         }
     }
     if (flag & Application::CHECK_TERMINATE) {
-        _intance = this;
+        static Application* termIntance = this;
         Utils::programRegisterTerminate([](int reval) {
-            _intance->exit(reval);
+            termIntance->exit(reval);
         });
     }
 }
 
 void Application::loadUseage(std::vector<std::vector<std::string>> useage)
 {
-    bool showVersion = getarg(_cmd_map, false, "-v", "--v", "-version", "--version");
+    bool showVersion = getarg(m_hpr->cmd_map.get(), false, "-v", "--v", "-version", "--version");
     if (showVersion) {
         LOG_DEBUG(PROJECT_NAME, " ", PROJECT_VERSION);
         std::quick_exit(0);
     }
-    bool showUseage = getarg(_cmd_map, false, "-h", "--h", "-help", "--help");
+    bool showUseage = getarg(m_hpr->cmd_map.get(), false, "-h", "--h", "-help", "--help");
     if (showUseage) {
         std::cout << "Useage:" << std::endl;
         for (const auto& value : useage) {

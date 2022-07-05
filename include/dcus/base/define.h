@@ -41,15 +41,15 @@
 #define C_INTERFACE_END
 #endif
 
-#define DCUS_NAMESPACE_BEGIN \
-    namespace DCus {
-#define DCUS_NAMESPACE_END \
-    }                      \
-    ;
+#define DCUS_NAMESPACE_BEGIN namespace DCus {
+#define DCUS_NAMESPACE_END }
 
 #define CLASS_DISSABLE_COPY_AND_ASSIGN(TypeName) \
     TypeName(const TypeName&) = delete;          \
     TypeName& operator=(const TypeName&) = delete;
+
+#define DCUS_HELPER_CREATE(helper) helper = new std::remove_reference<decltype(*helper)>::type
+#define DCUS_HELPER_DESTROY(helper) delete helper
 
 #define DCUS_UNUSED(Var) (void)(Var)
 #define DCUS_STRNAME(Name) #Name

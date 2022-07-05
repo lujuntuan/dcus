@@ -41,7 +41,7 @@ struct ClientHelper {
     std::string guid;
     std::string version;
     std::string downloadDir;
-    Timer* replyControlTimer = nullptr;
+    std::shared_ptr<Timer> replyControlTimer;
     ClientEngine::DeployFunction deployFunction = nullptr;
     ClientEngine::DetailFunction detailFunction = nullptr;
     std::atomic<uint32_t> controlMessageId { 0 };
@@ -90,9 +90,7 @@ ClientEngine::ClientEngine(int argc, char** argv)
     setInstance(this);
     loadUseage({ USAGE_NAME_LIST, USAGE_GUID_LIST });
 
-    if (!m_hpr) {
-        m_hpr = new ClientHelper;
-    }
+    DCUS_HELPER_CREATE(m_hpr);
     static std::mutex mutex;
     setMutex(mutex);
 
@@ -120,10 +118,7 @@ ClientEngine::ClientEngine(int argc, char** argv)
 
 ClientEngine::~ClientEngine()
 {
-    if (m_hpr) {
-        delete m_hpr;
-        m_hpr = nullptr;
-    }
+    DCUS_HELPER_DESTROY(m_hpr);
     setInstance(nullptr);
 }
 
@@ -218,9 +213,9 @@ void ClientEngine::postDeployDone(bool success, int errorCode)
         return;
     }
     if (success) {
-        this->postEvent(new ClientEvent(ClientEvent::RES_DEPLOY_DONE));
+        this->postEvent(std::make_shared<ClientEvent>(ClientEvent::RES_DEPLOY_DONE));
     } else {
-        this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, VariantMap { { "error", errorCode } }));
+        this->postEvent(std::make_shared<ClientEvent>(ClientEvent::RES_ERROR, VariantMap { { "error", errorCode } }));
     }
 }
 
@@ -230,7 +225,7 @@ void ClientEngine::postDeployProgress(float progress, const std::string& message
         LOG_WARNING("can not postDeployProgress");
         return;
     }
-    this->postEvent(new ClientEvent(ClientEvent::RES_DEPLOY_PROGRESS, VariantMap { { "progress", progress }, { "message", message } }));
+    this->postEvent(std::make_shared<ClientEvent>(ClientEvent::RES_DEPLOY_PROGRESS, VariantMap { { "progress", progress }, { "message", message } }));
 }
 
 void ClientEngine::postCancelDone(bool success, int errorCode)
@@ -240,9 +235,9 @@ void ClientEngine::postCancelDone(bool success, int errorCode)
         return;
     }
     if (success) {
-        this->postEvent(new ClientEvent(ClientEvent::RES_CANCEL_DONE));
+        this->postEvent(std::make_shared<ClientEvent>(ClientEvent::RES_CANCEL_DONE));
     } else {
-        this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, VariantMap { { "error", errorCode } }));
+        this->postEvent(std::make_shared<ClientEvent>(ClientEvent::RES_ERROR, VariantMap { { "error", errorCode } }));
     }
 }
 
@@ -261,7 +256,7 @@ void ClientEngine::postDetailAnswer(Answer answer)
         LOG_WARNING("can not postDetailAnswer");
         return;
     }
-    this->postEvent(new ClientEvent(ClientEvent::RES_ANSWER, VariantMap { { "answer", answer } }));
+    this->postEvent(std::make_shared<ClientEvent>(ClientEvent::RES_ANSWER, VariantMap { { "answer", answer } }));
 }
 
 void ClientEngine::begin()
@@ -277,9 +272,9 @@ void ClientEngine::end()
     onStop();
 }
 
-void ClientEngine::eventChanged(Event* event)
+void ClientEngine::eventChanged(const std::shared_ptr<Event>& event)
 {
-    ClientEvent* clientEvent = (ClientEvent*)event;
+    auto clientEvent = std::static_pointer_cast<ClientEvent>(event);
     if (clientEvent->type() == ClientEvent::FUNCTION) {
         return;
     }
@@ -298,7 +293,7 @@ void ClientEngine::eventChanged(Event* event)
     }
     switch (clientEvent->type()) {
     case ClientEvent::REQ_CONTROL: {
-        ClientControlEvent* controlEvent = dynamic_cast<ClientControlEvent*>(clientEvent);
+        auto controlEvent = std::dynamic_pointer_cast<ClientControlEvent>(clientEvent);
         if (!controlEvent) {
             LOG_WARNING("get ClientControlEvent error");
             break;
@@ -370,11 +365,11 @@ void ClientEngine::eventChanged(Event* event)
             m_hpr->detail.domain.message = "Deploy ...";
             stopThread();
             if (m_hpr->detail.detectVersionEqual()) {
-                this->postEvent(new ClientEvent(ClientEvent::RES_DEPLOY_DONE));
+                this->postEvent(std::make_shared<ClientEvent>(ClientEvent::RES_DEPLOY_DONE));
                 break;
             }
             if (!m_hpr->detail.detectVersionVaild()) {
-                this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, VariantMap { { "error", 2900 } }));
+                this->postEvent(std::make_shared<ClientEvent>(ClientEvent::RES_ERROR, VariantMap { { "error", 2900 } }));
                 LOG_WARNING("deploy version not vaild(", m_hpr->detail.domain.version, ")");
                 break;
             }
@@ -393,20 +388,20 @@ void ClientEngine::eventChanged(Event* event)
             setDomainState(WR_CANCEL);
             m_hpr->detail.domain.message = "Cancel ...";
             if (m_hpr->detail.detectVersionEqual()) {
-                this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, VariantMap { { "error", 2901 } }));
+                this->postEvent(std::make_shared<ClientEvent>(ClientEvent::RES_ERROR, VariantMap { { "error", 2901 } }));
                 break;
             }
             if (m_hpr->detail.domain.last == WR_IDLE) {
-                this->postEvent(new ClientEvent(ClientEvent::RES_CANCEL_DONE));
+                this->postEvent(std::make_shared<ClientEvent>(ClientEvent::RES_CANCEL_DONE));
                 break;
             }
             if (m_hpr->cancelEnable) {
                 if (m_hpr->detail.domain.last == WR_WAIT) {
-                    this->postEvent(new ClientEvent(ClientEvent::RES_CANCEL_DONE));
+                    this->postEvent(std::make_shared<ClientEvent>(ClientEvent::RES_CANCEL_DONE));
                 }
             } else {
                 if (m_hpr->detail.domain.last == WR_DEPLOY) {
-                    this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, VariantMap { { "error", 2902 } }));
+                    this->postEvent(std::make_shared<ClientEvent>(ClientEvent::RES_ERROR, VariantMap { { "error", 2902 } }));
                 }
             }
             break;
@@ -428,7 +423,7 @@ void ClientEngine::eventChanged(Event* event)
         break;
     }
     case ClientEvent::REQ_DETAIL: {
-        ClientDetailEvent* detailEvent = dynamic_cast<ClientDetailEvent*>(clientEvent);
+        auto detailEvent = std::dynamic_pointer_cast<ClientDetailEvent>(clientEvent);
         if (!detailEvent) {
             LOG_WARNING("get ClientDetailEvent error");
             break;
@@ -495,7 +490,7 @@ void ClientEngine::eventChanged(Event* event)
         break;
     }
     case ClientEvent::RES_TRANSFER_PROGRESS: {
-        ClientTransferEvent* transferEvent = dynamic_cast<ClientTransferEvent*>(clientEvent);
+        auto transferEvent = std::dynamic_pointer_cast<ClientTransferEvent>(clientEvent);
         if (!transferEvent) {
             LOG_WARNING("get ClientTransferEvent error");
             break;
@@ -570,7 +565,7 @@ bool ClientEngine::hasSubscibeDetail() const
 
 void ClientEngine::processControlMessage(Control control, Upgrade&& upgrade, Depends&& depends)
 {
-    this->postEvent(new ClientControlEvent(control, upgrade, depends));
+    this->postEvent(std::make_shared<ClientControlEvent>(control, upgrade, depends));
 }
 
 void ClientEngine::processDetailMessage(DetailMessage&& detailMessage)
@@ -578,7 +573,7 @@ void ClientEngine::processDetailMessage(DetailMessage&& detailMessage)
     if (!m_hpr->detailFunction) {
         return;
     }
-    this->postEvent(new ClientDetailEvent(detailMessage));
+    this->postEvent(std::make_shared<ClientDetailEvent>(detailMessage));
 }
 
 bool ClientEngine::checkControlMessageId(uint32_t id) const
@@ -675,12 +670,12 @@ void ClientEngine::download(const std::string& id, const Files& files)
         times++;
     }
     if (status.state == Core::SUCCEED) {
-        this->postEvent(new ClientEvent(ClientEvent::RES_DOWNLOAD));
+        this->postEvent(std::make_shared<ClientEvent>(ClientEvent::RES_DOWNLOAD));
     } else if (status.state == Core::FAILED) {
-        this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, VariantMap { { "error", 2000 + status.error } }));
+        this->postEvent(std::make_shared<ClientEvent>(ClientEvent::RES_ERROR, VariantMap { { "error", 2000 + status.error } }));
     } else {
         if (m_hpr->hasCancelAction) {
-            this->postEvent(new ClientEvent(ClientEvent::RES_CANCEL_DONE));
+            this->postEvent(std::make_shared<ClientEvent>(ClientEvent::RES_CANCEL_DONE));
         } else {
             LOG_WARNING("force quit");
         }
@@ -705,12 +700,12 @@ void ClientEngine::verify(const std::string& id, const Files& files)
             // this->postEvent(new ClientTransferEvent(Transfers(transfers)));
         });
     if (status.state == Core::SUCCEED) {
-        this->postEvent(new ClientEvent(ClientEvent::RES_VERIFY));
+        this->postEvent(std::make_shared<ClientEvent>(ClientEvent::RES_VERIFY));
     } else if (status.state == Core::FAILED) {
-        this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, VariantMap { { "error", 2000 + status.error } }));
+        this->postEvent(std::make_shared<ClientEvent>(ClientEvent::RES_ERROR, VariantMap { { "error", 2000 + status.error } }));
     } else {
         if (m_hpr->hasCancelAction) {
-            this->postEvent(new ClientEvent(ClientEvent::RES_CANCEL_DONE));
+            this->postEvent(std::make_shared<ClientEvent>(ClientEvent::RES_CANCEL_DONE));
         } else {
             LOG_WARNING("force quit");
         }
@@ -738,12 +733,12 @@ void ClientEngine::patch(const FilePaths& patchPaths)
             // this->postEvent(new ClientTransferEvent(Transfers(transfers)));
         });
     if (status.state == Core::SUCCEED) {
-        this->postEvent(new ClientEvent(ClientEvent::RES_PATCH));
+        this->postEvent(std::make_shared<ClientEvent>(ClientEvent::RES_PATCH));
     } else if (status.state == Core::FAILED) {
-        this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, VariantMap { { "error", 2000 + status.error } }));
+        this->postEvent(std::make_shared<ClientEvent>(ClientEvent::RES_ERROR, VariantMap { { "error", 2000 + status.error } }));
     } else {
         if (m_hpr->hasCancelAction) {
-            this->postEvent(new ClientEvent(ClientEvent::RES_CANCEL_DONE));
+            this->postEvent(std::make_shared<ClientEvent>(ClientEvent::RES_CANCEL_DONE));
         } else {
             LOG_WARNING("force quit");
         }
@@ -759,7 +754,7 @@ void ClientEngine::deploy(const std::string& id, const Files& files)
         const std::string& path = dir + "/" + file.name;
         if (!Utils::exists(path)) {
             LOG_WARNING("deploy file is not exists(", path, ")");
-            this->postEvent(new ClientEvent(ClientEvent::RES_ERROR, VariantMap { { "error", 2910 } }));
+            this->postEvent(std::make_shared<ClientEvent>(ClientEvent::RES_ERROR, VariantMap { { "error", 2910 } }));
             return;
         }
         filePaths.push_back(path);

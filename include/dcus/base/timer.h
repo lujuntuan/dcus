@@ -15,6 +15,7 @@
 
 #include "dcus/base/define.h"
 #include <functional>
+#include <memory>
 #include <stdint.h>
 
 DCUS_NAMESPACE_BEGIN
@@ -22,16 +23,24 @@ DCUS_NAMESPACE_BEGIN
 #define TIMER_USE_PRECISION 1
 #define TIMER_ERROR_OFFSET 1000000U
 
+class Queue;
+
 class DCUS_EXPORT Timer final {
     CLASS_DISSABLE_COPY_AND_ASSIGN(Timer)
-public:
-    using Function = std::function<void()>;
 
 private:
-    explicit Timer(uint32_t interval_milli_s, bool loop = false, const Function& function = nullptr) noexcept; // 0milli_s==100000ns
+    struct TimerPrivate {
+        explicit TimerPrivate(int) { }
+    };
+
+public:
+    using Function = std::function<void()>;
+    explicit Timer(const TimerPrivate&, uint32_t interval_milli_s, bool loop = false, const Function& function = nullptr) noexcept; // 0milli_s==100000ns
     ~Timer() noexcept;
 
 public:
+    static std::shared_ptr<Timer> create(Queue* queue, uint32_t interval_milli_s, bool loop = false, const Function& function = nullptr) noexcept;
+    static void once(Queue* queue, uint32_t interval_milli_s, const Function& function = nullptr) noexcept;
     void start(const Function& function = nullptr) noexcept;
     void stop() noexcept;
     bool active() const noexcept;
@@ -43,7 +52,7 @@ public:
     void setFunction(const Function& function) noexcept;
 
 private:
-    friend class Queue;
+    friend Queue;
     uint32_t m_interval = 0;
     uint64_t m_startTimer = 0;
 #if TIMER_USE_PRECISION
@@ -51,6 +60,7 @@ private:
 #endif
     bool m_loop = false;
     Function m_function = nullptr;
+    Queue* m_queue = nullptr;
 };
 
 DCUS_NAMESPACE_END

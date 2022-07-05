@@ -16,6 +16,7 @@
 #include "dcus/base/define.h"
 #include "dcus/base/event.h"
 #include "dcus/base/timer.h"
+#include <memory>
 #include <mutex>
 
 DCUS_NAMESPACE_BEGIN
@@ -37,10 +38,9 @@ public:
     bool isRunInthread() const;
     int quitCode() const;
     int eventCount() const;
-    Timer* createTimer(uint32_t interval_milli_s, bool loop = false, const Timer::Function& function = nullptr);
-    void destroyTimer(Timer* timer);
+    std::shared_ptr<Timer> createTimer(uint32_t interval_milli_s, bool loop = false, const Timer::Function& function = nullptr);
     void onceTimer(uint32_t interval_milli_s, const Timer::Function& function = nullptr);
-    void postEvent(Event* event);
+    void postEvent(const std::shared_ptr<Event>& event);
     void setMutex(std::mutex& mutex);
     void lock() const;
     void unlock() const;
@@ -48,13 +48,17 @@ public:
 protected:
     virtual void begin() { }
     virtual void end() { }
-    virtual void eventChanged(Event* event) = 0;
+    virtual void eventChanged(const std::shared_ptr<Event>& event) = 0;
     virtual void processEvent();
 
 private:
+    void addTimer(const std::shared_ptr<Timer>& timer);
+    void removeTimer(const std::shared_ptr<Timer>& timer);
+    void removeTimer(Timer* timer);
     virtual void processNextSleepTime();
 
 private:
+    friend Timer;
     struct QueueHelper* m_queueHelper = nullptr;
 };
 

@@ -27,18 +27,13 @@ struct PluginHelper {
 
 Plugin::Plugin()
 {
-    if (!m_hpr) {
-        m_hpr = new PluginHelper;
-    }
+    DCUS_HELPER_CREATE(m_hpr);
 }
 
 Plugin::~Plugin()
 {
     clear();
-    if (m_hpr) {
-        delete m_hpr;
-        m_hpr = nullptr;
-    }
+    DCUS_HELPER_DESTROY(m_hpr);
 }
 
 std::deque<std::string> Plugin::defaultSearchPath()

@@ -14,9 +14,9 @@
 #define DCUS_WEB_QUEUE_H
 
 #include "dcus/base/queue.h"
-#include "dcus/upgrade.h"
 #include "dcus/server/web_feed.h"
 #include "dcus/server/web_init.h"
+#include "dcus/upgrade.h"
 
 DCUS_NAMESPACE_BEGIN
 
@@ -40,7 +40,7 @@ protected:
 private:
     virtual void begin() override;
     virtual void end() override;
-    virtual void eventChanged(Event* event) override;
+    virtual void eventChanged(const std::shared_ptr<Event>& event) override;
 
     virtual bool init(const WebInit& webInit) = 0;
     virtual bool detect() = 0;

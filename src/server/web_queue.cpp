@@ -33,7 +33,7 @@ struct WebHelper {
     std::string localUrl;
     std::string ipAddress;
     std::string distributeUrl;
-    Timer* checkTimer = nullptr;
+    std::shared_ptr<Timer> checkTimer;
     Core::DistributeHandle distributeHandle = { nullptr };
     Thread workThread;
 };
@@ -41,9 +41,7 @@ struct WebHelper {
 WebQueue::WebQueue()
     : Queue(DCUS_QUEUE_ID_WEB)
 {
-    if (!m_hpr) {
-        m_hpr = new WebHelper;
-    }
+    DCUS_HELPER_CREATE(m_hpr);
     if (dcus_server_config.value("net_interface").isValid()) {
         m_hpr->ipAddress = Utils::getIpAddress(dcus_server_config.value("net_interface").toString());
     } else {
@@ -88,10 +86,7 @@ WebQueue::WebQueue()
 
 WebQueue::~WebQueue()
 {
-    if (m_hpr) {
-        delete m_hpr;
-        m_hpr = nullptr;
-    }
+    DCUS_HELPER_DESTROY(m_hpr);
 }
 
 WebQueue::State WebQueue::state() const
@@ -118,9 +113,9 @@ void WebQueue::end()
     Core::stopDistribute(m_hpr->distributeHandle);
 }
 
-void WebQueue::eventChanged(Event* event)
+void WebQueue::eventChanged(const std::shared_ptr<Event>& event)
 {
-    WebEvent* webEvent = (WebEvent*)event;
+    auto webEvent = std::static_pointer_cast<WebEvent>(event);
     if (webEvent->type() == WebEvent::FUNCTION) {
         return;
     }
@@ -129,7 +124,7 @@ void WebQueue::eventChanged(Event* event)
     }
     switch (webEvent->type()) {
     case WebEvent::REQ_INIT: {
-        WebInitEvent* webInitEvent = dynamic_cast<WebInitEvent*>(event);
+        auto webInitEvent = std::dynamic_pointer_cast<WebInitEvent>(event);
         if (!webInitEvent) {
             LOG_WARNING("get WebInitEvent error");
             break;
@@ -139,7 +134,7 @@ void WebQueue::eventChanged(Event* event)
             break;
         }
         bool success = init(webInitEvent->webInit());
-        dcus_server_engine->postEvent(new ServerEvent(ServerEvent::RES_INIT, VariantMap { { "success", success } }));
+        dcus_server_engine->postEvent(std::make_shared<ServerEvent>(ServerEvent::RES_INIT, VariantMap { { "success", success } }));
         if (success) {
             checkUpgrade();
             m_hpr->checkTimer->start();
@@ -188,7 +183,7 @@ void WebQueue::eventChanged(Event* event)
             }
         }
         if (canPull) {
-            dcus_server_engine->postEvent(new ServerEvent(ServerEvent::REQ_PULL));
+            dcus_server_engine->postEvent(std::make_shared<ServerEvent>(ServerEvent::REQ_PULL));
         }
         break;
     }
@@ -210,13 +205,13 @@ void WebQueue::eventChanged(Event* event)
         break;
     }
     case WebEvent::REQ_FEEDBACK: {
-        WebFeedEvent* webFeedEvent = dynamic_cast<WebFeedEvent*>(event);
+        auto webFeedEvent = std::dynamic_pointer_cast<WebFeedEvent>(event);
         if (!webFeedEvent) {
             LOG_WARNING("get WebFeedbackEvent error");
             break;
         }
         bool success = feedback(webFeedEvent->webFeed());
-        dcus_server_engine->postEvent(new ServerEvent(ServerEvent::RES_FEEDBACK_DONE, VariantMap { { "success", success } }));
+        dcus_server_engine->postEvent(std::make_shared<ServerEvent>(ServerEvent::RES_FEEDBACK_DONE, VariantMap { { "success", success } }));
         break;
     }
     default:
@@ -226,12 +221,12 @@ void WebQueue::eventChanged(Event* event)
 
 void WebQueue::postError(int errorCode)
 {
-    dcus_server_engine->postEvent(new ServerEvent(ServerEvent::RES_ERROR, VariantMap { { "error", errorCode } }));
+    dcus_server_engine->postEvent(std::make_shared<ServerEvent>(ServerEvent::RES_ERROR, VariantMap { { "error", errorCode } }));
 }
 
 void WebQueue::postIdle()
 {
-    dcus_server_engine->postEvent(new ServerEvent(ServerEvent::REQ_IDLE));
+    dcus_server_engine->postEvent(std::make_shared<ServerEvent>(ServerEvent::REQ_IDLE));
 }
 
 void WebQueue::postUpgrade(Upgrade&& upgrade)
@@ -242,7 +237,7 @@ void WebQueue::postUpgrade(Upgrade&& upgrade)
         return;
     }
     unlock();
-    dcus_server_engine->postEvent(new ServerUpgradeEvent(upgrade));
+    dcus_server_engine->postEvent(std::make_shared<ServerUpgradeEvent>(upgrade));
 }
 
 void WebQueue::postCancel(std::string&& id)
@@ -253,7 +248,7 @@ void WebQueue::postCancel(std::string&& id)
         return;
     }
     unlock();
-    dcus_server_engine->postEvent(new ServerEvent(ServerEvent::REQ_CANCEL, VariantMap { { "id", id } }));
+    dcus_server_engine->postEvent(std::make_shared<ServerEvent>(ServerEvent::REQ_CANCEL, VariantMap { { "id", id } }));
 }
 
 void WebQueue::setCheckTimerInterval(int interval)
@@ -265,7 +260,7 @@ void WebQueue::checkUpgrade()
 {
     bool active = detect();
     if (dcus_server_engine->isActive() != active) {
-        dcus_server_engine->postEvent(new ServerEvent(ServerEvent::REQ_ACTIVE, VariantMap { { "active", active } }));
+        dcus_server_engine->postEvent(std::make_shared<ServerEvent>(ServerEvent::REQ_ACTIVE, VariantMap { { "active", active } }));
     }
 }
 
@@ -331,10 +326,10 @@ void WebQueue::download(const std::string& id, const Files& files)
             return m_hpr->workThread.isReadyFinished();
         },
         [](const Transfers& transfers) {
-            dcus_server_engine->postEvent(new ServerTransferEvent(Transfers(transfers)));
+            dcus_server_engine->postEvent(std::make_shared<ServerTransferEvent>(Transfers(transfers)));
         });
     if (status.state == Core::SUCCEED) {
-        dcus_server_engine->postEvent(new ServerEvent(ServerEvent::RES_DOWNLOAD_DONE));
+        dcus_server_engine->postEvent(std::make_shared<ServerEvent>(ServerEvent::RES_DOWNLOAD_DONE));
     } else if (status.state == Core::FAILED) {
         postError(status.error);
     }
@@ -349,10 +344,10 @@ void WebQueue::verify(const std::string& id, const Files& files)
         },
         [](const Transfers& transfers) {
             Transfers t = transfers;
-            dcus_server_engine->postEvent(new ServerTransferEvent(Transfers(transfers)));
+            dcus_server_engine->postEvent(std::make_shared<ServerTransferEvent>(Transfers(transfers)));
         });
     if (status.state == Core::SUCCEED) {
-        dcus_server_engine->postEvent(new ServerEvent(ServerEvent::RES_VERIFY_DONE));
+        dcus_server_engine->postEvent(std::make_shared<ServerEvent>(ServerEvent::RES_VERIFY_DONE));
     } else if (status.state == Core::FAILED) {
         postError(status.error);
     }
@@ -368,10 +363,10 @@ void WebQueue::distribute(const std::string& id, const Files& files)
         },
         [](const Transfers& transfers) {
             Transfers t = transfers;
-            dcus_server_engine->postEvent(new ServerTransferEvent(Transfers(transfers)));
+            dcus_server_engine->postEvent(std::make_shared<ServerTransferEvent>(Transfers(transfers)));
         });
     if (status.state == Core::SUCCEED) {
-        dcus_server_engine->postEvent(new ServerEvent(ServerEvent::RES_DISTRUBUTE_DONE));
+        dcus_server_engine->postEvent(std::make_shared<ServerEvent>(ServerEvent::RES_DISTRUBUTE_DONE));
     } else if (status.state == Core::FAILED) {
         postError(status.error);
     }

@@ -67,7 +67,7 @@ public:
 private:
     virtual void begin() override;
     virtual void end() override;
-    virtual void eventChanged(Event* event) override;
+    virtual void eventChanged(const std::shared_ptr<Event>& event) override;
 
     virtual void onStart() {};
     virtual void onStop() {};

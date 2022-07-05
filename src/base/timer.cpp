@@ -11,11 +11,13 @@
  **********************************************************************************/
 
 #include "dcus/base/timer.h"
+#include "dcus/base/log.h"
+#include "dcus/base/queue.h"
 #include "dcus/utils/time.h"
 
 DCUS_NAMESPACE_BEGIN
 
-Timer::Timer(uint32_t interval_milli_s, bool loop, const Function& function) noexcept
+Timer::Timer(const TimerPrivate&, uint32_t interval_milli_s, bool loop, const Function& function) noexcept
     : m_interval(interval_milli_s)
     , m_loop(loop)
     , m_function(function)
@@ -26,6 +28,27 @@ Timer::~Timer() noexcept
 {
     m_function = nullptr;
     stop();
+    if (m_queue) {
+        m_queue->removeTimer(this);
+    }
+}
+
+std::shared_ptr<Timer> Timer::create(Queue* queue, uint32_t interval_milli_s, bool loop, const Function& function) noexcept
+{
+    if (!queue) {
+        LOG_CRITICAL("queue is null");
+    }
+    const std::shared_ptr<Timer>& timer = std::make_shared<Timer>(TimerPrivate { 0 }, interval_milli_s, loop, function);
+    queue->addTimer(timer);
+    return timer;
+}
+
+void Timer::once(Queue* queue, uint32_t interval_milli_s, const Function& function) noexcept
+{
+    if (!queue) {
+        LOG_CRITICAL("queue is null");
+    }
+    queue->onceTimer(interval_milli_s, function);
 }
 
 void Timer::start(const Function& function) noexcept

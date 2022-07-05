@@ -30,17 +30,12 @@ struct HawkbitHelper {
 HawkbitQueue::HawkbitQueue()
     : WebQueue()
 {
-    if (!m_hpr) {
-        m_hpr = new HawkbitHelper;
-    }
+    DCUS_HELPER_CREATE(m_hpr);
 }
 
 HawkbitQueue::~HawkbitQueue()
 {
-    if (m_hpr) {
-        delete m_hpr;
-        m_hpr = nullptr;
-    }
+    DCUS_HELPER_DESTROY(m_hpr);
 }
 
 bool HawkbitQueue::init(const WebInit& webInit)

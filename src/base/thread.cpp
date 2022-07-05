@@ -23,6 +23,18 @@
 
 DCUS_NAMESPACE_BEGIN
 
+static std::mutex& getThreadMapLock()
+{
+    static std::mutex mutex;
+    return mutex;
+}
+
+static std::unordered_map<std::thread::id, Thread*>& getThreadMap()
+{
+    static std::unordered_map<std::thread::id, Thread*> threadMap;
+    return threadMap;
+}
+
 struct ThreadHelper {
     std::unique_ptr<std::thread> thread;
     std::atomic_bool isRunning { false };
@@ -31,14 +43,16 @@ struct ThreadHelper {
     Thread::Function endFunction = nullptr;
     std::mutex mutex;
     std::condition_variable_any condition;
-    static std::unordered_map<std::thread::id, Thread*> _ThreadMap;
 };
 
-std::unordered_map<std::thread::id, Thread*> ThreadHelper::_ThreadMap;
+void Thread::create()
+{
+    DCUS_HELPER_CREATE(m_hpr);
+}
 
 Thread::Thread()
 {
-    createHelper();
+    create();
 }
 
 Thread::~Thread()
@@ -46,15 +60,15 @@ Thread::~Thread()
     if (m_hpr->thread) {
         stop();
     }
-    if (m_hpr) {
-        delete m_hpr;
-        m_hpr = nullptr;
-    }
+    DCUS_HELPER_DESTROY(m_hpr);
 }
 
 Thread* Thread::currentThread()
 {
-    return ThreadHelper::_ThreadMap.find(std::this_thread::get_id())->second;
+    getThreadMapLock().lock();
+    const auto& thread = getThreadMap().find(std::this_thread::get_id())->second;
+    getThreadMapLock().unlock();
+    return thread;
 }
 
 void Thread::sleep(uint32_t s)
@@ -117,7 +131,9 @@ bool Thread::start()
     m_hpr->isRunning = true;
     try {
         m_hpr->thread = std::make_unique<std::thread>([this]() {
-            ThreadHelper::_ThreadMap.emplace(std::this_thread::get_id(), this);
+            getThreadMapLock().lock();
+            getThreadMap().emplace(std::this_thread::get_id(), this);
+            getThreadMapLock().unlock();
             if (m_hpr->startFunction) {
                 m_hpr->startFunction();
             }
@@ -128,7 +144,9 @@ bool Thread::start()
             m_hpr->isRunning = false;
             std::lock_guard<std::mutex> lock(m_hpr->mutex);
             m_hpr->condition.notify_one();
-            ThreadHelper::_ThreadMap.erase(std::this_thread::get_id());
+            getThreadMapLock().lock();
+            getThreadMap().erase(std::this_thread::get_id());
+            getThreadMapLock().unlock();
         });
         return true;
     } catch (...) {
@@ -184,13 +202,6 @@ bool Thread::stop(uint32_t milli_s)
     }
     m_hpr->isRunning = false;
     return true;
-}
-
-void Thread::createHelper()
-{
-    if (!m_hpr) {
-        m_hpr = new ThreadHelper;
-    }
 }
 
 DCUS_NAMESPACE_END

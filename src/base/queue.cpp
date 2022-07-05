@@ -21,6 +21,7 @@
 #include <thread>
 
 #define QUEUE_MAX_NUM 4096
+
 #define m_hpr m_queueHelper
 
 DCUS_NAMESPACE_BEGIN
@@ -42,15 +43,15 @@ struct QueueHelper {
     std::atomic_bool isBusy { false };
     std::atomic_int quitCode { 0 };
     std::thread::id currentThreadID = std::this_thread::get_id();
-    std::queue<Event*> eventQueue;
+    std::queue<std::shared_ptr<Event>> eventQueue;
     std::queue<Timer::Function> timerFunctionQueue;
-    std::list<Timer*> timerList;
+    std::list<std::shared_ptr<Timer>> timerList;
     std::mutex eventMutex;
     std::thread::id workThreadId;
     Semaphore eventSemaPhore { 0 };
     Semaphore waitSemaPhore { 0 };
     Semaphore quitSemaPhore { 0 };
-    Thread* queueThread = nullptr;
+    std::unique_ptr<Thread> queueThread;
     std::mutex* commonMutex = nullptr;
     TimeMethod timeMethod;
 };
@@ -60,9 +61,7 @@ Queue::Queue(int queueId)
     if (queueId < 0) {
         LOG_WARNING("queue id not set");
     }
-    if (!m_hpr) {
-        m_hpr = new QueueHelper;
-    }
+    DCUS_HELPER_CREATE(m_hpr);
     m_hpr->queueId = queueId;
 }
 
@@ -74,29 +73,16 @@ Queue::~Queue()
     //
     m_hpr->eventMutex.lock();
     for (; !m_hpr->eventQueue.empty();) {
-        Event* event = m_hpr->eventQueue.front();
-        if (event) {
-            delete event;
-        } else {
-            LOG_WARNING("event is null");
-        }
         m_hpr->eventQueue.pop();
     }
-    for (Timer* timer : m_hpr->timerList) {
+    for (const auto& timer : m_hpr->timerList) {
         if (timer) {
-            delete timer;
-        } else {
-            LOG_WARNING("timer is null");
+            timer->m_queue = nullptr;
         }
     }
     m_hpr->eventMutex.unlock();
-    if (m_hpr->queueThread) {
-        delete m_hpr->queueThread;
-    }
-    if (m_hpr) {
-        delete m_hpr;
-        m_hpr = nullptr;
-    }
+    // m_hpr->queueThread.release();
+    DCUS_HELPER_DESTROY(m_hpr);
 }
 
 int Queue::runInBlock()
@@ -133,7 +119,7 @@ void Queue::runInThread()
         return;
     }
     m_hpr->isRunning = true;
-    m_hpr->queueThread = new Thread([this]() {
+    m_hpr->queueThread = std::make_unique<Thread>([this]() {
         runInBlock();
     });
     m_hpr->queueThread->start();
@@ -219,39 +205,24 @@ int Queue::eventCount() const
     return count;
 }
 
-Timer* Queue::createTimer(uint32_t interval_milli_s, bool loop, const Timer::Function& function)
+std::shared_ptr<Timer> Queue::createTimer(uint32_t interval_milli_s, bool loop, const Timer::Function& function)
 {
-    Timer* timer = new Timer(interval_milli_s, loop, function);
-    m_hpr->eventMutex.lock();
-    m_hpr->timerList.push_back(timer);
-    m_hpr->eventMutex.unlock();
-    return timer;
-}
-
-void Queue::destroyTimer(Timer* timer)
-{
-    if (!timer) {
-        LOG_WARNING("timer is null");
-    }
-    m_hpr->eventMutex.lock();
-    m_hpr->timerList.remove(timer);
-    m_hpr->eventMutex.unlock();
-    delete timer;
+    return Timer::create(this, interval_milli_s, loop, function);
 }
 
 void Queue::onceTimer(uint32_t interval_milli_s, const Timer::Function& function)
 {
-    Timer* timer = createTimer(interval_milli_s, false, nullptr);
-    timer->setFunction([timer, function, this] {
+    std::weak_ptr<Timer> timer = createTimer(interval_milli_s, false, nullptr);
+    timer.lock()->setFunction([timer, function, this] {
         if (function) {
             function();
-            destroyTimer(timer);
+            removeTimer(timer.lock());
         }
     });
-    timer->start();
+    timer.lock()->start();
 }
 
-void Queue::postEvent(Event* event)
+void Queue::postEvent(const std::shared_ptr<Event>& event)
 {
     if (event->queueId() < 0) {
         LOG_WARNING("queue id not set");
@@ -311,7 +282,7 @@ void Queue::processEvent()
             m_hpr->eventMutex.unlock();
             break;
         }
-        Event* event = m_hpr->eventQueue.front();
+        auto event = m_hpr->eventQueue.front();
         m_hpr->eventQueue.pop();
         m_hpr->eventMutex.unlock();
         if (event) {
@@ -321,12 +292,40 @@ void Queue::processEvent()
             if (event->function()) {
                 event->function()();
             }
-            delete event;
         } else {
             LOG_WARNING("event is null");
         }
     }
     m_hpr->isBusy = false;
+}
+
+void Queue::addTimer(const std::shared_ptr<Timer>& timer)
+{
+    m_hpr->eventMutex.lock();
+    timer->m_queue = this;
+    m_hpr->timerList.push_back(timer);
+    m_hpr->eventMutex.unlock();
+}
+
+void Queue::removeTimer(const std::shared_ptr<Timer>& timer)
+{
+    m_hpr->eventMutex.lock();
+    timer->m_queue = nullptr;
+    m_hpr->timerList.remove(timer);
+    m_hpr->eventMutex.unlock();
+}
+
+void Queue::removeTimer(Timer* timer)
+{
+    m_hpr->eventMutex.lock();
+    for (auto it = m_hpr->timerList.begin(); it != m_hpr->timerList.end(); it++) {
+        if ((*it).get() == timer) {
+            m_hpr->timerList.erase(it);
+            break;
+        }
+    }
+    timer->m_queue = nullptr;
+    m_hpr->eventMutex.unlock();
 }
 
 void Queue::processNextSleepTime()
@@ -339,7 +338,10 @@ void Queue::processNextSleepTime()
     m_hpr->timeMethod.currentTime = Utils::getNanoCurrent();
 #if TIMER_USE_PRECISION
     m_hpr->timeMethod.expactCount = 0;
-    for (Timer* timer : m_hpr->timerList) {
+    for (const auto& timer : m_hpr->timerList) {
+        if (!timer) {
+            continue;
+        }
         if (!timer->active()) {
             continue;
         }
@@ -377,7 +379,10 @@ void Queue::processNextSleepTime()
         }
     }
 #else
-    for (Timer* timer : m_hpr->timerList) {
+    for (const auto& timer : m_hpr->timerList) {
+        if (!timer) {
+            continue;
+        }
         if (!timer->active()) {
             continue;
         }

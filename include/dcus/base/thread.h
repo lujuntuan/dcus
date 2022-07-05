@@ -21,15 +21,17 @@ DCUS_NAMESPACE_BEGIN
 
 class DCUS_EXPORT Thread final {
     CLASS_DISSABLE_COPY_AND_ASSIGN(Thread)
+private:
+    void create();
+
 public:
     using Function = std::function<void()>;
     Thread();
     template <typename T, typename... ARGS>
     explicit Thread(T&& function, ARGS&&... args)
     {
-        createHelper();
-        std::function<typename std::result_of<T(ARGS...)>::type()> task(std::bind(std::forward<T>(function), std::forward<ARGS>(args)...));
-        m_runFunction = task;
+        create();
+        m_runFunction = std::function<typename std::result_of<T(ARGS...)>::type()>(std::bind(std::forward<T>(function), std::forward<ARGS>(args)...));
     }
     ~Thread();
     static Thread* currentThread();
@@ -53,9 +55,6 @@ public:
         return start();
     }
     bool stop(uint32_t milli_s = 100);
-
-private:
-    void createHelper();
 
 private:
     struct ThreadHelper* m_threadHelper = nullptr;

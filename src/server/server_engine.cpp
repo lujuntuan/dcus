@@ -64,7 +64,7 @@ struct ServerHelper {
     std::string cancelId;
     std::string lastlId;
     std::string lastCancelId;
-    Timer* processDomainsTimer = nullptr;
+    std::shared_ptr<Timer> processDomainsTimer;
     VariantMap attributes;
     VariantMap domainsConfig;
     VariantMap cacheStatus;
@@ -88,9 +88,7 @@ ServerEngine::ServerEngine(int argc, char** argv)
     setInstance(this);
     loadUseage({ USAGE_URL_LIST, USAGE_TENANT_LIST, USAGE_ID_LIST, USAGE_TOKEN_LIST });
 
-    if (!m_hpr) {
-        m_hpr = new ServerHelper;
-    }
+    DCUS_HELPER_CREATE(m_hpr);
     m_hpr->domainsConfig = readConfig("/etc/dcus_domains.conf");
     static std::mutex mutex;
     setMutex(mutex);
@@ -99,10 +97,7 @@ ServerEngine::ServerEngine(int argc, char** argv)
 
 ServerEngine::~ServerEngine()
 {
-    if (m_hpr) {
-        delete m_hpr;
-        m_hpr = nullptr;
-    }
+    DCUS_HELPER_DESTROY(m_hpr);
     setInstance(nullptr);
 }
 
@@ -189,7 +184,7 @@ void ServerEngine::startWebEngine()
 
     // GatewayToken or TargetToken
     WebInit webInit(webUrl.toString(), tenant.toString(), id.toString(), { "GatewayToken", token.toString() });
-    m_hpr->webQueue.postEvent(new WebInitEvent(webInit));
+    m_hpr->webQueue.postEvent(std::make_shared<WebInitEvent>(webInit));
     m_hpr->webQueue.runInThread();
 }
 
@@ -215,7 +210,7 @@ void ServerEngine::processDomainMessage(Domain&& domain, bool discovery)
             return;
         }
     }
-    this->postEvent(new ServerDomainEvent(domain, discovery));
+    this->postEvent(std::make_shared<ServerDomainEvent>(domain, discovery));
 }
 
 void ServerEngine::begin()
@@ -242,9 +237,9 @@ void ServerEngine::end()
     onStop();
 }
 
-void ServerEngine::eventChanged(Event* event)
+void ServerEngine::eventChanged(const std::shared_ptr<Event>& event)
 {
-    ServerEvent* serverEvent = (ServerEvent*)event;
+    auto serverEvent = std::static_pointer_cast<ServerEvent>(event);
     if (serverEvent->type() == ServerEvent::FUNCTION) {
         return;
     }
@@ -287,7 +282,7 @@ void ServerEngine::eventChanged(Event* event)
         if (m_hpr->state == MR_DONE_ASK || m_hpr->state == MR_ERROR_ASK) {
             break;
         }
-        ServerUpgradeEvent* upgradeEvent = dynamic_cast<ServerUpgradeEvent*>(serverEvent);
+        auto upgradeEvent = std::dynamic_pointer_cast<ServerUpgradeEvent>(serverEvent);
         if (!upgradeEvent) {
             LOG_WARNING("get ServerUpgradeEvent error");
             break;
@@ -328,7 +323,7 @@ void ServerEngine::eventChanged(Event* event)
         if (!Domain::mrStateIsBusy(m_hpr->state)) {
             feedback(false, 1900);
             WebFeed webFeed(m_hpr->cancelId, WebFeed::TP_DEPLOY, WebFeed::EXE_CLOSED, WebFeed::RS_FAILURE);
-            m_hpr->webQueue.postEvent(new WebFeedEvent(webFeed));
+            m_hpr->webQueue.postEvent(std::make_shared<WebFeedEvent>(webFeed));
             break;
         }
         setState(MR_CANCEL_ASK);
@@ -368,7 +363,7 @@ void ServerEngine::eventChanged(Event* event)
             d.transfers.shrink_to_fit();
         }
         setState(MR_VERIFY);
-        m_hpr->webQueue.postEvent(new WebEvent(WebEvent::REQ_VERIFY));
+        m_hpr->webQueue.postEvent(std::make_shared<WebEvent>(WebEvent::REQ_VERIFY));
         break;
     }
     case ServerEvent::RES_VERIFY_DONE: {
@@ -380,7 +375,7 @@ void ServerEngine::eventChanged(Event* event)
             d.transfers.shrink_to_fit();
         }
         setState(MR_DISTRIBUTE);
-        m_hpr->webQueue.postEvent(new WebEvent(WebEvent::REQ_DISTRIBUTE));
+        m_hpr->webQueue.postEvent(std::make_shared<WebEvent>(WebEvent::REQ_DISTRIBUTE));
         break;
     }
     case ServerEvent::RES_DISTRUBUTE_DONE: {
@@ -402,7 +397,7 @@ void ServerEngine::eventChanged(Event* event)
         break;
     }
     case ServerEvent::RES_TRANSFER_PROGRESS: {
-        ServerTransferEvent* transferEvent = dynamic_cast<ServerTransferEvent*>(serverEvent);
+        auto transferEvent = std::dynamic_pointer_cast<ServerTransferEvent>(serverEvent);
         if (!transferEvent) {
             LOG_WARNING("get ServerTransferEvent error");
             break;
@@ -444,7 +439,7 @@ void ServerEngine::eventChanged(Event* event)
         break;
     }
     case ServerEvent::RES_DOMAIN: {
-        ServerDomainEvent* serverDomainEvent = dynamic_cast<ServerDomainEvent*>(serverEvent);
+        auto serverDomainEvent = std::dynamic_pointer_cast<ServerDomainEvent>(serverEvent);
         if (!serverDomainEvent) {
             LOG_WARNING("get ServerControlReplyEvent error");
             break;
@@ -780,10 +775,10 @@ void ServerEngine::setState(ServerState state)
         if (Domain::mrStateIsBusy(m_hpr->state)) {
             if (m_hpr->webFeed.type == WebFeed::TP_DEPLOY) {
                 WebFeed webFeed(m_hpr->upgrade.id, WebFeed::TP_DEPLOY, WebFeed::EXE_PROCEEDING, WebFeed::RS_SUCCESS, getWebFeedDetails(), getWebFeedProgress());
-                m_hpr->webQueue.postEvent(new WebFeedEvent(webFeed));
+                m_hpr->webQueue.postEvent(std::make_shared<WebFeedEvent>(webFeed));
             } else {
                 WebFeed webFeed(m_hpr->cancelId, WebFeed::TP_CANCEL, WebFeed::EXE_PROCEEDING, WebFeed::RS_SUCCESS, getWebFeedDetails(), getWebFeedProgress());
-                m_hpr->webQueue.postEvent(new WebFeedEvent(webFeed));
+                m_hpr->webQueue.postEvent(std::make_shared<WebFeedEvent>(webFeed));
             }
         }
     }
@@ -852,7 +847,7 @@ void ServerEngine::pending()
 void ServerEngine::download()
 {
     setState(MR_DOWNLOAD);
-    m_hpr->webQueue.postEvent(new WebEvent(WebEvent::REQ_DOWNLOAD));
+    m_hpr->webQueue.postEvent(std::make_shared<WebEvent>(WebEvent::REQ_DOWNLOAD));
 }
 
 void ServerEngine::deploy()
@@ -910,8 +905,8 @@ void ServerEngine::feedback(bool finished, int error)
     WebFeed tmpFeed = m_hpr->webFeed;
     tmpFeed.details = getWebFeedDetails();
     tmpFeed.progress = getWebFeedProgress();
-    m_hpr->webQueue.postEvent(new WebEvent(WebEvent::REQ_STOP));
-    m_hpr->webQueue.postEvent(new WebFeedEvent(tmpFeed));
+    m_hpr->webQueue.postEvent(std::make_shared<WebEvent>(WebEvent::REQ_STOP));
+    m_hpr->webQueue.postEvent(std::make_shared<WebFeedEvent>(tmpFeed));
     if (m_hpr->detailSubscribed) {
         setState(state);
     } else {
@@ -1113,7 +1108,7 @@ void ServerEngine::processDomains()
                         if (m_hpr->control == CTL_DEPLOY) {
                             sendControlMessage(CTL_DEPLOY);
                             WebFeed webFeed(m_hpr->upgrade.id, WebFeed::TP_DEPLOY, WebFeed::EXE_SCHEDULED, WebFeed::RS_SUCCESS, getWebFeedDetails(), getWebFeedProgress());
-                            m_hpr->webQueue.postEvent(new WebFeedEvent(webFeed));
+                            m_hpr->webQueue.postEvent(std::make_shared<WebFeedEvent>(webFeed));
                         }
                     }
                 } else if (!d.hasDepends(m_hpr->depends)) {
